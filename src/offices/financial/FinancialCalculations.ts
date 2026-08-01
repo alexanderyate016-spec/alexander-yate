@@ -81,5 +81,130 @@ export const FinancialCalculations = {
     if (n.includes('ahorro')) return '🏦';
     if (n.includes('inversión') || n.includes('bolsa') || n.includes('cripto')) return '📈';
     return '💳';
+  },
+
+  calculateBudgetSpent(budget: any, transactions: FinancialTransaction[], todayStr: string): number {
+    if (!transactions || transactions.length === 0) return 0;
+    
+    // Filter transactions by nature 'external_expense' or 'investment_buy'
+    const expenses = transactions.filter(t => t.nature === 'external_expense' || t.nature === 'investment_buy');
+
+    // Filter by category if categoryId is specified and not 'all'
+    let filtered = expenses;
+    if (budget.categoryId && budget.categoryId !== 'all') {
+      filtered = filtered.filter(t => 
+        t.categoryId === budget.categoryId || 
+        t.description.toLowerCase().includes(budget.name.toLowerCase()) ||
+        (budget.categoryIdName && t.description.toLowerCase().includes(budget.categoryIdName.toLowerCase()))
+      );
+    }
+
+    // Filter by period / date range if specified
+    if (budget.startDate && budget.endDate) {
+      filtered = filtered.filter(t => t.date >= budget.startDate && t.date <= budget.endDate);
+    } else if (budget.period === 'monthly' || !budget.period) {
+      const currentMonthPrefix = todayStr.substring(0, 7); // YYYY-MM
+      filtered = filtered.filter(t => t.date.startsWith(currentMonthPrefix));
+    } else if (budget.period === 'weekly') {
+      // Last 7 days
+      const todayDate = new Date(todayStr);
+      const sevenDaysAgo = new Date(todayDate);
+      sevenDaysAgo.setDate(todayDate.getDate() - 7);
+      const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0];
+      filtered = filtered.filter(t => t.date >= sevenDaysStr && t.date <= todayStr);
+    } else if (budget.period === 'annual') {
+      const currentYearPrefix = todayStr.substring(0, 4); // YYYY
+      filtered = filtered.filter(t => t.date.startsWith(currentYearPrefix));
+    }
+
+    return filtered.reduce((sum, t) => sum + t.amount, 0);
+  },
+
+  getObligationStatus(dueDateStr: string, isPaid: boolean, todayStr: string) {
+    if (isPaid) {
+      return { status: 'paid', label: 'Pagada', color: 'emerald' as const, daysDiff: 0 };
+    }
+
+    const today = new Date(todayStr);
+    const due = new Date(dueDateStr);
+    const diffTime = due.getTime() - today.getTime();
+    const daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (daysDiff < 0) {
+      return { status: 'overdue', label: `Vencida (${Math.abs(daysDiff)} d)`, color: 'rose' as const, daysDiff };
+    } else if (daysDiff <= 3) {
+      return { status: 'due_soon', label: daysDiff === 0 ? 'Vence hoy' : `Vence en ${daysDiff} d`, color: 'amber' as const, daysDiff };
+    } else {
+      return { status: 'pending', label: `Pendiente (${daysDiff} d)`, color: 'blue' as const, daysDiff };
+    }
+  },
+
+  generateSmartAlerts(data: FinancialOfficeData, todayStr: string) {
+    const alerts: Array<{ id: string; type: 'warning' | 'danger' | 'info' | 'success'; title: string; description: string; moduleId: string }> = [];
+
+    // 1. Check Obligations (overdue / due soon)
+    (data.obligations || []).forEach(ob => {
+      const st = this.getObligationStatus(ob.dueDate, ob.isPaid, todayStr);
+      if (st.status === 'overdue') {
+        alerts.push({
+          id: `alert_ob_ov_${ob.id}`,
+          type: 'danger',
+          title: `Obligación Vencida: ${ob.title}`,
+          description: `La obligación de $${ob.amount} ${ob.currency} venció hace ${Math.abs(st.daysDiff)} días.`,
+          moduleId: 'obligations'
+        });
+      } else if (st.status === 'due_soon') {
+        alerts.push({
+          id: `alert_ob_ds_${ob.id}`,
+          type: 'warning',
+          title: `Obligación Próxima a Vencer: ${ob.title}`,
+          description: `Vence ${st.daysDiff === 0 ? 'HOY' : `en ${st.daysDiff} días`}: $${ob.amount} ${ob.currency}.`,
+          moduleId: 'obligations'
+        });
+      }
+    });
+
+    // 2. Check Budgets (>90% or >100%)
+    (data.budgets || []).forEach((b: any) => {
+      const spent = this.calculateBudgetSpent(b, data.transactions || [], todayStr);
+      const limit = b.monthlyLimit || 1;
+      const pct = (spent / limit) * 100;
+
+      if (pct >= 100) {
+        alerts.push({
+          id: `alert_bdg_ex_${b.id}`,
+          type: 'danger',
+          title: `Presupuesto Excedido: ${b.name || 'Categoría'}`,
+          description: `Has gastado $${spent.toLocaleString()} de $${limit.toLocaleString()} (${Math.round(pct)}%). Alerta de sobrecosto.`,
+          moduleId: 'budgets'
+        });
+      } else if (pct >= 80) {
+        alerts.push({
+          id: `alert_bdg_warn_${b.id}`,
+          type: 'warning',
+          title: `Presupuesto en Riesgo: ${b.name || 'Categoría'}`,
+          description: `Has consumido el ${Math.round(pct)}% de tu límite de $${limit.toLocaleString()}.`,
+          moduleId: 'budgets'
+        });
+      }
+    });
+
+    // 3. High Yield Yields
+    (data.accounts || []).forEach(acc => {
+      if (acc.type === 'high_yield' && acc.annualInterestRate) {
+        const est = this.calculateDailyYieldEstimated(acc, data.transactions || []);
+        if (est > 0) {
+          alerts.push({
+            id: `alert_yield_${acc.id}`,
+            type: 'success',
+            title: `Rendimiento Diario Estimado: ${acc.name}`,
+            description: `Tu cuenta al ${acc.annualInterestRate}% E.A. genera aprox. $${Math.round(est).toLocaleString()} ${acc.currency}/día.`,
+            moduleId: 'accounts'
+          });
+        }
+      }
+    });
+
+    return alerts;
   }
 };
