@@ -45,6 +45,45 @@ export const FinancialStore = {
     storeInstance.updateState(draft => {
       const id = 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       draft.offices.financiera.transactions.push({ ...tx, id });
+
+      // If it's an investment buy transaction, automatically record/update position
+      if (tx.nature === 'investment_buy' && tx.assetName && tx.assetQuantity && tx.unitPrice) {
+        if (!draft.offices.financiera.investments) draft.offices.financiera.investments = [];
+        const existingInv = draft.offices.financiera.investments.find(
+          i => i.assetName.toLowerCase() === tx.assetName!.toLowerCase()
+        );
+        if (existingInv) {
+          const totalQty = existingInv.quantity + tx.assetQuantity;
+          const totalCost = (existingInv.quantity * existingInv.avgPurchasePrice) + (tx.assetQuantity * tx.unitPrice);
+          existingInv.quantity = totalQty;
+          existingInv.avgPurchasePrice = totalCost / totalQty;
+          existingInv.currentPrice = tx.unitPrice;
+        } else {
+          draft.offices.financiera.investments.push({
+            id: 'inv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            assetName: tx.assetName,
+            type: 'Inversión',
+            quantity: tx.assetQuantity,
+            avgPurchasePrice: tx.unitPrice,
+            currentPrice: tx.unitPrice,
+            currency: tx.currency,
+            purchaseDate: tx.date
+          });
+        }
+      }
+
+      // If it's an investment sell transaction, reduce quantity from position
+      if (tx.nature === 'investment_sell' && tx.assetName && tx.assetQuantity) {
+        if (draft.offices.financiera.investments) {
+          const existingInv = draft.offices.financiera.investments.find(
+            i => i.assetName.toLowerCase() === tx.assetName!.toLowerCase()
+          );
+          if (existingInv) {
+            existingInv.quantity = Math.max(0, existingInv.quantity - tx.assetQuantity);
+            if (tx.unitPrice) existingInv.currentPrice = tx.unitPrice;
+          }
+        }
+      }
     });
   },
 
@@ -229,6 +268,15 @@ export const FinancialStore = {
   },
 
   // DISTRIBUTION PLAN (Plan de Distribución Financiera)
+  setDistributionIncomeBaseMode(mode: 'manual' | 'calculated') {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.financiera.distributionPlan) {
+        draft.offices.financiera.distributionPlan = getDefaultDistributionPlan();
+      }
+      draft.offices.financiera.distributionPlan.incomeBaseMode = mode;
+    });
+  },
+
   setDistributionBaseIncome(amount: number | undefined) {
     storeInstance.updateState(draft => {
       if (!draft.offices.financiera.distributionPlan) {

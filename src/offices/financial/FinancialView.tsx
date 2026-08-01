@@ -56,7 +56,8 @@ import {
   X,
   Clock,
   ShieldAlert,
-  Repeat
+  Repeat,
+  RefreshCw
 } from 'lucide-react';
 
 interface Props {
@@ -181,6 +182,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [txSourceAcc, setTxSourceAcc] = useState('');
   const [txDestAcc, setTxDestAcc] = useState('');
   const [txCategory, setTxCategory] = useState('');
+  const [txSourceName, setTxSourceName] = useState('');
+  const [txBeneficiaryName, setTxBeneficiaryName] = useState('');
+  const [txAssetName, setTxAssetName] = useState('');
+  const [txAssetQuantity, setTxAssetQuantity] = useState<number | ''>('');
+  const [txUnitPrice, setTxUnitPrice] = useState<number | ''>('');
+  const [txReconciliationReason, setTxReconciliationReason] = useState('');
+  const [txReconciliationUser, setTxReconciliationUser] = useState('');
 
   // New Obligation State
   const [obTitle, setObTitle] = useState('');
@@ -380,21 +388,45 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
   const handleCreateTransaction = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!txDesc.trim() || !txAmount || Number(txAmount) <= 0) return;
+    if (!txDesc.trim()) return;
+
+    // Calculate final amount depending on nature
+    let finalAmount = Number(txAmount) || 0;
+    if ((txNature === 'investment_buy' || txNature === 'investment_sell') && txAssetQuantity && txUnitPrice) {
+      finalAmount = Number(txAssetQuantity) * Number(txUnitPrice);
+    }
+
+    if (finalAmount <= 0) return;
+
     FinancialStore.addTransaction({
       date: todayStr,
       time: timeStr,
       nature: txNature,
       description: txDesc.trim(),
-      amount: Number(txAmount),
+      amount: finalAmount,
       currency: txCurr,
       sourceAccountId: txSourceAcc || undefined,
       destinationAccountId: txDestAcc || undefined,
+      sourceName: txSourceName.trim() || undefined,
+      beneficiaryName: txBeneficiaryName.trim() || undefined,
+      assetName: txAssetName.trim() || undefined,
+      assetQuantity: txAssetQuantity ? Number(txAssetQuantity) : undefined,
+      unitPrice: txUnitPrice ? Number(txUnitPrice) : undefined,
+      reconciliationReason: txReconciliationReason.trim() || undefined,
+      reconciliationUser: txReconciliationUser.trim() || undefined,
       categoryId: txCategory || undefined,
       tags: []
     });
+
     setTxDesc('');
     setTxAmount('');
+    setTxSourceName('');
+    setTxBeneficiaryName('');
+    setTxAssetName('');
+    setTxAssetQuantity('');
+    setTxUnitPrice('');
+    setTxReconciliationReason('');
+    setTxReconciliationUser('');
     triggerToast(`Movimiento "${txDesc}" registrado correctamente 💳`);
   };
 
@@ -1776,64 +1808,350 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             </h3>
 
             <ExecutiveForm onSubmit={handleCreateTransaction}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                <div>
-                  <ExecutiveSelect
-                    label="Naturaleza *"
-                    value={txNature}
-                    onChange={e => setTxNature(e.target.value as any)}
-                    accentColor="emerald"
-                    options={[
-                      { value: 'external_expense', label: 'Gasto / Salida Externa' },
-                      { value: 'external_income', label: 'Ingreso Externo' },
-                      { value: 'internal_transfer', label: 'Transferencia Interna' },
-                      { value: 'financial_yield', label: 'Rendimiento Financiero' },
-                      { value: 'reconciliation_adj', label: 'Ajuste de Conciliación' }
-                    ]}
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                  <div>
+                    <ExecutiveSelect
+                      label="Naturaleza de Transacción *"
+                      value={txNature}
+                      onChange={e => setTxNature(e.target.value as any)}
+                      accentColor="emerald"
+                      options={[
+                        { value: 'external_expense', label: '💸 Gasto / Salida Externa' },
+                        { value: 'external_income', label: '💵 Ingreso Externo' },
+                        { value: 'internal_transfer', label: '🔄 Transferencia Interna' },
+                        { value: 'investment_buy', label: '📈 Compra de Inversión' },
+                        { value: 'investment_sell', label: '📉 Venta de Inversión' },
+                        { value: 'reconciliation_adj', label: '⚖️ Ajuste de Conciliación' },
+                        { value: 'financial_yield', label: '✨ Rendimiento Financiero' }
+                      ]}
+                    />
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <ExecutiveInput
+                      label="Descripción *"
+                      placeholder="Ej: Pago de supermercado, Salario, Transferencia o Ajuste"
+                      value={txDesc}
+                      onChange={e => setTxDesc(e.target.value)}
+                      accentColor="emerald"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <ExecutiveSelect
+                      label="Moneda *"
+                      value={txCurr}
+                      onChange={e => setTxCurr(e.target.value as any)}
+                      accentColor="emerald"
+                      options={[
+                        { value: 'COP', label: 'COP ($)' },
+                        { value: 'USD', label: 'USD ($)' },
+                        { value: 'EUR', label: 'EUR (€)' },
+                        { value: 'BTC', label: 'BTC (₿)' },
+                        { value: 'ETH', label: 'ETH (Ξ)' }
+                      ]}
+                    />
+                  </div>
                 </div>
 
-                <div className="lg:col-span-2">
-                  <ExecutiveInput
-                    label="Descripción *"
-                    placeholder="Ej: Pago de supermercado o nómina"
-                    value={txDesc}
-                    onChange={e => setTxDesc(e.target.value)}
-                    accentColor="emerald"
-                    required
-                  />
-                </div>
+                {/* DYNAMIC FIELDS PER NATURE */}
+                {txNature === 'external_income' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveInput
+                        label="Origen del Dinero *"
+                        placeholder="Ej: Salario, Beca, Regalo, Venta, Devolución"
+                        value={txSourceName}
+                        onChange={e => setTxSourceName(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Destino (Ingreso) *"
+                        value={txDestAcc}
+                        onChange={e => setTxDestAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Seleccionar Cuenta Destino --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Monto del Ingreso *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
 
-                <div>
-                  <ExecutiveInput
-                    label="Monto *"
-                    type="number"
-                    placeholder="0.00"
-                    value={txAmount}
-                    onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                    accentColor="emerald"
-                    required
-                  />
-                </div>
+                {txNature === 'external_expense' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Origen (Desembolso) *"
+                        value={txSourceAcc}
+                        onChange={e => setTxSourceAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Seleccionar Cuenta Origen --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Destino / Beneficiario *"
+                        placeholder="Ej: Arrendador, Supermercado, Universidad"
+                        value={txBeneficiaryName}
+                        onChange={e => setTxBeneficiaryName(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Monto del Gasto *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
 
-                <div>
-                  <ExecutiveSelect
-                    label="Cuenta de Origen"
-                    value={txSourceAcc}
-                    onChange={e => setTxSourceAcc(e.target.value)}
-                    accentColor="emerald"
-                    options={[
-                      { value: '', label: '-- Sin especificar --' },
-                      ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
-                    ]}
-                  />
-                </div>
-              </div>
+                {txNature === 'internal_transfer' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-blue-950/20 border border-blue-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Origen (Sale) *"
+                        value={txSourceAcc}
+                        onChange={e => setTxSourceAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Cuenta Origen --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Destino (Entra) *"
+                        value={txDestAcc}
+                        onChange={e => setTxDestAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Cuenta Destino --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Monto Transferido *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex justify-end pt-2">
-                <ExecutiveButton type="submit" variant="primary" accentColor="emerald" icon={<Plus className="w-4 h-4" />}>
-                  Guardar Movimiento
-                </ExecutiveButton>
+                {txNature === 'investment_buy' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-indigo-950/20 border border-indigo-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta de Origen *"
+                        value={txSourceAcc}
+                        onChange={e => setTxSourceAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Cuenta Pago --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Activo Adquirido *"
+                        placeholder="Ej: Acciones Apple, BTC, ETF"
+                        value={txAssetName}
+                        onChange={e => setTxAssetName(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Cantidad *"
+                        type="number"
+                        placeholder="1.0"
+                        value={txAssetQuantity}
+                        onChange={e => setTxAssetQuantity(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Precio Unitario *"
+                        type="number"
+                        placeholder="100.00"
+                        value={txUnitPrice}
+                        onChange={e => setTxUnitPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {txNature === 'investment_sell' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-purple-950/20 border border-purple-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveInput
+                        label="Activo Vendido *"
+                        placeholder="Ej: Acciones Apple, BTC"
+                        value={txAssetName}
+                        onChange={e => setTxAssetName(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Cantidad *"
+                        type="number"
+                        placeholder="1.0"
+                        value={txAssetQuantity}
+                        onChange={e => setTxAssetQuantity(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Destino (Ingreso) *"
+                        value={txDestAcc}
+                        onChange={e => setTxDestAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Cuenta Destino --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Precio Venta *"
+                        type="number"
+                        placeholder="100.00"
+                        value={txUnitPrice}
+                        onChange={e => setTxUnitPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {txNature === 'reconciliation_adj' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Afectada *"
+                        value={txSourceAcc}
+                        onChange={e => setTxSourceAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Seleccionar Cuenta --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Motivo Conciliación *"
+                        placeholder="Ej: Saldo de extracto a fin de mes"
+                        value={txReconciliationReason}
+                        onChange={e => setTxReconciliationReason(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Usuario / Responsable *"
+                        placeholder="Ej: Presidente / Contador"
+                        value={txReconciliationUser}
+                        onChange={e => setTxReconciliationUser(e.target.value)}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Diferencia Aplicada (+/-) *"
+                        type="number"
+                        placeholder="Ej: 50.00 o -25.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {txNature === 'financial_yield' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl">
+                    <div>
+                      <ExecutiveSelect
+                        label="Cuenta Destino (Rendimiento) *"
+                        value={txDestAcc}
+                        onChange={e => setTxDestAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Cuenta Destino --' },
+                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <ExecutiveInput
+                        label="Monto del Rendimiento *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-2">
+                  <ExecutiveButton type="submit" variant="primary" accentColor="emerald" icon={<Plus className="w-4 h-4" />}>
+                    Guardar Movimiento en Historial
+                  </ExecutiveButton>
+                </div>
               </div>
             </ExecutiveForm>
           </GlassPanel>
@@ -1848,28 +2166,55 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           ) : (
             <div className="space-y-2.5">
               {filteredTransactions.map(tx => {
-                const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield';
+                const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell';
+                const sourceAcc = (data.accounts || []).find(a => a.id === tx.sourceAccountId);
+                const destAcc = (data.accounts || []).find(a => a.id === tx.destinationAccountId);
 
                 return (
                   <div
                     key={tx.id}
                     className="p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-between gap-4 hover:border-white/30 transition-all"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-xl border ${isIncome ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
-                        {isIncome ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2.5 rounded-xl border mt-0.5 ${
+                        isIncome 
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                          : tx.nature === 'internal_transfer'
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                          : tx.nature === 'reconciliation_adj'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                      }`}>
+                        {isIncome ? <ArrowUpRight className="w-5 h-5" /> : tx.nature === 'internal_transfer' ? <RefreshCw className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                       </div>
-                      <div>
-                        <h4 className="font-serif font-bold text-white text-sm">{tx.description}</h4>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-serif font-bold text-white text-sm">{tx.description}</h4>
+                          <ExecutiveBadge variant="subtle" accentColor={
+                            isIncome ? 'emerald' : tx.nature === 'internal_transfer' ? 'blue' : tx.nature === 'reconciliation_adj' ? 'amber' : 'rose'
+                          }>
+                            {tx.nature.replace('_', ' ')}
+                          </ExecutiveBadge>
+                        </div>
                         <div className="text-xs text-slate-400 font-mono">
-                          {tx.date} • {tx.time} | <span className="uppercase text-slate-300">{tx.nature.replace('_', ' ')}</span>
+                          {tx.date} • {tx.time}
+                        </div>
+                        <div className="text-[11px] text-slate-300 flex flex-wrap gap-2 pt-0.5">
+                          {tx.sourceName && <span>Origen: <strong className="text-white">{tx.sourceName}</strong></span>}
+                          {tx.beneficiaryName && <span>Beneficiario: <strong className="text-white">{tx.beneficiaryName}</strong></span>}
+                          {tx.assetName && <span>Activo: <strong className="text-white">{tx.assetName}</strong> ({tx.assetQuantity} u. @ {formatCurrency(tx.unitPrice || 0, tx.currency)})</span>}
+                          {tx.reconciliationReason && <span>Motivo: <strong className="text-amber-300">{tx.reconciliationReason}</strong> (por {tx.reconciliationUser})</span>}
+                          {sourceAcc && <span>Desde: <strong className="text-slate-200">{sourceAcc.name}</strong></span>}
+                          {destAcc && <span>Hacia: <strong className="text-slate-200">{destAcc.name}</strong></span>}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <span className={`text-base font-serif font-bold ${isIncome ? 'text-emerald-400' : 'text-slate-200'}`}>
-                        {isIncome ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span className={`text-base font-serif font-bold ${
+                        isIncome ? 'text-emerald-400' : tx.nature === 'internal_transfer' ? 'text-blue-300' : tx.nature === 'reconciliation_adj' ? 'text-amber-400' : 'text-slate-200'
+                      }`}>
+                        {isIncome ? '+' : tx.nature === 'internal_transfer' ? '↔ ' : ''}{formatCurrency(tx.amount, tx.currency)}
                       </span>
                       <button
                         onClick={() => {

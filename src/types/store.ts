@@ -176,6 +176,13 @@ export interface FinancialTransaction {
   nature: TransactionNature;
   sourceAccountId?: string;
   destinationAccountId?: string;
+  sourceName?: string; // Origen del dinero en ingresos externos (ej. salario, beca)
+  beneficiaryName?: string; // Destino o beneficiario en salidas externas
+  assetName?: string; // Nombre del activo para compra/venta de inversión
+  assetQuantity?: number; // Cantidad para inversión
+  unitPrice?: number; // Precio unitario para inversión
+  reconciliationReason?: string; // Motivo del ajuste de conciliación
+  reconciliationUser?: string; // Usuario que aplicó la conciliación
   categoryId?: string;
   description: string;
   amount: number;
@@ -230,6 +237,7 @@ export interface FinancialFundPlan {
 }
 
 export interface FinancialDistributionPlan {
+  incomeBaseMode?: 'manual' | 'calculated';
   monthlyBaseIncome?: number; // Custom base income amount for distribution plan
   currency: CurrencyCode;
   funds: FinancialFundPlan[];

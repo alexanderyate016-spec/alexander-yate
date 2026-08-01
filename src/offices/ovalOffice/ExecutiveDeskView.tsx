@@ -1,6 +1,7 @@
 import React from 'react';
 import { MasterState } from '../../types/store';
 import { OvalOfficeCalculations } from './OvalOfficeCalculations';
+import { FinancialCalculations } from '../financial/FinancialCalculations';
 import { 
   GraduationCap, 
   Landmark, 
@@ -54,12 +55,15 @@ export const ExecutiveDeskView: React.FC<Props> = ({
     }
   }
 
-  // 2. Financial Metrics & Calculation
-  const accounts = state.offices.financiera?.accounts || [];
+  // 2. Financial Metrics & Calculation (Calculado dinámicamente desde FinancialCalculations)
+  const financialData = state.offices.financiera;
+  const accounts = financialData?.accounts || [];
+  const transactions = financialData?.transactions || [];
   const hasAccounts = accounts.length > 0;
-  const totalBalance = hasAccounts
-    ? accounts.reduce((acc, curr) => acc + (curr.initialBalance || 0), 0)
-    : null;
+  const liquidNW = financialData ? FinancialCalculations.calculateLiquidNetWorth(financialData) : { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
+  const investedNW = financialData ? FinancialCalculations.calculateInvestedNetWorth(financialData) : { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
+  const totalNW = financialData ? FinancialCalculations.calculateTotalNetWorth(financialData) : { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
+  const totalBalance = liquidNW.COP || 0;
 
   // 3. Medical Metrics & Calculation
   const appointments = state.offices.medica?.appointments || [];

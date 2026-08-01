@@ -40,7 +40,8 @@ import {
   Info,
   TrendingDown,
   TrendingUp,
-  ShieldAlert
+  ShieldAlert,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -74,22 +75,24 @@ function AnimatedProgressBar({ percent, color = 'emerald', height = 'h-2' }: { p
 
 export function FinancialDistributionView({ data, todayStr, triggerToast }: Props) {
   const plan = data.distributionPlan || {
-    monthlyBaseIncome: 2000000,
+    incomeBaseMode: 'calculated',
+    monthlyBaseIncome: undefined,
     currency: 'COP',
     funds: []
   };
 
   const currency: CurrencyCode = plan.currency || 'COP';
+  const mode = plan.incomeBaseMode || 'calculated';
 
-  // Calculate actual current month income
+  // Calculate actual current month income (external_income)
   const actualIncome = useMemo(() => {
     return FinancialCalculations.calculateActualMonthlyIncome(data.transactions || [], currency, todayStr);
   }, [data.transactions, currency, todayStr]);
 
-  // Determine base income used for calculations
-  const baseIncome = plan.monthlyBaseIncome !== undefined && plan.monthlyBaseIncome > 0
-    ? plan.monthlyBaseIncome
-    : (actualIncome > 0 ? actualIncome : 2000000);
+  // Determine base income used for plan calculations (NO HARDCODED DEFAULTS)
+  const baseIncome = mode === 'manual'
+    ? (plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : 0)
+    : actualIncome;
 
   // Expanded states
   const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({
@@ -357,36 +360,73 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         {/* BASE INCOME CONFIG & VALIDATION STATUS BAR */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 items-center">
           {/* BASE INCOME SELECTOR */}
-          <div className="p-3 bg-slate-900/80 border border-white/10 rounded-xl">
-            <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-              Base de Ingresos para el Plan
-            </label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-emerald-400">$</span>
-              <input
-                type="number"
-                value={plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : baseIncome}
-                onChange={e => {
-                  const val = e.target.value === '' ? undefined : Number(e.target.value);
-                  FinancialStore.setDistributionBaseIncome(val);
-                }}
-                className="w-full bg-transparent text-white font-serif font-bold text-lg focus:outline-none border-b border-emerald-500/40 focus:border-emerald-400"
-                placeholder="2000000"
-              />
-              <button
-                title="Sincronizar con ingresos reales del mes"
-                onClick={() => {
-                  FinancialStore.setDistributionBaseIncome(actualIncome > 0 ? actualIncome : 2000000);
-                  triggerToast(`Base ajustada a ingresos reales: ${formatCurrency(actualIncome, currency)}`, 'info');
-                }}
-                className="px-2 py-1 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg whitespace-nowrap transition-colors"
-              >
-                Sync Mes
-              </button>
+          <div className="p-3.5 bg-slate-900/80 border border-white/10 rounded-xl space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] uppercase font-bold text-slate-300 block">
+                Origen de la Base de Ingresos
+              </label>
+              <ExecutiveBadge variant="subtle" accentColor={mode === 'manual' ? 'amber' : 'emerald'}>
+                {mode === 'manual' ? 'Modo Manual' : 'Modo Automático'}
+              </ExecutiveBadge>
             </div>
-            <span className="text-[10px] text-slate-400 block mt-1">
-              Ingresos reales en el mes: <strong className="text-slate-200">{formatCurrency(actualIncome, currency)}</strong>
-            </span>
+
+            <select
+              value={mode}
+              onChange={e => {
+                const newMode = e.target.value as 'manual' | 'calculated';
+                FinancialStore.setDistributionIncomeBaseMode(newMode);
+                triggerToast(`Origen de base cambiado a: ${newMode === 'manual' ? 'Manual' : 'Calculado desde movimientos'}`, 'info');
+              }}
+              className="w-full bg-[#132337] text-xs font-semibold text-white p-2 rounded-lg border border-white/15 focus:border-emerald-400 focus:outline-none"
+            >
+              <option value="calculated">Calculada automáticamente desde movimientos</option>
+              <option value="manual">Manual (Ingresar o modificar cifra)</option>
+            </select>
+
+            {mode === 'manual' ? (
+              <div className="pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-amber-400">$</span>
+                  <input
+                    type="number"
+                    value={plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : ''}
+                    onChange={e => {
+                      const val = e.target.value === '' ? undefined : Number(e.target.value);
+                      FinancialStore.setDistributionBaseIncome(val);
+                    }}
+                    className="w-full bg-transparent text-white font-serif font-bold text-base focus:outline-none border-b border-amber-500/50 focus:border-amber-400"
+                    placeholder="Ingresa tu base de ingresos..."
+                  />
+                  {plan.monthlyBaseIncome !== undefined && (
+                    <button
+                      title="Eliminar cifra manual"
+                      onClick={() => {
+                        FinancialStore.setDistributionBaseIncome(undefined);
+                        triggerToast('Cifra manual eliminada', 'info');
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  Ingresado libremente. Puedes editarlo o eliminarlo cuando desees.
+                </span>
+              </div>
+            ) : (
+              <div className="pt-1 flex justify-between items-center">
+                <div>
+                  <span className="text-xs text-slate-400 block">Base del Plan (Movimientos):</span>
+                  <strong className="text-base font-serif font-bold text-emerald-400">
+                    {formatCurrency(actualIncome, currency)}
+                  </strong>
+                </div>
+                <span className="text-[10px] text-slate-400 max-w-[130px] text-right">
+                  Suma de todos los ingresos externos en el período.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* FUND TOTAL VALIDATION BAR */}

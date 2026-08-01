@@ -2,7 +2,8 @@ import { CasaBlancaStoreData, FinancialDistributionPlan } from '../types/store';
 
 export function getDefaultDistributionPlan(): FinancialDistributionPlan {
   return {
-    monthlyBaseIncome: 2000000,
+    incomeBaseMode: 'calculated',
+    monthlyBaseIncome: undefined,
     currency: 'COP',
     funds: [
       {
