@@ -205,11 +205,42 @@ export interface InvestmentPosition {
   purchaseDate: string;
 }
 
+export interface FinancialSubcategoryPlan {
+  id: string;
+  name: string;
+  percentage: number; // Percentage relative to parent category
+  emoji?: string;
+}
+
+export interface FinancialCategoryPlan {
+  id: string;
+  name: string;
+  percentage: number; // Percentage relative to parent fund
+  emoji?: string;
+  subcategories?: FinancialSubcategoryPlan[];
+}
+
+export interface FinancialFundPlan {
+  id: string;
+  name: string;
+  percentage: number; // Percentage relative to total income budget
+  color: string;
+  emoji?: string;
+  categories: FinancialCategoryPlan[];
+}
+
+export interface FinancialDistributionPlan {
+  monthlyBaseIncome?: number; // Custom base income amount for distribution plan
+  currency: CurrencyCode;
+  funds: FinancialFundPlan[];
+}
+
 export interface FinancialOfficeData {
   accounts: FinancialAccount[];
   categories: FinancialCategory[];
   transactions: FinancialTransaction[];
   budgets: Array<{ id: string; categoryId: string; monthlyLimit: number; currency: CurrencyCode }>;
+  distributionPlan?: FinancialDistributionPlan;
   recurringExpenses: Array<{ id: string; title: string; amount: number; currency: CurrencyCode; dueDay: number }>;
   savings: Array<{ id: string; goalName: string; targetAmount: number; currentAmount: number; currency: CurrencyCode; targetDate?: string }>;
   investments: InvestmentPosition[];

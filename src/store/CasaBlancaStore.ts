@@ -72,6 +72,7 @@ class CasaBlancaStore {
           categories: parsed?.offices?.financiera?.categories || initial.offices.financiera.categories || [],
           transactions: parsed?.offices?.financiera?.transactions || initial.offices.financiera.transactions || [],
           budgets: parsed?.offices?.financiera?.budgets || initial.offices.financiera.budgets || [],
+          distributionPlan: parsed?.offices?.financiera?.distributionPlan || initial.offices.financiera.distributionPlan,
           recurringExpenses: parsed?.offices?.financiera?.recurringExpenses || initial.offices.financiera.recurringExpenses || [],
           savings: parsed?.offices?.financiera?.savings || initial.offices.financiera.savings || [],
           investments: parsed?.offices?.financiera?.investments || initial.offices.financiera.investments || [],

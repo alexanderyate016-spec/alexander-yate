@@ -11,6 +11,7 @@ import {
 } from '../../types/store';
 import { FinancialStore } from './FinancialStore';
 import { FinancialCalculations } from './FinancialCalculations';
+import { FinancialDistributionView } from './FinancialDistributionView';
 import { getTodayDateString, getCurrentTimeString } from '../../utils/dates';
 import { formatCurrency } from '../../utils/formatters';
 import {
@@ -223,6 +224,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
   // Master Calculations
   const liquidNW = useMemo(() => FinancialCalculations.calculateLiquidNetWorth(data), [data]);
+  const investedNW = useMemo(() => FinancialCalculations.calculateInvestedNetWorth(data), [data]);
   const totalNW = useMemo(() => FinancialCalculations.calculateTotalNetWorth(data), [data]);
   const smartAlerts = useMemo(() => FinancialCalculations.generateSmartAlerts(data, todayStr), [data, todayStr]);
 
@@ -700,9 +702,9 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div onClick={() => setActiveTab('accounts')} className="cursor-pointer group">
               <ExecutiveMetricCard
-                title="Patrimonio Disponible (COP)"
+                title="Patrimonio Líquido (COP)"
                 value={formatCurrency(liquidNW.COP || 0, 'COP')}
-                subtitle="Efectivo + Cuentas + Billeteras Digitales"
+                subtitle="Disponible Inmediato (Efectivo, Cuentas, Ahorros, Alto Rendimiento, Billeteras)"
                 icon={<Wallet className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />}
                 accentColor="emerald"
               />
@@ -710,34 +712,31 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
             <div onClick={() => setActiveTab('investments')} className="cursor-pointer group">
               <ExecutiveMetricCard
+                title="Patrimonio Invertido (COP)"
+                value={formatCurrency(investedNW.COP || 0, 'COP')}
+                subtitle="Portafolio de Inversiones + Cuentas de Inversión"
+                icon={<TrendingUp className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />}
+                accentColor="blue"
+              />
+            </div>
+
+            <div onClick={() => setActiveTab('accounts')} className="cursor-pointer group">
+              <ExecutiveMetricCard
                 title="Patrimonio Total (COP)"
                 value={formatCurrency(totalNW.COP || 0, 'COP')}
-                subtitle="Líquido + Portafolio de Inversiones"
-                icon={<TrendingUp className="w-5 h-5 text-emerald-300 group-hover:scale-110 transition-transform" />}
+                subtitle="Patrimonio Líquido + Patrimonio Invertido"
+                icon={<Landmark className="w-5 h-5 text-emerald-300 group-hover:scale-110 transition-transform" />}
                 accentColor="emerald"
               />
             </div>
 
             <div onClick={() => setActiveTab('budgets')} className="cursor-pointer group">
               <ExecutiveMetricCard
-                title="Presupuesto Mensual"
-                value={`${Math.round(budgetSummary.overallPct)}% Ejecutado`}
-                subtitle={`$${budgetSummary.totalSpent.toLocaleString()} / $${budgetSummary.totalAssigned.toLocaleString()}`}
-                icon={<PieChart className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />}
-                accentColor={budgetSummary.overallPct > 90 ? 'rose' : 'amber'}
-              />
-            </div>
-
-            <div onClick={() => setActiveTab('obligations')} className="cursor-pointer group">
-              <ExecutiveMetricCard
-                title="Obligaciones Pendientes"
-                value={data.obligations.filter(o => !o.isPaid).length}
-                subtitle={`${data.obligations.filter(o => {
-                  const st = FinancialCalculations.getObligationStatus(o.dueDate, o.isPaid, todayStr);
-                  return st.status === 'overdue' || st.status === 'due_soon';
-                }).length} requieren atención urgente`}
-                icon={<AlertCircle className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />}
-                accentColor="rose"
+                title="Plan de Distribución"
+                value={`${(data.distributionPlan?.funds || []).length} Fondos`}
+                subtitle="Plan Financiero Jerárquico a 3 Niveles"
+                icon={<PieChart className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />}
+                accentColor="purple"
               />
             </div>
           </div>
@@ -996,220 +995,9 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
         </div>
       )}
 
-      {/* TAB 2: PRESUPUESTOS (BUDGETS) */}
+      {/* TAB 2: PLAN DE DISTRIBUCIÓN FINANCIERA */}
       {activeTab === 'budgets' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-serif font-bold text-white">Módulo de Presupuestos</h3>
-              <p className="text-xs text-slate-400">
-                Planificación de límites de gasto calculados automáticamente en base a tus movimientos reales
-              </p>
-            </div>
-            <ExecutiveButton
-              variant="primary"
-              accentColor="emerald"
-              icon={<Plus className="w-4 h-4" />}
-              onClick={() => setIsCreatingBudget(true)}
-            >
-              Nuevo Presupuesto
-            </ExecutiveButton>
-          </div>
-
-          {/* BUDGETS GRID */}
-          {(!data.budgets || data.budgets.length === 0) ? (
-            <ExecutiveEmptyState
-              icon={<PieChart className="w-8 h-8 text-emerald-400" />}
-              title="Sin Presupuestos Activos"
-              description="Define presupuestos por categoría o período para controlar tus gastos y recibir alertas automáticas antes de sobrepasar tus límites."
-              accentColor="emerald"
-              actionLabel="Crear Primer Presupuesto"
-              onAction={() => setIsCreatingBudget(true)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.budgets.map((b: any) => {
-                const spent = FinancialCalculations.calculateBudgetSpent(b, data.transactions || [], todayStr);
-                const limit = b.monthlyLimit || 0;
-                const remaining = limit - spent;
-                const percent = limit > 0 ? (spent / limit) * 100 : 0;
-
-                const colorName = percent >= 90 ? 'rose' : percent >= 70 ? 'amber' : 'emerald';
-
-                return (
-                  <motion.div
-                    key={b.id}
-                    whileHover={{ y: -3 }}
-                    className={`p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-[#132337]/90 border-white/10 ${
-                      percent >= 100 ? 'border-rose-500/50 shadow-rose-500/10' : 'hover:border-emerald-400/40'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-serif font-bold text-white text-base">{b.name || b.categoryId}</h4>
-                        <span className="text-xs text-slate-400 font-mono">
-                          Período: {b.period || 'Mensual'} • {b.currency || 'COP'}
-                        </span>
-                      </div>
-                      <ExecutiveBadge
-                        variant="solid"
-                        accentColor={percent >= 100 ? 'rose' : percent >= 70 ? 'amber' : 'emerald'}
-                      >
-                        {percent >= 100 ? 'EXCEDIDO' : percent >= 70 ? 'ALERTA' : 'EN ORDEN'}
-                      </ExecutiveBadge>
-                    </div>
-
-                    <div className="space-y-3 my-3">
-                      <div className="flex justify-between items-end text-xs">
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Gastado</span>
-                          <strong className={`text-base font-serif font-bold text-${colorName}-400`}>
-                            {formatCurrency(spent, b.currency || 'COP')}
-                          </strong>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Asignado</span>
-                          <strong className="text-sm font-mono text-slate-200">
-                            {formatCurrency(limit, b.currency || 'COP')}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <AnimatedProgressBar percent={percent} color={colorName} height="h-3" />
-
-                      <div className="flex justify-between items-center text-xs font-mono pt-1">
-                        <span className="text-slate-400">Restante:</span>
-                        <strong className={remaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}>
-                          {formatCurrency(remaining, b.currency || 'COP')}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {percent >= 100 && (
-                      <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-xs text-rose-300 flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span>Presupuesto excedido por {formatCurrency(Math.abs(remaining), b.currency || 'COP')}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end pt-2 border-t border-white/10">
-                      <button
-                        onClick={() => {
-                          FinancialStore.deleteBudget(b.id);
-                          triggerToast('Presupuesto eliminado', 'info');
-                        }}
-                        className="px-2.5 py-1 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* CREATE BUDGET MODAL */}
-          <ExecutiveModal
-            isOpen={isCreatingBudget}
-            onClose={() => setIsCreatingBudget(false)}
-            title="Nuevo Presupuesto de Gastos"
-            accentColor="emerald"
-          >
-            <ExecutiveForm onSubmit={handleCreateBudget}>
-              <ExecutiveInput
-                label="Nombre del Presupuesto *"
-                placeholder="Ej: Mercado y Supermercado"
-                value={bdgName}
-                onChange={e => setBdgName(e.target.value)}
-                accentColor="emerald"
-                required
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <ExecutiveInput
-                  label="Monto Asignado Limit *"
-                  type="number"
-                  placeholder="0.00"
-                  value={bdgLimit}
-                  onChange={e => setBdgLimit(e.target.value === '' ? '' : Number(e.target.value))}
-                  accentColor="emerald"
-                  required
-                />
-
-                <ExecutiveSelect
-                  label="Moneda"
-                  value={bdgCurr}
-                  onChange={e => setBdgCurr(e.target.value as any)}
-                  accentColor="emerald"
-                  options={[
-                    { value: 'COP', label: 'COP ($)' },
-                    { value: 'USD', label: 'USD ($)' },
-                    { value: 'EUR', label: 'EUR (€)' }
-                  ]}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <ExecutiveSelect
-                  label="Período"
-                  value={bdgPeriod}
-                  onChange={e => setBdgPeriod(e.target.value as any)}
-                  accentColor="emerald"
-                  options={[
-                    { value: 'monthly', label: 'Mensual' },
-                    { value: 'weekly', label: 'Semanal' },
-                    { value: 'annual', label: 'Anual' },
-                    { value: 'custom', label: 'Personalizado' }
-                  ]}
-                />
-
-                <ExecutiveSelect
-                  label="Categoría Filtrada"
-                  value={bdgCategory}
-                  onChange={e => setBdgCategory(e.target.value)}
-                  accentColor="emerald"
-                  options={[
-                    { value: 'all', label: 'Todas las categorías' },
-                    { value: 'Alimentación', label: 'Alimentación' },
-                    { value: 'Transporte', label: 'Transporte' },
-                    { value: 'Vivienda', label: 'Vivienda' },
-                    { value: 'Estudio', label: 'Estudio' },
-                    { value: 'Entretenimiento', label: 'Entretenimiento' }
-                  ]}
-                />
-              </div>
-
-              {bdgPeriod === 'custom' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <ExecutiveInput
-                    label="Fecha Inicio"
-                    type="date"
-                    value={bdgStartDate}
-                    onChange={e => setBdgStartDate(e.target.value)}
-                    accentColor="emerald"
-                  />
-                  <ExecutiveInput
-                    label="Fecha Fin"
-                    type="date"
-                    value={bdgEndDate}
-                    onChange={e => setBdgEndDate(e.target.value)}
-                    accentColor="emerald"
-                  />
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-3">
-                <ExecutiveButton variant="ghost" type="button" onClick={() => setIsCreatingBudget(false)}>
-                  Cancelar
-                </ExecutiveButton>
-                <ExecutiveButton variant="primary" type="submit" accentColor="emerald">
-                  Crear Presupuesto
-                </ExecutiveButton>
-              </div>
-            </ExecutiveForm>
-          </ExecutiveModal>
-        </div>
+        <FinancialDistributionView data={data} todayStr={todayStr} triggerToast={triggerToast} />
       )}
 
       {/* TAB 3: ANÁLISIS DE GASTOS */}

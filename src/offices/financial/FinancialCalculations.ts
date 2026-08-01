@@ -29,12 +29,12 @@ export const FinancialCalculations = {
   },
 
   calculateLiquidNetWorth(data: FinancialOfficeData): Record<CurrencyCode, number> {
-    const liquidTypes = ['cash', 'checking', 'savings', 'digital_wallet'];
+    const liquidTypes = ['cash', 'checking', 'savings', 'high_yield', 'digital_wallet'];
     const result: Record<CurrencyCode, number> = { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
 
-    data.accounts.forEach(acc => {
+    (data.accounts || []).forEach(acc => {
       if (liquidTypes.includes(acc.type)) {
-        const bal = this.calculateAccountBalance(acc, data.transactions);
+        const bal = this.calculateAccountBalance(acc, data.transactions || []);
         result[acc.currency] = (result[acc.currency] || 0) + bal;
       }
     });
@@ -42,22 +42,45 @@ export const FinancialCalculations = {
     return result;
   },
 
-  calculateTotalNetWorth(data: FinancialOfficeData): Record<CurrencyCode, number> {
+  calculateInvestedNetWorth(data: FinancialOfficeData): Record<CurrencyCode, number> {
     const result: Record<CurrencyCode, number> = { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
 
-    // Sum all accounts
-    data.accounts.forEach(acc => {
-      const bal = this.calculateAccountBalance(acc, data.transactions);
-      result[acc.currency] = (result[acc.currency] || 0) + bal;
+    // Sum accounts marked as investment
+    (data.accounts || []).forEach(acc => {
+      if (acc.type === 'investment') {
+        const bal = this.calculateAccountBalance(acc, data.transactions || []);
+        result[acc.currency] = (result[acc.currency] || 0) + bal;
+      }
     });
 
-    // Sum investment valuations
-    data.investments.forEach(inv => {
+    // Sum explicit investment positions
+    (data.investments || []).forEach(inv => {
       const val = inv.quantity * inv.currentPrice;
       result[inv.currency] = (result[inv.currency] || 0) + val;
     });
 
     return result;
+  },
+
+  calculateTotalNetWorth(data: FinancialOfficeData): Record<CurrencyCode, number> {
+    const liquid = this.calculateLiquidNetWorth(data);
+    const invested = this.calculateInvestedNetWorth(data);
+    const result: Record<CurrencyCode, number> = { COP: 0, USD: 0, EUR: 0, BTC: 0, ETH: 0 };
+
+    const currencies: CurrencyCode[] = ['COP', 'USD', 'EUR', 'BTC', 'ETH'];
+    currencies.forEach(c => {
+      result[c] = (liquid[c] || 0) + (invested[c] || 0);
+    });
+
+    return result;
+  },
+
+  calculateActualMonthlyIncome(transactions: FinancialTransaction[], currency: CurrencyCode, todayStr: string): number {
+    if (!transactions || transactions.length === 0) return 0;
+    const currentMonthPrefix = todayStr.substring(0, 7); // YYYY-MM
+    return transactions
+      .filter(t => t.nature === 'external_income' && t.currency === currency && t.date.startsWith(currentMonthPrefix))
+      .reduce((sum, t) => sum + t.amount, 0);
   },
 
   calculateDailyYieldEstimated(account: FinancialAccount, transactions: FinancialTransaction[]): number {
