@@ -6,7 +6,7 @@ export const SocialSync = {
     const targetMMDD = targetDateStr.substring(5); // "MM-DD"
 
     // 1. Social commitments
-    data.commitments.forEach(c => {
+    (data?.commitments || []).forEach(c => {
       if (c.date === targetDateStr) {
         events.push({
           id: `soc_com_${c.id}`,
@@ -26,7 +26,7 @@ export const SocialSync = {
     });
 
     // 2. Birthdays on target date
-    data.people.forEach(p => {
+    (data?.people || []).forEach(p => {
       if (p.birthday && p.birthday.endsWith(targetMMDD)) {
         events.push({
           id: `soc_bday_${p.id}_${targetDateStr}`,

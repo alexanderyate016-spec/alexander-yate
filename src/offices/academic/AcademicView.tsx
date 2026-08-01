@@ -27,7 +27,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [subjClassroom, setSubjClassroom] = useState('');
 
   // Selected subject for detail editing
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(data.subjects[0]?.id || null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(data?.subjects?.[0]?.id || null);
 
   // New Cut state
   const [newCutName, setNewCutName] = useState('');
@@ -110,7 +110,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     e.preventDefault();
     if (!selectedSubject) return;
     const newSessions = [
-      ...selectedSubject.scheduleSessions,
+      ...(selectedSubject.scheduleSessions || []),
       {
         id: 'ses_' + Date.now(),
         day: Number(sessionDay),
@@ -124,7 +124,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
   const handleDeleteSession = (sessionId: string) => {
     if (!selectedSubject) return;
-    const filtered = selectedSubject.scheduleSessions.filter(s => s.id !== sessionId);
+    const filtered = (selectedSubject.scheduleSessions || []).filter(s => s.id !== sessionId);
     AcademicStore.updateSubject(selectedSubject.id, { scheduleSessions: filtered });
   };
 

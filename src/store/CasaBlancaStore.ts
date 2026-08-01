@@ -41,22 +41,71 @@ class CasaBlancaStore {
 
   private migrateAndMerge(parsed: any): CasaBlancaStoreData {
     const initial = createInitialEmptyStore();
-    const crisisData = { ...initial.crisisCenter, ...parsed.crisis, ...parsed.crisisCenter };
+    const crisisData = { ...initial.crisisCenter, ...parsed?.crisis, ...parsed?.crisisCenter };
     return {
-      metadata: { ...initial.metadata, ...parsed.metadata },
-      settings: { ...initial.settings, ...parsed.settings },
-      security: { ...initial.security, ...parsed.security },
+      metadata: { ...initial.metadata, ...parsed?.metadata },
+      settings: { ...initial.settings, ...parsed?.settings },
+      security: {
+        ...initial.security,
+        ...parsed?.security,
+        profile: { ...initial.security.profile, ...parsed?.security?.profile },
+        authentication: { ...initial.security.authentication, ...parsed?.security?.authentication },
+        settings: { ...initial.security.settings, ...parsed?.security?.settings },
+        accessLogs: parsed?.security?.accessLogs || initial.security.accessLogs || []
+      },
       crisis: crisisData,
       crisisCenter: crisisData,
       offices: {
-        academica: { ...initial.offices.academica, ...parsed.offices?.academica },
-        vidaDiaria: { ...initial.offices.vidaDiaria, ...parsed.offices?.vidaDiaria },
-        financiera: { ...initial.offices.financiera, ...parsed.offices?.financiera },
-        vidaSocial: { ...initial.offices.vidaSocial, ...parsed.offices?.vidaSocial },
-        medica: { ...initial.offices.medica, ...parsed.offices?.medica },
-        desarrolloPersonal: { ...initial.offices.desarrolloPersonal, ...parsed.offices?.desarrolloPersonal }
+        academica: {
+          semesters: parsed?.offices?.academica?.semesters || initial.offices.academica.semesters || [],
+          subjects: parsed?.offices?.academica?.subjects || initial.offices.academica.subjects || []
+        },
+        vidaDiaria: {
+          habits: parsed?.offices?.vidaDiaria?.habits || initial.offices.vidaDiaria.habits || [],
+          tasks: parsed?.offices?.vidaDiaria?.tasks || initial.offices.vidaDiaria.tasks || [],
+          routines: parsed?.offices?.vidaDiaria?.routines || initial.offices.vidaDiaria.routines || [],
+          objectives: parsed?.offices?.vidaDiaria?.objectives || initial.offices.vidaDiaria.objectives || [],
+          timePlans: parsed?.offices?.vidaDiaria?.timePlans || initial.offices.vidaDiaria.timePlans || []
+        },
+        financiera: {
+          accounts: parsed?.offices?.financiera?.accounts || initial.offices.financiera.accounts || [],
+          categories: parsed?.offices?.financiera?.categories || initial.offices.financiera.categories || [],
+          transactions: parsed?.offices?.financiera?.transactions || initial.offices.financiera.transactions || [],
+          budgets: parsed?.offices?.financiera?.budgets || initial.offices.financiera.budgets || [],
+          recurringExpenses: parsed?.offices?.financiera?.recurringExpenses || initial.offices.financiera.recurringExpenses || [],
+          savings: parsed?.offices?.financiera?.savings || initial.offices.financiera.savings || [],
+          investments: parsed?.offices?.financiera?.investments || initial.offices.financiera.investments || [],
+          obligations: parsed?.offices?.financiera?.obligations || initial.offices.financiera.obligations || []
+        },
+        vidaSocial: {
+          people: parsed?.offices?.vidaSocial?.people || initial.offices.vidaSocial.people || [],
+          groups: parsed?.offices?.vidaSocial?.groups || initial.offices.vidaSocial.groups || [],
+          interactions: parsed?.offices?.vidaSocial?.interactions || initial.offices.vidaSocial.interactions || [],
+          commitments: parsed?.offices?.vidaSocial?.commitments || initial.offices.vidaSocial.commitments || [],
+          specialDates: parsed?.offices?.vidaSocial?.specialDates || initial.offices.vidaSocial.specialDates || []
+        },
+        medica: {
+          healthRecords: parsed?.offices?.medica?.healthRecords || initial.offices.medica.healthRecords || [],
+          nutritionRecords: parsed?.offices?.medica?.nutritionRecords || initial.offices.medica.nutritionRecords || [],
+          medications: parsed?.offices?.medica?.medications || initial.offices.medica.medications || [],
+          appointments: parsed?.offices?.medica?.appointments || initial.offices.medica.appointments || [],
+          medicalExams: parsed?.offices?.medica?.medicalExams || initial.offices.medica.medicalExams || [],
+          conditions: parsed?.offices?.medica?.conditions || initial.offices.medica.conditions || [],
+          immunizations: parsed?.offices?.medica?.immunizations || initial.offices.medica.immunizations || []
+        },
+        desarrolloPersonal: {
+          direction: {
+            purpose: parsed?.offices?.desarrolloPersonal?.direction?.purpose || '',
+            vision: parsed?.offices?.desarrolloPersonal?.direction?.vision || '',
+            principles: parsed?.offices?.desarrolloPersonal?.direction?.principles || []
+          },
+          characterAreas: parsed?.offices?.desarrolloPersonal?.characterAreas || initial.offices.desarrolloPersonal.characterAreas || [],
+          journalEntries: parsed?.offices?.desarrolloPersonal?.journalEntries || initial.offices.desarrolloPersonal.journalEntries || [],
+          personalHistory: parsed?.offices?.desarrolloPersonal?.personalHistory || initial.offices.desarrolloPersonal.personalHistory || [],
+          philosophicalReflections: parsed?.offices?.desarrolloPersonal?.philosophicalReflections || initial.offices.desarrolloPersonal.philosophicalReflections || []
+        }
       },
-      executive: { ...initial.executive, ...parsed.executive }
+      executive: { ...initial.executive, ...parsed?.executive }
     };
   }
 

@@ -7,8 +7,8 @@ export const AcademicSync = {
     const dayNum = getDayOfWeekNumber(targetDateStr);
 
     // 1. Classes for target date
-    data.subjects.forEach(sub => {
-      sub.scheduleSessions.forEach(ses => {
+    (data?.subjects || []).forEach(sub => {
+      (sub?.scheduleSessions || []).forEach(ses => {
         if (ses.day === dayNum) {
           events.push({
             id: `acad_cls_${sub.id}_${ses.id}_${targetDateStr}`,
@@ -27,8 +27,8 @@ export const AcademicSync = {
       });
 
       // 2. Scheduled Evaluations for target date
-      sub.cuts?.forEach(cut => {
-        cut.activities.forEach(act => {
+      (sub?.cuts || []).forEach(cut => {
+        (cut?.activities || []).forEach(act => {
           if (act.date === targetDateStr && act.status === 'pending') {
             events.push({
               id: `acad_eval_${sub.id}_${act.id}`,

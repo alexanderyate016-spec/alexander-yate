@@ -25,16 +25,22 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
 
   const handleInitialSetup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
     if (!fullName.trim()) {
       setErrorMsg('Por favor ingresa tu nombre completo.');
       return;
     }
-    if (pin.length < 4) {
-      setErrorMsg('El PIN presidencial debe tener al menos 4 dígitos.');
+    if (!/^\d{4}$/.test(pin)) {
+      setErrorMsg('El PIN presidencial debe tener exactamente 4 dígitos numéricos.');
       return;
     }
     if (pin !== confirmPin) {
       setErrorMsg('Los PIN ingresados no coinciden.');
+      return;
+    }
+    if (!question.trim()) {
+      setErrorMsg('Ingresa una pregunta de seguridad.');
       return;
     }
     if (!answer.trim()) {
@@ -42,8 +48,13 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
       return;
     }
 
-    await SecurityStore.setupSecurity(fullName, pin, question, answer);
-    onUnlockSuccess();
+    try {
+      await SecurityStore.setupSecurity(fullName, pin, question, answer);
+      onUnlockSuccess();
+    } catch (err) {
+      console.error('Error al activar seguridad:', err);
+      setErrorMsg('Error al activar seguridad. Revise los datos ingresados.');
+    }
   };
 
   const handleUnlockWithPin = async (e: React.FormEvent) => {
@@ -112,6 +123,8 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
                 <input
                   type="password"
                   placeholder="****"
+                  maxLength={4}
+                  inputMode="numeric"
                   value={pin}
                   onChange={e => setPin(e.target.value)}
                   className="w-full p-2.5 border border-[#D1C7B7] bg-white text-[#0A192F] font-mono text-center text-sm focus:outline-none focus:border-[#C5A059]"
@@ -124,6 +137,8 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
                 <input
                   type="password"
                   placeholder="****"
+                  maxLength={4}
+                  inputMode="numeric"
                   value={confirmPin}
                   onChange={e => setConfirmPin(e.target.value)}
                   className="w-full p-2.5 border border-[#D1C7B7] bg-white text-[#0A192F] font-mono text-center text-sm focus:outline-none focus:border-[#C5A059]"

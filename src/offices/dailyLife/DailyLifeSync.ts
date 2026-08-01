@@ -5,7 +5,7 @@ export const DailyLifeSync = {
     const events: UnifiedExecutiveEvent[] = [];
 
     // 1. Timed Tasks
-    data.tasks.forEach(task => {
+    (data?.tasks || []).forEach(task => {
       if (task.date === targetDateStr && task.startTime && task.status === 'pending') {
         events.push({
           id: `dl_task_${task.id}`,
@@ -25,7 +25,7 @@ export const DailyLifeSync = {
     });
 
     // 2. Time Plans
-    data.timePlans.forEach(plan => {
+    (data?.timePlans || []).forEach(plan => {
       if (plan.date === targetDateStr) {
         events.push({
           id: `dl_tpl_${plan.id}`,

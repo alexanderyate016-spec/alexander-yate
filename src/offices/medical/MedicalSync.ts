@@ -5,7 +5,7 @@ export const MedicalSync = {
     const events: UnifiedExecutiveEvent[] = [];
 
     // Medical Appointments
-    data.appointments.forEach(apt => {
+    (data?.appointments || []).forEach(apt => {
       if (apt.date === targetDateStr) {
         events.push({
           id: `med_apt_${apt.id}`,

@@ -105,7 +105,7 @@ export const OvalOfficeView: React.FC<Props> = ({ state, onNavigateToOffice, onA
             {gpa !== null ? gpa.toFixed(2) : 'N/A'} <span className="text-xs font-sans font-normal text-[#8B8378]">PGA</span>
           </div>
           <div className="text-[11px] text-[#8B8378] truncate">
-            {state.offices.academica.evaluations.filter(e => e.date === selectedDate).length} eval. hoy
+            {(state.offices.academica?.subjects || []).flatMap(s => (s.cuts || []).flatMap(c => c.activities || [])).filter(a => a.date === selectedDate).length} eval. hoy
           </div>
         </div>
 

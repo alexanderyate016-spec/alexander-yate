@@ -5,7 +5,7 @@ export const FinancialSync = {
     const events: UnifiedExecutiveEvent[] = [];
 
     // Financial obligations due on or before target date
-    data.obligations.forEach(ob => {
+    (data?.obligations || []).forEach(ob => {
       if (ob.dueDate === targetDateStr && !ob.isPaid) {
         events.push({
           id: `fin_ob_${ob.id}`,
