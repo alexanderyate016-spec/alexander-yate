@@ -1,0 +1,6 @@
+{
+  "name": "Casa Blanca Personal",
+  "description": "Centro de coordinación personal ejecutivo inspirado en la arquitectura funcional de la Casa Blanca.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
