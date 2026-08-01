@@ -80,3 +80,34 @@ export function getDaysDifference(dateStr1: string, dateStr2: string): number {
   const diffTime = d2.getTime() - d1.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
+
+export function getWeekDaysForDate(dateStr: string): Array<{ dateStr: string; dayNum: number; dayShort: string; dayNumberStr: string; isToday: boolean }> {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay(); // 0 is Sunday, 1 is Monday...
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+
+  const todayStr = getTodayDateString();
+  const days = [];
+  const shortNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday);
+    cur.setDate(monday.getDate() + i);
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, '0');
+    const dayOfMonth = String(cur.getDate()).padStart(2, '0');
+    const curDateStr = `${y}-${m}-${dayOfMonth}`;
+
+    days.push({
+      dateStr: curDateStr,
+      dayNum: i + 1,
+      dayShort: shortNames[i],
+      dayNumberStr: dayOfMonth,
+      isToday: curDateStr === todayStr
+    });
+  }
+
+  return days;
+}

@@ -60,11 +60,11 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
   const handleUnlockWithPin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    const success = await SecurityStore.verifyPin(inputPin);
-    if (success) {
+    const res = await SecurityStore.verifyPin(inputPin);
+    if (res.success) {
       onUnlockSuccess();
     } else {
-      setErrorMsg('PIN presidencial incorrecto.');
+      setErrorMsg(res.message || 'PIN presidencial incorrecto.');
       setInputPin('');
     }
   };
@@ -72,14 +72,16 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
   const handleUnlockWithQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    const success = await SecurityStore.verifySecurityAnswer(inputAnswer);
-    if (success) {
+    const res = await SecurityStore.verifySecurityAnswer(inputAnswer);
+    if (res.success) {
       onUnlockSuccess();
     } else {
-      setErrorMsg('Respuesta de seguridad incorrecta.');
+      setErrorMsg(res.message || 'Respuesta de seguridad incorrecta.');
       setInputAnswer('');
     }
   };
+
+  const lockoutInfo = SecurityStore.isCurrentlyLockedOut();
 
   // FIRST TIME SETUP SCREEN
   if (!securityData.isSetupComplete) {
@@ -204,6 +206,21 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
           </div>
         )}
 
+        {lockoutInfo.locked && (
+          <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 text-xs font-sans space-y-1">
+            <div className="flex items-center gap-2 font-bold text-amber-950">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>SISTEMA BLOQUEADO POR SEGURIDAD</span>
+            </div>
+            <p className="text-[11px]">
+              Se han superado los 3 intentos fallidos de PIN. El acceso por PIN está bloqueado durante {lockoutInfo.remainingMinutes} minuto(s) (hasta las {lockoutInfo.unlockTime}).
+            </p>
+            <p className="text-[11px] font-semibold text-[#0A192F]">
+              Puede desbloquear inmediatamente utilizando su Pregunta de Seguridad a continuación.
+            </p>
+          </div>
+        )}
+
         {mode === 'pin' ? (
           <form onSubmit={handleUnlockWithPin} className="space-y-4">
             <div>
@@ -213,9 +230,12 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
               <input
                 type="password"
                 placeholder="****"
+                maxLength={4}
+                inputMode="numeric"
+                disabled={lockoutInfo.locked}
                 value={inputPin}
                 onChange={e => setInputPin(e.target.value)}
-                className="w-full p-3 border border-[#D1C7B7] bg-white text-[#0A192F] font-mono text-center text-lg tracking-widest focus:outline-none focus:border-[#C5A059]"
+                className={`w-full p-3 border border-[#D1C7B7] bg-white text-[#0A192F] font-mono text-center text-lg tracking-widest focus:outline-none focus:border-[#C5A059] ${lockoutInfo.locked ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                 autoFocus
                 required
               />
@@ -223,7 +243,8 @@ export const SecurityCenterView: React.FC<Props> = ({ securityData, onUnlockSucc
 
             <button
               type="submit"
-              className="w-full py-3 bg-[#0A192F] hover:bg-[#162A45] text-white font-bold uppercase tracking-widest text-[10px] border border-[#C5A059] transition-colors"
+              disabled={lockoutInfo.locked}
+              className={`w-full py-3 bg-[#0A192F] text-white font-bold uppercase tracking-widest text-[10px] border border-[#C5A059] transition-colors ${lockoutInfo.locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#162A45]'}`}
             >
               Desbloquear Sistema
             </button>
