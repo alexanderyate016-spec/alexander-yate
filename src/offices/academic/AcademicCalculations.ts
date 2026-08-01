@@ -17,7 +17,97 @@ export interface EvaluationItem {
   daysDiff: number; // 0 = today, 1 = tomorrow, etc.
 }
 
+export interface DistributionMetric {
+  totalAssigned: number;
+  remaining: number;
+  excess: number;
+  percentage: number;
+  isComplete: boolean;
+  isDeficit: boolean;
+  isExcess: boolean;
+  status: 'complete' | 'deficit' | 'excess';
+  statusMessage: string;
+  statusColor: 'emerald' | 'amber' | 'rose';
+}
+
 export const AcademicCalculations = {
+  getCutsDistribution(cuts: { cutWeightPercent: number }[] | undefined): DistributionMetric {
+    const safeCuts = cuts || [];
+    const totalAssigned = Math.round(safeCuts.reduce((acc, c) => acc + (Number(c.cutWeightPercent) || 0), 0) * 10) / 10;
+    
+    const isComplete = Math.abs(totalAssigned - 100) < 0.1;
+    const isExcess = totalAssigned > 100;
+    const isDeficit = totalAssigned < 100;
+
+    const remaining = isDeficit ? Math.round((100 - totalAssigned) * 10) / 10 : 0;
+    const excess = isExcess ? Math.round((totalAssigned - 100) * 10) / 10 : 0;
+
+    let status: 'complete' | 'deficit' | 'excess' = 'complete';
+    let statusMessage = "Distribución completa.";
+    let statusColor: 'emerald' | 'amber' | 'rose' = 'emerald';
+
+    if (isExcess) {
+      status = 'excess';
+      statusMessage = "Los cortes superan el 100%. Debes corregir la distribución.";
+      statusColor = 'rose';
+    } else if (isDeficit) {
+      status = 'deficit';
+      statusMessage = "Falta distribuir el porcentaje restante.";
+      statusColor = 'amber';
+    }
+
+    return {
+      totalAssigned,
+      remaining,
+      excess,
+      percentage: Math.min(100, totalAssigned),
+      isComplete,
+      isDeficit,
+      isExcess,
+      status,
+      statusMessage,
+      statusColor
+    };
+  },
+
+  getActivitiesDistribution(activities: { weightPercent: number }[] | undefined): DistributionMetric {
+    const safeActivities = activities || [];
+    const totalAssigned = Math.round(safeActivities.reduce((acc, a) => acc + (Number(a.weightPercent) || 0), 0) * 10) / 10;
+
+    const isComplete = Math.abs(totalAssigned - 100) < 0.1;
+    const isExcess = totalAssigned > 100;
+    const isDeficit = totalAssigned < 100;
+
+    const remaining = isDeficit ? Math.round((100 - totalAssigned) * 10) / 10 : 0;
+    const excess = isExcess ? Math.round((totalAssigned - 100) * 10) / 10 : 0;
+
+    let status: 'complete' | 'deficit' | 'excess' = 'complete';
+    let statusMessage = "Configuración completa ✓";
+    let statusColor: 'emerald' | 'amber' | 'rose' = 'emerald';
+
+    if (isExcess) {
+      status = 'excess';
+      statusMessage = "Las actividades superan el 100%. Debes corregir la distribución.";
+      statusColor = 'rose';
+    } else if (isDeficit) {
+      status = 'deficit';
+      statusMessage = "Falta distribuir el porcentaje restante.";
+      statusColor = 'amber';
+    }
+
+    return {
+      totalAssigned,
+      remaining,
+      excess,
+      percentage: Math.min(100, totalAssigned),
+      isComplete,
+      isDeficit,
+      isExcess,
+      status,
+      statusMessage,
+      statusColor
+    };
+  },
   calculateSubjectAverage(subject: AcademicSubject): { average: number; totalGradedWeight: number; hasGrades: boolean } {
     if (!subject.cuts || subject.cuts.length === 0) {
       return { average: 0, totalGradedWeight: 0, hasGrades: false };

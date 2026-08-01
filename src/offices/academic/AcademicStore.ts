@@ -155,7 +155,12 @@ export const AcademicStore = {
         if (cut) {
           const actIdx = cut.activities.findIndex(a => a.id === activityId);
           if (actIdx !== -1) {
-            cut.activities[actIdx] = { ...cut.activities[actIdx], ...updates };
+            const current = cut.activities[actIdx];
+            const updated = { ...current, ...updates };
+            if ('grade' in updates && updates.grade === undefined) {
+              delete updated.grade;
+            }
+            cut.activities[actIdx] = updated;
           }
         }
       }

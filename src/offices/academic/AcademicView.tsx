@@ -30,18 +30,150 @@ import {
   X, 
   Check, 
   Layers, 
-  Sliders, 
   Target, 
   UserCheck, 
-  MapPin, 
   Percent, 
-  Filter
+  CheckSquare,
+  AlertCircle,
+  HelpCircle,
+  CheckCircle2,
+  ListFilter
 } from 'lucide-react';
 
 interface Props {
   data: AcademicOfficeData;
   onOpenOffice?: (officeKey: string) => void;
 }
+
+// =========================================================================
+// HELPER COMPONENTS: REAL-TIME PERCENTAGE DISTRIBUTION BARS
+// =========================================================================
+const CutsDistributionBar: React.FC<{ 
+  cuts: AcademicCut[]; 
+  proposedCutWeight?: { cutId?: string; weight: number };
+}> = ({ cuts, proposedCutWeight }) => {
+  let adjustedCuts = (cuts || []).map(c => ({ cutWeightPercent: c.cutWeightPercent }));
+  if (proposedCutWeight !== undefined) {
+    if (proposedCutWeight.cutId) {
+      adjustedCuts = cuts.map(c => c.id === proposedCutWeight.cutId 
+        ? { cutWeightPercent: proposedCutWeight.weight } 
+        : { cutWeightPercent: c.cutWeightPercent }
+      );
+    } else {
+      adjustedCuts = [...adjustedCuts, { cutWeightPercent: proposedCutWeight.weight }];
+    }
+  }
+  const dist = AcademicCalculations.getCutsDistribution(adjustedCuts);
+
+  return (
+    <div className={`p-3.5 rounded-xl border backdrop-blur-md space-y-2 text-xs transition-all ${
+      dist.statusColor === 'emerald'
+        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+        : dist.statusColor === 'rose'
+        ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+        : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+    }`}>
+      <div className="flex flex-wrap justify-between items-center gap-2 font-bold">
+        <div className="flex items-center gap-2">
+          <Percent className="w-4 h-4 shrink-0 text-[#C5A059]" />
+          <span>Distribución de Cortes de la Materia</span>
+        </div>
+        <div className="flex items-center gap-3 font-mono text-[11px]">
+          <span>Total asignado: <strong className="text-white font-bold">{dist.totalAssigned}%</strong></span>
+          {dist.isDeficit && (
+            <span>Faltan por asignar: <strong className="text-amber-300 font-bold">{dist.remaining}%</strong></span>
+          )}
+          {dist.isExcess && (
+            <span className="text-rose-300 font-bold">Exceso: +{dist.excess}%</span>
+          )}
+        </div>
+      </div>
+
+      {/* Visual Progress Bar */}
+      <div className="w-full bg-slate-900/80 rounded-full h-2.5 overflow-hidden border border-white/10 relative">
+        <div 
+          className={`h-full transition-all duration-300 rounded-full ${
+            dist.statusColor === 'emerald' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
+            dist.statusColor === 'rose' ? 'bg-gradient-to-r from-rose-500 to-red-600' :
+            'bg-gradient-to-r from-amber-500 to-yellow-400'
+          }`}
+          style={{ width: `${Math.min(100, dist.totalAssigned)}%` }}
+        />
+      </div>
+
+      <div className="flex justify-between items-center text-[11px] font-semibold pt-0.5">
+        <span className="flex items-center gap-1.5">
+          {dist.isComplete && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+          {dist.isDeficit && <AlertTriangle className="w-4 h-4 text-amber-400" />}
+          {dist.isExcess && <AlertCircle className="w-4 h-4 text-rose-400" />}
+          {dist.statusMessage}
+        </span>
+        <span className="font-mono text-slate-300">{dist.totalAssigned}% / 100%</span>
+      </div>
+    </div>
+  );
+};
+
+const ActivitiesDistributionBar: React.FC<{ 
+  activities: AcademicEvaluationActivity[]; 
+  proposedActivityWeight?: { actId?: string; weight: number };
+}> = ({ activities, proposedActivityWeight }) => {
+  let adjustedActs = (activities || []).map(a => ({ weightPercent: a.weightPercent }));
+  if (proposedActivityWeight !== undefined) {
+    if (proposedActivityWeight.actId) {
+      adjustedActs = activities.map(a => a.id === proposedActivityWeight.actId 
+        ? { weightPercent: proposedActivityWeight.weight } 
+        : { weightPercent: a.weightPercent }
+      );
+    } else {
+      adjustedActs = [...adjustedActs, { weightPercent: proposedActivityWeight.weight }];
+    }
+  }
+  const dist = AcademicCalculations.getActivitiesDistribution(adjustedActs);
+
+  return (
+    <div className={`p-3 rounded-xl border backdrop-blur-md space-y-1.5 text-xs transition-all ${
+      dist.statusColor === 'emerald'
+        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
+        : dist.statusColor === 'rose'
+        ? 'bg-rose-950/30 border-rose-500/30 text-rose-200'
+        : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+    }`}>
+      <div className="flex flex-wrap justify-between items-center gap-2 font-bold">
+        <span className="flex items-center gap-1.5">
+          <Target className="w-3.5 h-3.5 text-[#C5A059]" /> Evaluaciones del Corte
+        </span>
+        <div className="flex items-center gap-3 font-mono text-[11px]">
+          <span>Total asignado: <strong className="text-white">{dist.totalAssigned}%</strong></span>
+          {dist.isDeficit && <span>Faltan por asignar: <strong className="text-amber-300">{dist.remaining}%</strong></span>}
+          {dist.isExcess && <span className="text-rose-300 font-bold">Exceso: +{dist.excess}%</span>}
+        </div>
+      </div>
+
+      {/* Visual Progress Bar */}
+      <div className="w-full bg-slate-900/80 rounded-full h-2 overflow-hidden border border-white/10">
+        <div 
+          className={`h-full transition-all duration-300 rounded-full ${
+            dist.statusColor === 'emerald' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
+            dist.statusColor === 'rose' ? 'bg-gradient-to-r from-rose-500 to-red-600' :
+            'bg-gradient-to-r from-amber-500 to-yellow-400'
+          }`}
+          style={{ width: `${Math.min(100, dist.totalAssigned)}%` }}
+        />
+      </div>
+
+      <div className="flex justify-between items-center text-[10px] font-semibold">
+        <span className="flex items-center gap-1">
+          {dist.isComplete && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+          {dist.isDeficit && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
+          {dist.isExcess && <AlertCircle className="w-3.5 h-3.5 text-rose-400" />}
+          {dist.statusMessage}
+        </span>
+        <span className="font-mono text-slate-300">{dist.totalAssigned}% / 100%</span>
+      </div>
+    </div>
+  );
+};
 
 export const AcademicView: React.FC<Props> = ({ data }) => {
   // Main Navigation Tabs
@@ -54,48 +186,98 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
   const [subjectSubTab, setSubjectSubTab] = useState<'info' | 'schedule' | 'evaluations' | 'grades'>('info');
 
-  // Modals & Slideovers State
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'warning' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
+  // Custom Confirmation Modal State
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const openConfirm = (opts: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }) => {
+    setConfirmModalData(opts);
+  };
+
+  // Modals & Forms State
+  // 1. Semester Modal
   const [showSemesterModal, setShowSemesterModal] = useState(false);
   const [editingSemester, setEditingSemester] = useState<AcademicSemester | null>(null);
   const [semName, setSemName] = useState('');
   const [semStart, setSemStart] = useState('');
   const [semEnd, setSemEnd] = useState('');
 
+  // 2. Subject Modal
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState<AcademicSubject | null>(null);
   const [subjName, setSubjName] = useState('');
   const [subjProf, setSubjProf] = useState('');
   const [subjColor, setSubjColor] = useState('#3B82F6');
   const [subjClassroom, setSubjClassroom] = useState('');
+  const [subjSemesterId, setSubjSemesterId] = useState('');
 
-  // Session Edit Modal (e.g. from Horario click)
+  // 3. Global Session Modal (from Schedule tab)
+  const [showAddSessionGlobalModal, setShowAddSessionGlobalModal] = useState(false);
+  const [globalSessionSubjectId, setGlobalSessionSubjectId] = useState('');
+
+  // 4. Session Edit Modal
   const [editingSessionData, setEditingSessionData] = useState<{
     subjectId: string;
     subjectName: string;
     session: AcademicSession;
   } | null>(null);
 
-  // New Session Form (inside subject or modal)
-  const [sessionDay, setSessionDay] = useState(1);
+  // New Session Form State
+  const [sessionDay, setSessionDay] = useState<number>(1);
   const [sessionStart, setSessionStart] = useState('08:00');
   const [sessionEnd, setSessionEnd] = useState('10:00');
   const [sessionRoom, setSessionRoom] = useState('');
 
-  // New Cut Form
-  const [newCutName, setNewCutName] = useState('');
-  const [newCutWeight, setNewCutWeight] = useState(30);
-
-  // Editing Cut Modal
+  // 5. Cut Modal
+  const [showCutModal, setShowCutModal] = useState(false);
+  const [cutSubjectId, setCutSubjectId] = useState('');
   const [editingCut, setEditingCut] = useState<{ subjectId: string; cut: AcademicCut } | null>(null);
-  const [editCutName, setEditCutName] = useState('');
-  const [editCutWeight, setEditCutWeight] = useState(30);
+  const [cutName, setCutName] = useState('');
+  const [cutWeight, setCutWeight] = useState(30);
 
-  // Editing Activity Modal
+  // 6. Activity / Evaluation Edit Modal
   const [editingActivity, setEditingActivity] = useState<{
     subjectId: string;
     cutId: string;
     activity: AcademicEvaluationActivity;
   } | null>(null);
+  const [editActName, setEditActName] = useState('');
+  const [editActType, setEditActType] = useState<AcademicEvaluationActivity['type']>('Parcial');
+  const [editActDate, setEditActDate] = useState('');
+  const [editActWeight, setEditActWeight] = useState(20);
+  const [editActStatus, setEditActStatus] = useState<'pending' | 'graded' | 'cancelled'>('pending');
+  const [editActGrade, setEditActGrade] = useState<string>('');
+
+  // 7. Inline New Activity Forms dictionary (key = cutId)
+  const [newActivityForms, setNewActivityForms] = useState<Record<string, {
+    name: string;
+    type: AcademicEvaluationActivity['type'];
+    date: string;
+    weight: number;
+  }>>({});
 
   const todayStr = getTodayDateString();
 
@@ -127,13 +309,15 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const semesterProgress = AcademicCalculations.calculateSemesterProgress(activeSemester || undefined);
   const goalMessage = AcademicCalculations.getAcademicGoalMessage(activeSubjects, 4.0);
 
-  // Handlers for Semester
+  // =========================================================================
+  // HANDLERS: SEMESTERS
+  // =========================================================================
   const handleOpenSemesterModal = (sem?: AcademicSemester) => {
     if (sem) {
       setEditingSemester(sem);
       setSemName(sem.name);
-      setSemStart(sem.startDate);
-      setSemEnd(sem.endDate);
+      setSemStart(sem.startDate || todayStr);
+      setSemEnd(sem.endDate || todayStr);
     } else {
       setEditingSemester(null);
       setSemName('');
@@ -145,128 +329,441 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
   const handleSaveSemester = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!semName.trim()) return;
+    if (!semName.trim()) {
+      showToast('Por favor ingresa un nombre para el semestre.', 'warning');
+      return;
+    }
     if (editingSemester) {
       AcademicStore.updateSemester(editingSemester.id, {
-        name: semName,
+        name: semName.trim(),
         startDate: semStart || todayStr,
         endDate: semEnd || todayStr
       });
+      showToast(`Semestre "${semName.trim()}" actualizado correctamente.`);
     } else {
       AcademicStore.addSemester({
-        name: semName,
+        name: semName.trim(),
         startDate: semStart || todayStr,
         endDate: semEnd || todayStr,
         isActive: semesters.length === 0
       });
+      showToast(`Semestre "${semName.trim()}" registrado correctamente.`);
     }
     setShowSemesterModal(false);
   };
 
-  // Handlers for Subject
+  const handleSetActiveSemester = (semId: string, semNameText: string) => {
+    AcademicStore.setActiveSemester(semId);
+    showToast(`Semestre "${semNameText}" activado.`);
+  };
+
+  const handleDeleteSemester = (sem: AcademicSemester) => {
+    openConfirm({
+      title: '¿Eliminar semestre?',
+      message: `¿Está seguro de eliminar el semestre "${sem.name}"? Esta acción eliminará también todas las materias, horarios, evaluaciones y notas asociadas a este semestre.`,
+      isDanger: true,
+      confirmText: 'Eliminar Semestre',
+      onConfirm: () => {
+        AcademicStore.deleteSemester(sem.id);
+        showToast(`Semestre "${sem.name}" eliminado.`, 'warning');
+      }
+    });
+  };
+
+  // =========================================================================
+  // HANDLERS: SUBJECTS
+  // =========================================================================
   const handleOpenSubjectModal = (subj?: AcademicSubject) => {
+    if (semesters.length === 0) {
+      showToast('Debes crear un semestre universitario antes de registrar materias.', 'warning');
+      handleOpenSemesterModal();
+      return;
+    }
+
     if (subj) {
       setEditingSubject(subj);
       setSubjName(subj.name);
       setSubjProf(subj.professor);
       setSubjColor(subj.color || '#3B82F6');
       setSubjClassroom(subj.classroom || '');
+      setSubjSemesterId(subj.semesterId || activeSemester?.id || semesters[0].id);
     } else {
       setEditingSubject(null);
       setSubjName('');
       setSubjProf('');
       setSubjColor('#3B82F6');
       setSubjClassroom('');
+      setSubjSemesterId(activeSemester?.id || semesters[0]?.id || '');
     }
     setShowSubjectModal(true);
   };
 
   const handleSaveSubject = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjName.trim() || !activeSemester) return;
+    if (!subjName.trim()) {
+      showToast('Ingresa el nombre de la asignatura.', 'warning');
+      return;
+    }
+    const targetSemId = subjSemesterId || activeSemester?.id || semesters[0]?.id;
+    if (!targetSemId) {
+      showToast('Selecciona un semestre válido.', 'warning');
+      return;
+    }
+
     if (editingSubject) {
       AcademicStore.updateSubject(editingSubject.id, {
-        name: subjName,
-        professor: subjProf || 'Por asignar',
+        name: subjName.trim(),
+        professor: subjProf.trim() || 'Por asignar',
         color: subjColor,
-        classroom: subjClassroom
+        classroom: subjClassroom.trim(),
+        semesterId: targetSemId
       });
+      showToast(`Materia "${subjName.trim()}" actualizada.`);
     } else {
       AcademicStore.addSubject({
-        semesterId: activeSemester.id,
-        name: subjName,
-        professor: subjProf || 'Por asignar',
+        semesterId: targetSemId,
+        name: subjName.trim(),
+        professor: subjProf.trim() || 'Por asignar',
         color: subjColor,
-        classroom: subjClassroom,
+        classroom: subjClassroom.trim(),
         scheduleSessions: [],
         cuts: []
       });
+      showToast(`Materia "${subjName.trim()}" creada exitosamente.`);
     }
     setShowSubjectModal(false);
   };
 
-  // Handlers for Sessions
+  const handleDeleteSubject = (subject: AcademicSubject) => {
+    openConfirm({
+      title: '¿Eliminar materia?',
+      message: `¿Está seguro de eliminar la materia "${subject.name}"? Esta acción eliminará también sus horarios, evaluaciones y notas asociadas de forma permanente.`,
+      isDanger: true,
+      confirmText: 'Eliminar Materia',
+      onConfirm: () => {
+        AcademicStore.deleteSubject(subject.id);
+        if (expandedSubjectId === subject.id) {
+          setExpandedSubjectId(null);
+        }
+        showToast(`Materia "${subject.name}" eliminada.`, 'warning');
+      }
+    });
+  };
+
+  // =========================================================================
+  // HANDLERS: SESSIONS (SCHEDULE)
+  // =========================================================================
   const handleAddSessionToSubject = (subjectId: string) => {
-    if (!sessionStart || !sessionEnd) return;
+    if (!sessionStart || !sessionEnd) {
+      showToast('Selecciona la hora de inicio y fin de la clase.', 'warning');
+      return;
+    }
+    if (sessionStart >= sessionEnd) {
+      showToast('La hora de inicio debe ser anterior a la hora de fin.', 'warning');
+      return;
+    }
     AcademicStore.addSession(subjectId, {
       day: Number(sessionDay),
       startTime: sessionStart,
       endTime: sessionEnd,
-      classroom: sessionRoom
+      classroom: sessionRoom.trim()
     });
     setSessionRoom('');
+    showToast('Sesión de clase agregada correctamente.');
+  };
+
+  const handleGlobalAddSession = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!globalSessionSubjectId) {
+      showToast('Selecciona una materia para la clase.', 'warning');
+      return;
+    }
+    handleAddSessionToSubject(globalSessionSubjectId);
+    setShowAddSessionGlobalModal(false);
   };
 
   const handleSaveSessionEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSessionData) return;
+    if (editingSessionData.session.startTime >= editingSessionData.session.endTime) {
+      showToast('La hora de inicio debe ser anterior a la hora de fin.', 'warning');
+      return;
+    }
     AcademicStore.updateSession(
       editingSessionData.subjectId, 
       editingSessionData.session.id, 
       {
-        day: editingSessionData.session.day,
+        day: Number(editingSessionData.session.day),
         startTime: editingSessionData.session.startTime,
         endTime: editingSessionData.session.endTime,
         classroom: editingSessionData.session.classroom
       }
     );
     setEditingSessionData(null);
+    showToast('Sesión de clase actualizada.');
   };
 
-  const handleDeleteSession = (subjectId: string, sessionId: string) => {
-    AcademicStore.deleteSession(subjectId, sessionId);
-    if (editingSessionData?.session.id === sessionId) {
-      setEditingSessionData(null);
+  const handleDeleteSession = (subjectId: string, sessionId: string, dayName?: string) => {
+    openConfirm({
+      title: '¿Eliminar sesión de clase?',
+      message: `¿Está seguro de eliminar esta sesión de clase${dayName ? ' (' + dayName + ')' : ''}?`,
+      isDanger: true,
+      confirmText: 'Eliminar Sesión',
+      onConfirm: () => {
+        AcademicStore.deleteSession(subjectId, sessionId);
+        if (editingSessionData?.session.id === sessionId) {
+          setEditingSessionData(null);
+        }
+        showToast('Sesión de clase eliminada.', 'warning');
+      }
+    });
+  };
+
+  // =========================================================================
+  // HANDLERS: CUTS
+  // =========================================================================
+  const handleOpenCutModal = (subjectId: string, cut?: AcademicCut) => {
+    setCutSubjectId(subjectId);
+    if (cut) {
+      setEditingCut({ subjectId, cut });
+      setCutName(cut.cutName);
+      setCutWeight(cut.cutWeightPercent);
+    } else {
+      setEditingCut(null);
+      setCutName('');
+      setCutWeight(30);
+    }
+    setShowCutModal(true);
+  };
+
+  const handleSaveCut = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cutName.trim()) {
+      showToast('Ingresa un nombre para el corte.', 'warning');
+      return;
+    }
+    if (cutWeight <= 0 || cutWeight > 100) {
+      showToast('El peso porcentaje debe ser entre 1% y 100%.', 'warning');
+      return;
+    }
+
+    const targetSubj = subjects.find(s => s.id === cutSubjectId);
+    if (targetSubj) {
+      const otherCutsWeight = (targetSubj.cuts || [])
+        .filter(c => editingCut ? c.id !== editingCut.cut.id : true)
+        .reduce((sum, c) => sum + (Number(c.cutWeightPercent) || 0), 0);
+      const totalNewWeight = Math.round((otherCutsWeight + Number(cutWeight)) * 10) / 10;
+      if (totalNewWeight > 100) {
+        showToast(`Los cortes superan el 100% (+${Math.round((totalNewWeight - 100) * 10) / 10}%). Debes corregir la distribución.`, 'error');
+        return;
+      }
+    }
+
+    if (editingCut) {
+      AcademicStore.updateCut(editingCut.subjectId, editingCut.cut.id, {
+        cutName: cutName.trim(),
+        cutWeightPercent: Number(cutWeight)
+      });
+      showToast(`Corte "${cutName.trim()}" actualizado.`);
+    } else {
+      AcademicStore.addCut(cutSubjectId, cutName.trim(), Number(cutWeight));
+      showToast(`Corte "${cutName.trim()}" creado.`);
+    }
+    setShowCutModal(false);
+  };
+
+  const handleDeleteCut = (subjectId: string, cut: AcademicCut) => {
+    openConfirm({
+      title: '¿Eliminar corte de evaluación?',
+      message: `¿Está seguro de eliminar el corte "${cut.cutName}"? Esta acción eliminará también todas sus actividades y calificaciones asociadas.`,
+      isDanger: true,
+      confirmText: 'Eliminar Corte',
+      onConfirm: () => {
+        AcademicStore.deleteCut(subjectId, cut.id);
+        showToast(`Corte "${cut.cutName}" eliminado.`, 'warning');
+      }
+    });
+  };
+
+  // =========================================================================
+  // HANDLERS: EVALUATION ACTIVITIES & GRADES
+  // =========================================================================
+  const getInlineActivityState = (cutId: string) => {
+    return newActivityForms[cutId] || {
+      name: '',
+      type: 'Parcial',
+      date: todayStr,
+      weight: 20
+    };
+  };
+
+  const setInlineActivityState = (cutId: string, updates: Partial<{
+    name: string;
+    type: AcademicEvaluationActivity['type'];
+    date: string;
+    weight: number;
+  }>) => {
+    setNewActivityForms(prev => ({
+      ...prev,
+      [cutId]: { ...getInlineActivityState(cutId), ...updates }
+    }));
+  };
+
+  const handleAddActivityInline = (subjectId: string, cutId: string) => {
+    const formState = getInlineActivityState(cutId);
+    if (!formState.name.trim()) {
+      showToast('Ingresa el nombre de la evaluación.', 'warning');
+      return;
+    }
+
+    const targetSubj = subjects.find(s => s.id === subjectId);
+    const targetCut = targetSubj?.cuts?.find(c => c.id === cutId);
+    if (targetCut) {
+      const currentActsTotal = (targetCut.activities || []).reduce((sum, a) => sum + (Number(a.weightPercent) || 0), 0);
+      const newTotal = Math.round((currentActsTotal + (Number(formState.weight) || 0)) * 10) / 10;
+      if (newTotal > 100) {
+        showToast(`Las actividades del corte superan el 100% (+${Math.round((newTotal - 100) * 10) / 10}%). Debes corregir la distribución.`, 'warning');
+      }
+    }
+
+    AcademicStore.addActivity(subjectId, cutId, {
+      name: formState.name.trim(),
+      type: formState.type,
+      date: formState.date || todayStr,
+      weightPercent: Number(formState.weight) || 20,
+      status: 'pending'
+    });
+    // Reset form for cutId
+    setInlineActivityState(cutId, { name: '', weight: 20, date: todayStr });
+    showToast(`Evaluación "${formState.name.trim()}" creada.`);
+  };
+
+  const handleOpenEditActivityModal = (subjectId: string, cutId: string, activity: AcademicEvaluationActivity) => {
+    setEditingActivity({ subjectId, cutId, activity });
+    setEditActName(activity.name);
+    setEditActType(activity.type);
+    setEditActDate(activity.date || todayStr);
+    setEditActWeight(activity.weightPercent);
+    setEditActStatus(activity.status);
+    setEditActGrade(activity.grade !== undefined && activity.grade !== null ? String(activity.grade) : '');
+  };
+
+  const handleSaveActivityEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingActivity) return;
+    if (!editActName.trim()) {
+      showToast('Ingresa el nombre de la evaluación.', 'warning');
+      return;
+    }
+
+    let parsedGrade: number | undefined = undefined;
+    if (editActGrade.trim() !== '') {
+      parsedGrade = Number(editActGrade);
+      if (isNaN(parsedGrade) || parsedGrade < 0 || parsedGrade > 5.0) {
+        showToast('La calificación debe estar entre 0.0 y 5.0', 'warning');
+        return;
+      }
+    }
+
+    const targetSubj = subjects.find(s => s.id === editingActivity.subjectId);
+    const targetCut = targetSubj?.cuts?.find(c => c.id === editingActivity.cutId);
+    if (targetCut) {
+      const otherActsWeight = (targetCut.activities || [])
+        .filter(a => a.id !== editingActivity.activity.id)
+        .reduce((sum, a) => sum + (Number(a.weightPercent) || 0), 0);
+      const totalNewWeight = Math.round((otherActsWeight + Number(editActWeight)) * 10) / 10;
+      if (totalNewWeight > 100) {
+        showToast(`Las actividades superan el 100% (+${Math.round((totalNewWeight - 100) * 10) / 10}%). Debes corregir la distribución.`, 'warning');
+      }
+    }
+
+    const newStatus = parsedGrade !== undefined ? 'graded' : editActStatus;
+
+    AcademicStore.updateActivity(
+      editingActivity.subjectId,
+      editingActivity.cutId,
+      editingActivity.activity.id,
+      {
+        name: editActName.trim(),
+        type: editActType,
+        date: editActDate || todayStr,
+        weightPercent: Number(editActWeight),
+        status: newStatus,
+        grade: parsedGrade
+      }
+    );
+
+    setEditingActivity(null);
+    showToast(`Evaluación "${editActName.trim()}" actualizada.`);
+  };
+
+  const handleQuickGradeChange = (subjectId: string, cutId: string, activityId: string, gradeStr: string) => {
+    if (gradeStr === '') {
+      AcademicStore.updateActivity(subjectId, cutId, activityId, {
+        grade: undefined,
+        status: 'pending'
+      });
+      showToast('Nota borrada (evaluación en estado pendiente).');
+      return;
+    }
+
+    const val = Number(gradeStr);
+    if (!isNaN(val) && val >= 0 && val <= 5.0) {
+      AcademicStore.updateActivity(subjectId, cutId, activityId, {
+        grade: val,
+        status: 'graded'
+      });
+      showToast(`Nota ${formatGrade(val)} guardada.`);
     }
   };
 
-  // Handlers for Cuts & Activities
-  const handleAddCut = (subjectId: string) => {
-    if (!newCutName.trim()) return;
-    AcademicStore.addCut(subjectId, newCutName, Number(newCutWeight));
-    setNewCutName('');
+  const handleDeleteActivity = (subjectId: string, cutId: string, activity: AcademicEvaluationActivity) => {
+    openConfirm({
+      title: '¿Eliminar evaluación?',
+      message: `¿Está seguro de eliminar la actividad "${activity.name}"? Se perderán sus calificaciones y ponderaciones asociadas.`,
+      isDanger: true,
+      confirmText: 'Eliminar Evaluación',
+      onConfirm: () => {
+        AcademicStore.deleteActivity(subjectId, cutId, activity.id);
+        if (editingActivity?.activity.id === activity.id) {
+          setEditingActivity(null);
+        }
+        showToast(`Evaluación "${activity.name}" eliminada.`, 'warning');
+      }
+    });
   };
 
-  const handleSaveCutEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCut || !editCutName.trim()) return;
-    AcademicStore.updateCut(editingCut.subjectId, editingCut.cut.id, {
-      cutName: editCutName,
-      cutWeightPercent: Number(editCutWeight)
-    });
-    setEditingCut(null);
-  };
+  // Preset Color Palettes for Subjects
+  const colorPresets = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#6366F1'];
 
   return (
-    <div className="w-full space-y-6 font-sans min-h-screen pb-16 text-slate-100">
+    <div className="w-full space-y-6 font-sans min-h-screen pb-16 text-slate-100 relative">
       
+      {/* ========================================================= */}
+      {/* FLOATING TOAST NOTIFICATION                               */}
+      {/* ========================================================= */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl border flex items-center gap-3 backdrop-blur-xl animate-in slide-in-from-bottom-5 duration-300 ${
+          toast.type === 'success' 
+            ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40' 
+            : toast.type === 'warning'
+            ? 'bg-amber-950/90 text-amber-200 border-amber-500/40'
+            : 'bg-rose-950/90 text-rose-200 border-rose-500/40'
+        }`}>
+          {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+          {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
+          <span className="text-xs font-semibold">{toast.message}</span>
+        </div>
+      )}
+
       {/* ========================================================= */}
       {/* 1. TOP LIQUID GLASS PANEL (PANEL SUPERIOR)                */}
       {/* ========================================================= */}
       <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
-        {/* Soft Liquid Glass Glow Accent */}
+        {/* Glow Accent */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gold-accent/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           
@@ -276,7 +773,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               <GraduationCap className="w-7 h-7 text-[#C5A059]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">
                   Oficina Académica
                 </h1>
@@ -286,9 +783,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     <span>{activeSemester.name}</span>
                   </div>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-mono">
-                    Sin semestre activo
-                  </span>
+                  <button
+                    onClick={() => handleOpenSemesterModal()}
+                    className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-mono flex items-center gap-1 transition-all"
+                  >
+                    <AlertTriangle className="w-3 h-3 text-amber-400" />
+                    <span>Crear semestre activo</span>
+                  </button>
                 )}
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
@@ -299,7 +800,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
           {/* Global Search & Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-            {/* Global Search */}
+            {/* Search Input */}
             <div className="relative flex-1 sm:w-64 lg:w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -307,7 +808,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 placeholder="Buscar materia, profesor o aula..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#132337]/80 backdrop-blur-md border border-blue-500/30 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#C5A059] transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-[#132337]/80 backdrop-blur-md border border-blue-500/30 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#C5A059] transition-all"
               />
               {searchQuery && (
                 <button
@@ -330,8 +831,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             {/* Crear Materia Button */}
             <button
               onClick={() => handleOpenSubjectModal()}
-              disabled={!activeSemester}
-              className="px-4 py-2 bg-gradient-to-r from-[#C5A059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-xs font-bold text-slate-950 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-amber-900/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-gradient-to-r from-[#C5A059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-xs font-bold text-slate-950 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-amber-900/20 active:scale-95"
             >
               <Plus className="w-4 h-4" /> Crear Materia
             </button>
@@ -416,7 +916,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. EXECUTIVE OVERVIEW STATS CARDS (PANEL GENERAL)          */}
+      {/* 2. EXECUTIVE OVERVIEW STATS CARDS                         */}
       {/* ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
@@ -447,8 +947,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {activeSubjects.length}
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium">
-            {activeSemester ? `Inscritas en ${activeSemester.name}` : 'Sin semestre seleccionado'}
+          <div className="text-[11px] text-slate-400 font-medium truncate">
+            {activeSemester ? `Inscritas en ${activeSemester.name}` : 'Sin semestre activo'}
           </div>
         </div>
 
@@ -464,7 +964,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
           </div>
           <div className="text-[11px] text-slate-400 font-medium truncate">
-            {todayClasses.length > 0 ? `Primera: ${todayClasses[0].session.startTime}` : 'Día sin clases'}
+            {todayClasses.length > 0 ? `Primera: ${todayClasses[0].session.startTime}` : 'Sin clases hoy'}
           </div>
         </div>
 
@@ -479,7 +979,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {groupedEvals.total}
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium">
+          <div className="text-[11px] text-slate-400 font-medium truncate">
             {groupedEvals.today.length > 0 ? `${groupedEvals.today.length} hoy pendientes` : 'Sin parciales hoy'}
           </div>
         </div>
@@ -494,7 +994,6 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             <div className="text-2xl sm:text-3xl font-serif font-bold text-emerald-400">
               {semesterProgress}%
             </div>
-            {/* Progress bar */}
             <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
               <div 
                 className="bg-gradient-to-r from-emerald-500 to-teal-400 h-1.5 rounded-full transition-all duration-500"
@@ -502,8 +1001,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               />
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium">
-            Calculado sobre fechas de inicio/fin
+          <div className="text-[11px] text-slate-400 font-medium truncate">
+            Avance sobre calendario
           </div>
         </div>
 
@@ -548,15 +1047,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-8 text-center bg-[#132337]/40 rounded-xl border border-dashed border-blue-500/20 text-slate-400 space-y-2">
                   <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
                   <p className="text-sm font-medium text-slate-300">No tienes sesiones de clase para el día de hoy.</p>
-                  <p className="text-xs text-slate-500">Aprovecha para repasar apuntes o consultar las próximas evaluaciones.</p>
+                  <p className="text-xs text-slate-500">Aprovecha para repasar apuntes o revisar las próximas evaluaciones.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {todayClasses.map(({ subject, session }, idx) => (
                     <div 
                       key={idx} 
-                      className="p-4 bg-[#132337]/70 backdrop-blur-md rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-blue-400/50 transition-all shadow-md"
+                      className="p-4 bg-[#132337]/70 backdrop-blur-md rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-blue-400/50 transition-all shadow-md cursor-pointer"
                       style={{ borderLeftWidth: '5px', borderLeftColor: subject.color }}
+                      onClick={() => setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session })}
                     >
                       <div>
                         <div className="font-bold text-white text-sm flex items-center gap-2">
@@ -572,8 +1072,20 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         </div>
                       </div>
 
-                      <div className="px-3 py-1.5 bg-blue-900/60 border border-blue-400/40 rounded-xl text-xs font-mono font-bold text-blue-200 shrink-0">
-                        {session.startTime} – {session.endTime}
+                      <div className="flex items-center gap-2">
+                        <div className="px-3 py-1.5 bg-blue-900/60 border border-blue-400/40 rounded-xl text-xs font-mono font-bold text-blue-200 shrink-0">
+                          {session.startTime} – {session.endTime}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session });
+                          }}
+                          className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors"
+                          title="Editar sesión"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -586,7 +1098,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           {/* RIGHT 5 COLS: PRÓXIMAS EVALUACIONES Y TAREAS PENDIENTES */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* PRÓXIMAS EVALUACIONES DE HOY Y PRÓXIMAS */}
+            {/* PRÓXIMAS EVALUACIONES */}
             <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-2xl space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
@@ -626,8 +1138,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         <div className="text-[11px] text-slate-400">Corte: {item.cutName}</div>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-lg border block ${
+                      <div className="text-right shrink-0 space-y-1">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border block ${
                           item.daysDiff === 0 
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
                             : item.daysDiff === 1 
@@ -636,7 +1148,22 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         }`}>
                           {item.daysDiff === 0 ? '¡Hoy!' : item.daysDiff === 1 ? 'Mañana' : `En ${item.daysDiff} días`}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{item.activityDate}</span>
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            onClick={() => {
+                              const sub = activeSubjects.find(s => s.id === item.subjectId);
+                              const cut = sub?.cuts?.find(c => c.id === item.cutId);
+                              const act = cut?.activities.find(a => a.id === item.activityId);
+                              if (sub && cut && act) {
+                                handleOpenEditActivityModal(sub.id, cut.id, act);
+                              }
+                            }}
+                            className="p-1 text-slate-300 hover:text-white bg-white/5 rounded"
+                            title="Registrar nota / Editar"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -655,6 +1182,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {activeTab === 'subjects' && (
         <div className="space-y-6">
           
+          <div className="flex justify-between items-center flex-wrap gap-3">
+            <h3 className="font-serif font-bold text-lg text-white">Asignaturas de {activeSemester?.name || 'Semestre'}</h3>
+            <button
+              onClick={() => handleOpenSubjectModal()}
+              className="px-4 py-2 bg-gradient-to-r from-[#C5A059] to-amber-600 hover:from-amber-500 hover:to-amber-700 font-bold text-slate-950 text-xs rounded-xl shadow-lg flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Crear Materia
+            </button>
+          </div>
+
           {filteredSubjects.length === 0 ? (
             <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-12 text-center space-y-4">
               <BookOpen className="w-16 h-16 text-slate-500 mx-auto" />
@@ -711,7 +1248,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         </div>
                       </div>
 
-                      {/* Right stats and expand chevron */}
+                      {/* Right stats and buttons */}
                       <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-white/10">
                         <div className="text-right">
                           <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Promedio</div>
@@ -734,9 +1271,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`¿Eliminar la materia "${subject.name}"?`)) {
-                                AcademicStore.deleteSubject(subject.id);
-                              }
+                              handleDeleteSubject(subject);
                             }}
                             className="p-2 bg-[#132337] hover:bg-rose-900/60 rounded-xl text-slate-300 hover:text-rose-400 transition-colors"
                             title="Eliminar materia"
@@ -836,12 +1371,22 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                     <div className="text-slate-300 font-mono text-[11px]">{ses.startTime} – {ses.endTime}</div>
                                     {ses.classroom && <div className="text-[10px] text-slate-400">Aula: {ses.classroom}</div>}
                                   </div>
-                                  <button 
-                                    onClick={() => handleDeleteSession(subject.id, ses.id)}
-                                    className="text-rose-400 hover:text-rose-300 p-1"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={() => setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session: ses })}
+                                      className="text-slate-300 hover:text-white p-1"
+                                      title="Editar sesión"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteSession(subject.id, ses.id, getDayOfWeekName(ses.day))}
+                                      className="text-rose-400 hover:text-rose-300 p-1"
+                                      title="Eliminar sesión"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -894,145 +1439,150 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         {/* SUB-TAB 3: EVALUACIONES Y CORTES */}
                         {subjectSubTab === 'evaluations' && (
                           <div className="space-y-4">
-                            {/* Crear Corte Form */}
-                            <div className="p-3.5 bg-[#132337]/80 rounded-xl border border-white/10 flex flex-wrap items-center gap-2.5 text-xs">
-                              <input
-                                type="text"
-                                placeholder="Nombre del Corte (Ej: Corte 1, Parcial Final)"
-                                value={newCutName}
-                                onChange={e => setNewCutName(e.target.value)}
-                                className="p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white flex-1 min-w-[180px]"
-                              />
-                              <div className="flex items-center gap-1">
-                                <span className="text-slate-300">Peso (%):</span>
-                                <input
-                                  type="number"
-                                  value={newCutWeight}
-                                  onChange={e => setNewCutWeight(Number(e.target.value))}
-                                  className="w-16 p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white font-mono"
-                                />
-                              </div>
+                            {/* Cuts Distribution Indicator Bar */}
+                            <CutsDistributionBar cuts={subject.cuts || []} />
+
+                            {/* Crear Corte Button */}
+                            <div className="flex justify-between items-center text-xs pt-1">
+                              <span className="font-bold text-slate-300">Cortes de Evaluación ({subject.cuts?.length || 0})</span>
                               <button
-                                onClick={() => handleAddCut(subject.id)}
-                                className="px-3 py-2 bg-[#C5A059] hover:bg-amber-600 text-slate-950 font-bold rounded-lg flex items-center gap-1"
+                                onClick={() => handleOpenCutModal(subject.id)}
+                                className="px-3 py-1.5 bg-[#C5A059] hover:bg-amber-600 text-slate-950 font-bold rounded-lg flex items-center gap-1 shadow-md transition-all active:scale-95"
                               >
-                                <Plus className="w-4 h-4" /> Crear Corte
+                                <Plus className="w-3.5 h-3.5" /> Nuevo Corte
                               </button>
                             </div>
 
                             {/* List of Cuts */}
-                            {subject.cuts?.map(cut => (
-                              <div key={cut.id} className="p-4 bg-[#132337]/60 rounded-xl border border-white/10 space-y-3">
-                                <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[#C5A059] text-sm">{cut.cutName}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
-                                      Peso: {cut.cutWeightPercent}%
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => {
-                                        setEditingCut({ subjectId: subject.id, cut });
-                                        setEditCutName(cut.cutName);
-                                        setEditCutWeight(cut.cutWeightPercent);
-                                      }}
-                                      className="text-slate-400 hover:text-white p-1"
-                                      title="Editar corte"
-                                    >
-                                      <Edit3 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => AcademicStore.deleteCut(subject.id, cut.id)}
-                                      className="text-rose-400 hover:text-rose-300 p-1"
-                                      title="Eliminar corte"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
+                            {(!subject.cuts || subject.cuts.length === 0) ? (
+                              <div className="p-6 text-center bg-[#132337]/40 rounded-xl border border-dashed border-white/10 text-slate-400 text-xs">
+                                No hay cortes creados. Agrega cortes para organizar parciales, quices y talleres.
+                              </div>
+                            ) : (
+                              subject.cuts.map(cut => {
+                                const formState = getInlineActivityState(cut.id);
 
-                                {/* Activities in Cut */}
-                                <div className="space-y-2">
-                                  {cut.activities?.map(act => (
-                                    <div key={act.id} className="p-2.5 bg-[#0d131a]/80 rounded-lg border border-white/5 flex flex-wrap justify-between items-center gap-2 text-xs">
-                                      <div>
-                                        <span className="font-bold text-white">{act.name}</span>
-                                        <span className="text-slate-400 ml-2">({act.type} - {act.weightPercent}% del corte)</span>
-                                        <span className="text-slate-400 font-mono ml-2">[{act.date}]</span>
+                                return (
+                                  <div key={cut.id} className="p-4 bg-[#132337]/60 rounded-xl border border-white/10 space-y-3">
+                                    <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-[#C5A059] text-sm">{cut.cutName}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
+                                          Valor: {cut.cutWeightPercent}% de la materia
+                                        </span>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <span className="text-slate-400">Nota:</span>
-                                        <input
-                                          type="number"
-                                          step="0.1"
-                                          min="0"
-                                          max="5"
-                                          value={act.grade !== undefined ? act.grade : ''}
-                                          onChange={e => {
-                                            const val = e.target.value === '' ? undefined : Number(e.target.value);
-                                            AcademicStore.updateActivity(subject.id, cut.id, act.id, {
-                                              grade: val,
-                                              status: val !== undefined ? 'graded' : 'pending'
-                                            });
-                                          }}
-                                          placeholder="0.0"
-                                          className="w-16 p-1 bg-[#132337] border border-blue-500/30 rounded text-center font-bold text-white font-mono"
-                                        />
                                         <button
-                                          onClick={() => AcademicStore.deleteActivity(subject.id, cut.id, act.id)}
-                                          className="text-rose-400 hover:text-rose-300 p-1"
+                                          onClick={() => handleOpenCutModal(subject.id, cut)}
+                                          className="text-slate-400 hover:text-white p-1"
+                                          title="Editar corte"
                                         >
-                                          <X className="w-4 h-4" />
+                                          <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteCut(subject.id, cut)}
+                                          className="text-rose-400 hover:text-rose-300 p-1"
+                                          title="Eliminar corte"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                       </div>
                                     </div>
-                                  ))}
-                                </div>
 
-                                {/* Add Activity to Cut inline */}
-                                <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-2 text-xs">
-                                  <input
-                                    type="text"
-                                    placeholder="Nueva evaluación"
-                                    id={`act_name_${cut.id}`}
-                                    className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white flex-1 min-w-[140px]"
-                                  />
-                                  <select id={`act_type_${cut.id}`} className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white">
-                                    <option value="Parcial">Parcial</option>
-                                    <option value="Quiz">Quiz</option>
-                                    <option value="Taller">Taller</option>
-                                    <option value="Laboratorio">Laboratorio</option>
-                                    <option value="Exposición">Exposición</option>
-                                    <option value="Proyecto">Proyecto</option>
-                                    <option value="Otro">Otro</option>
-                                  </select>
-                                  <input type="date" id={`act_date_${cut.id}`} defaultValue={todayStr} className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" />
-                                  <input type="number" id={`act_weight_${cut.id}`} defaultValue={20} placeholder="%" className="w-14 p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" />
-                                  <button
-                                    onClick={() => {
-                                      const nameInput = document.getElementById(`act_name_${cut.id}`) as HTMLInputElement;
-                                      const typeInput = document.getElementById(`act_type_${cut.id}`) as HTMLSelectElement;
-                                      const dateInput = document.getElementById(`act_date_${cut.id}`) as HTMLInputElement;
-                                      const weightInput = document.getElementById(`act_weight_${cut.id}`) as HTMLInputElement;
-                                      if (nameInput?.value) {
-                                        AcademicStore.addActivity(subject.id, cut.id, {
-                                          name: nameInput.value,
-                                          type: typeInput.value as any,
-                                          date: dateInput.value || todayStr,
-                                          weightPercent: Number(weightInput.value) || 20,
-                                          status: 'pending'
-                                        });
-                                        nameInput.value = '';
-                                      }
-                                    }}
-                                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded flex items-center gap-1"
-                                  >
-                                    + Actividad
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                    {/* Activities Distribution Bar for this cut */}
+                                    <ActivitiesDistributionBar activities={cut.activities || []} />
+
+                                    {/* Activities in Cut */}
+                                    <div className="space-y-2">
+                                      {(!cut.activities || cut.activities.length === 0) ? (
+                                        <div className="text-[11px] text-slate-400 italic py-1">Sin actividades agregadas en este corte.</div>
+                                      ) : (
+                                        cut.activities.map(act => (
+                                          <div key={act.id} className="p-2.5 bg-[#0d131a]/80 rounded-lg border border-white/5 flex flex-wrap justify-between items-center gap-2 text-xs">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-white">{act.name}</span>
+                                              <span className="text-slate-400 text-[11px]">({act.type} - {act.weightPercent}% del corte)</span>
+                                              <span className="text-slate-400 font-mono text-[11px]">[{act.date}]</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-slate-400 text-xs">Nota:</span>
+                                              <input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                max="5"
+                                                value={act.grade !== undefined && act.grade !== null ? act.grade : ''}
+                                                onChange={e => handleQuickGradeChange(subject.id, cut.id, act.id, e.target.value)}
+                                                placeholder="0.0"
+                                                className="w-16 p-1 bg-[#132337] border border-blue-500/30 rounded text-center font-bold text-white font-mono"
+                                              />
+                                              <button
+                                                onClick={() => handleOpenEditActivityModal(subject.id, cut.id, act)}
+                                                className="text-slate-300 hover:text-white p-1"
+                                                title="Editar detalles de la evaluación"
+                                              >
+                                                <Edit3 className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteActivity(subject.id, cut.id, act)}
+                                                className="text-rose-400 hover:text-rose-300 p-1"
+                                                title="Eliminar evaluación"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+
+                                    {/* Add Activity Form Controlled via React state */}
+                                    <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-2 text-xs">
+                                      <input
+                                        type="text"
+                                        placeholder="Nueva evaluación..."
+                                        value={formState.name}
+                                        onChange={e => setInlineActivityState(cut.id, { name: e.target.value })}
+                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white flex-1 min-w-[140px]"
+                                      />
+                                      <select 
+                                        value={formState.type} 
+                                        onChange={e => setInlineActivityState(cut.id, { type: e.target.value as any })} 
+                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white"
+                                      >
+                                        <option value="Parcial">Parcial</option>
+                                        <option value="Quiz">Quiz</option>
+                                        <option value="Taller">Taller</option>
+                                        <option value="Laboratorio">Laboratorio</option>
+                                        <option value="Exposición">Exposición</option>
+                                        <option value="Proyecto">Proyecto</option>
+                                        <option value="Otro">Otro</option>
+                                      </select>
+                                      <input 
+                                        type="date" 
+                                        value={formState.date} 
+                                        onChange={e => setInlineActivityState(cut.id, { date: e.target.value })} 
+                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" 
+                                      />
+                                      <input 
+                                        type="number" 
+                                        value={formState.weight} 
+                                        onChange={e => setInlineActivityState(cut.id, { weight: Number(e.target.value) })} 
+                                        placeholder="%" 
+                                        className="w-14 p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" 
+                                      />
+                                      <button
+                                        onClick={() => handleAddActivityInline(subject.id, cut.id)}
+                                        className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded flex items-center gap-1"
+                                      >
+                                        + Evaluación
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
                           </div>
                         )}
 
@@ -1082,22 +1632,36 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* ========================================================= */}
       {activeTab === 'schedule' && (
         <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 shadow-2xl space-y-4">
-          <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <div className="flex justify-between items-center border-b border-white/10 pb-3 flex-wrap gap-2">
             <div>
               <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#C5A059]" /> Horario Semanal Continuo
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Cada clase se muestra como un único bloque continuo proporcional a su duración real.
+                Haz clic en cualquier clase para modificar sus horas, aula o eliminarla.
               </p>
             </div>
+
+            <button
+              onClick={() => {
+                if (activeSubjects.length === 0) {
+                  showToast('Debes registrar al menos una materia antes de crear sesiones.', 'warning');
+                  return;
+                }
+                setGlobalSessionSubjectId(activeSubjects[0].id);
+                setShowAddSessionGlobalModal(true);
+              }}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" /> Agregar Sesión
+            </button>
           </div>
 
           {/* WEEKLY SCHEDULE GRID */}
           <div className="overflow-x-auto">
             <div className="min-w-[800px] grid grid-cols-7 gap-2">
               
-              {/* Header Days: Hora + Lun-Sáb */}
+              {/* Header Days */}
               {['Hora', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map((dayName, idx) => (
                 <div 
                   key={idx} 
@@ -1111,11 +1675,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
               ))}
 
-              {/* Time axis & Days column layout */}
-              {/* Render 14 hourly slots from 06:00 to 20:00 */}
+              {/* Grid content */}
               <div className="col-span-7 grid grid-cols-7 gap-2 relative min-h-[560px] bg-[#0d1b2e]/60 rounded-xl border border-white/10 p-2">
                 
-                {/* Time Axis Column (Col 1) */}
+                {/* Time Axis Column */}
                 <div className="space-y-8 text-[11px] font-mono text-slate-400 pt-2 text-center border-r border-white/10">
                   {['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((time, idx) => (
                     <div key={idx} className="h-10 flex items-center justify-center">
@@ -1124,9 +1687,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   ))}
                 </div>
 
-                {/* Day Columns (Cols 2 to 7 -> Days 1 to 6) */}
+                {/* Day Columns (Days 1 to 6) */}
                 {[1, 2, 3, 4, 5, 6].map((dayNum) => {
-                  // Collect all sessions for this day across active subjects
                   const daySessions: Array<{
                     subject: AcademicSubject;
                     session: AcademicSession;
@@ -1143,15 +1705,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   return (
                     <div key={dayNum} className="relative border-r border-white/5 last:border-r-0 h-full min-h-[560px]">
                       {daySessions.map(({ subject, session }) => {
-                        // Calculate vertical position based on 06:00 to 22:00 (16 hours total = 960 mins)
                         const [startH, startM] = session.startTime.split(':').map(Number);
                         const [endH, endM] = session.endTime.split(':').map(Number);
 
-                        const startMins = (startH * 60 + startM) - (6 * 60); // mins relative to 06:00
+                        const startMins = (startH * 60 + startM) - (6 * 60);
                         const endMins = (endH * 60 + endM) - (6 * 60);
                         const durationMins = Math.max(30, endMins - startMins);
 
-                        // Total span = 16 hours = 960 minutes = 100%
                         const topPct = (startMins / 960) * 100;
                         const heightPct = (durationMins / 960) * 100;
 
@@ -1195,7 +1755,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* ========================================================= */}
-      {/* TAB 4: PRÓXIMAS EVALUACIONES (4 GROUPED CATEGORIES)       */}
+      {/* TAB 4: PRÓXIMAS EVALUACIONES                              */}
       {/* ========================================================= */}
       {activeTab === 'evaluations' && (
         <div className="space-y-6">
@@ -1212,10 +1772,26 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones hoy.</div>
               ) : (
                 groupedEvals.today.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-rose-500/30 space-y-1 text-xs">
-                    <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
-                      {ev.subjectName}
-                    </span>
+                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-rose-500/30 space-y-2 text-xs">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
+                        {ev.subjectName}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            const sub = activeSubjects.find(s => s.id === ev.subjectId);
+                            const cut = sub?.cuts?.find(c => c.id === ev.cutId);
+                            const act = cut?.activities.find(a => a.id === ev.activityId);
+                            if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
+                          }}
+                          className="p-1 text-slate-300 hover:text-white"
+                          title="Editar / Registrar nota"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
                     <div className="text-[11px] text-slate-400">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
                   </div>
@@ -1234,10 +1810,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones mañana.</div>
               ) : (
                 groupedEvals.tomorrow.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-amber-500/30 space-y-1 text-xs">
-                    <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
-                      {ev.subjectName}
-                    </span>
+                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-amber-500/30 space-y-2 text-xs">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
+                        {ev.subjectName}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const sub = activeSubjects.find(s => s.id === ev.subjectId);
+                          const cut = sub?.cuts?.find(c => c.id === ev.cutId);
+                          const act = cut?.activities.find(a => a.id === ev.activityId);
+                          if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
+                        }}
+                        className="p-1 text-slate-300 hover:text-white"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
                     <div className="text-[11px] text-slate-400">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
                   </div>
@@ -1256,10 +1845,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones esta semana.</div>
               ) : (
                 groupedEvals.thisWeek.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-blue-500/30 space-y-1 text-xs">
-                    <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
-                      {ev.subjectName}
-                    </span>
+                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-blue-500/30 space-y-2 text-xs">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
+                        {ev.subjectName}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const sub = activeSubjects.find(s => s.id === ev.subjectId);
+                          const cut = sub?.cuts?.find(c => c.id === ev.cutId);
+                          const act = cut?.activities.find(a => a.id === ev.activityId);
+                          if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
+                        }}
+                        className="p-1 text-slate-300 hover:text-white"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
                     <div className="text-[11px] text-slate-400">Fecha: {ev.activityDate} (Faltan {ev.daysDiff} días)</div>
                   </div>
@@ -1278,10 +1880,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones futuras registradas.</div>
               ) : (
                 groupedEvals.later.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-purple-500/30 space-y-1 text-xs">
-                    <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
-                      {ev.subjectName}
-                    </span>
+                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-purple-500/30 space-y-2 text-xs">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
+                        {ev.subjectName}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const sub = activeSubjects.find(s => s.id === ev.subjectId);
+                          const cut = sub?.cuts?.find(c => c.id === ev.cutId);
+                          const act = cut?.activities.find(a => a.id === ev.activityId);
+                          if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
+                        }}
+                        className="p-1 text-slate-300 hover:text-white"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
                     <div className="text-[11px] text-slate-400">Fecha: {ev.activityDate}</div>
                   </div>
@@ -1353,7 +1968,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* ========================================================= */}
       {activeTab === 'semesters' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <h3 className="font-serif font-bold text-lg text-white">Historial de Semestres Universitarios</h3>
             <button
               onClick={() => handleOpenSemesterModal()}
@@ -1371,9 +1986,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   sem.isActive ? 'border-[#C5A059] ring-1 ring-[#C5A059]/30' : 'border-white/10'
                 }`}
               >
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white text-base">{sem.name}</span>
                       {sem.isActive && (
                         <span className="bg-[#C5A059] text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -1386,10 +2001,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {!sem.isActive && (
                       <button
-                        onClick={() => AcademicStore.setActiveSemester(sem.id)}
+                        onClick={() => handleSetActiveSemester(sem.id, sem.name)}
                         className="text-xs bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-400/30 px-2.5 py-1 rounded-lg font-semibold"
                       >
                         Activar
@@ -1403,11 +2018,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`¿Eliminar semestre "${sem.name}"?`)) {
-                          AcademicStore.deleteSemester(sem.id);
-                        }
-                      }}
+                      onClick={() => handleDeleteSemester(sem)}
                       className="text-rose-400 hover:text-rose-300 p-1"
                       title="Eliminar semestre"
                     >
@@ -1417,6 +2028,54 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CONFIRMACIÓN DE ACCIONES CRÍTICAS                  */}
+      {/* ========================================================= */}
+      {confirmModalData && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-[#0B1528] border border-rose-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-serif font-bold text-white">{confirmModalData.title}</h3>
+                <p className="text-xs text-rose-300 font-medium">Confirmación requerida</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {confirmModalData.message}
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setConfirmModalData(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 rounded-xl transition-all"
+              >
+                {confirmModalData.cancelText || 'Cancelar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const action = confirmModalData.onConfirm;
+                  setConfirmModalData(null);
+                  action();
+                }}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                  confirmModalData.isDanger !== false 
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/30' 
+                    : 'bg-blue-600 hover:bg-blue-500 text-white'
+                }`}
+              >
+                {confirmModalData.confirmText || 'Confirmar'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1519,6 +2178,19 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">Semestre Perteneciente</label>
+                <select
+                  value={subjSemesterId}
+                  onChange={e => setSubjSemesterId(e.target.value)}
+                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                >
+                  {semesters.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} {s.isActive ? '(Activo)' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="text-xs font-bold text-slate-300 block mb-1">Profesor / Docente</label>
                 <input
                   type="text"
@@ -1529,26 +2201,38 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Color Institucional</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 block">Color Institucional</label>
+                <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={subjColor}
                     onChange={e => setSubjColor(e.target.value)}
-                    className="w-full h-10 p-1 bg-[#132337] border border-blue-500/30 rounded-xl cursor-pointer"
+                    className="w-10 h-10 p-1 bg-[#132337] border border-blue-500/30 rounded-xl cursor-pointer shrink-0"
                   />
+                  <div className="flex flex-wrap gap-1.5">
+                    {colorPresets.map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => setSubjColor(hex)}
+                        className={`w-6 h-6 rounded-full border ${subjColor === hex ? 'ring-2 ring-white scale-110' : 'border-transparent'}`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Aula Predeterminada</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Aula 301"
-                    value={subjClassroom}
-                    onChange={e => setSubjClassroom(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">Aula Predeterminada</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Aula 301, Lab de Cómputo"
+                  value={subjClassroom}
+                  onChange={e => setSubjClassroom(e.target.value)}
+                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
@@ -1564,6 +2248,102 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   className="px-4 py-2 text-xs font-bold text-slate-950 bg-[#C5A059] hover:bg-amber-600 rounded-xl"
                 >
                   Guardar Materia
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL GLOBAL AGREGAR SESIÓN                                */}
+      {/* ========================================================= */}
+      {showAddSessionGlobalModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h3 className="text-base font-serif font-bold text-white">Agregar Sesión de Clase</h3>
+              <button onClick={() => setShowAddSessionGlobalModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGlobalAddSession} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">Asignatura *</label>
+                <select
+                  value={globalSessionSubjectId}
+                  onChange={e => setGlobalSessionSubjectId(e.target.value)}
+                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                >
+                  {activeSubjects.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">Día de la Semana</label>
+                <select
+                  value={sessionDay}
+                  onChange={e => setSessionDay(Number(e.target.value))}
+                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                >
+                  <option value={1}>Lunes</option>
+                  <option value={2}>Martes</option>
+                  <option value={3}>Miércoles</option>
+                  <option value={4}>Jueves</option>
+                  <option value={5}>Viernes</option>
+                  <option value={6}>Sábado</option>
+                  <option value={7}>Domingo</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Inicio</label>
+                  <input
+                    type="time"
+                    value={sessionStart}
+                    onChange={e => setSessionStart(e.target.value)}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Fin</label>
+                  <input
+                    type="time"
+                    value={sessionEnd}
+                    onChange={e => setSessionEnd(e.target.value)}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">Aula / Salón (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Aula 301"
+                  value={sessionRoom}
+                  onChange={e => setSessionRoom(e.target.value)}
+                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSessionGlobalModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-slate-950 bg-[#C5A059] hover:bg-amber-600 rounded-xl"
+                >
+                  Guardar Sesión
                 </button>
               </div>
             </form>
@@ -1652,7 +2432,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               <div className="flex justify-between items-center pt-3 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => handleDeleteSession(editingSessionData.subjectId, editingSessionData.session.id)}
+                  onClick={() => handleDeleteSession(editingSessionData.subjectId, editingSessionData.session.id, getDayOfWeekName(editingSessionData.session.day))}
                   className="px-3 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/20 rounded-xl border border-rose-500/30"
                 >
                   Eliminar Sesión
@@ -1679,60 +2459,202 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* ========================================================= */}
-      {/* MODAL EDITAR CORTE                                         */}
+      {/* MODAL CORTE (CREAR / EDITAR)                              */}
       {/* ========================================================= */}
-      {editingCut && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <h3 className="text-base font-serif font-bold text-white">Editar Corte de Evaluación</h3>
-              <button onClick={() => setEditingCut(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+      {showCutModal && (() => {
+        const targetSubject = subjects.find(s => s.id === cutSubjectId);
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-base font-serif font-bold text-white">
+                  {editingCut ? 'Editar Corte de Evaluación' : 'Crear Corte de Evaluación'}
+                </h3>
+                <button onClick={() => setShowCutModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCut} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre del Corte *</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Corte 1, Parcial Final"
+                    value={cutName}
+                    onChange={e => setCutName(e.target.value)}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Peso en la asignatura (%) *</label>
+                  <input
+                    type="number"
+                    value={cutWeight}
+                    onChange={e => setCutWeight(Number(e.target.value))}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono"
+                    required
+                  />
+                </div>
+
+                {/* Live Real-time Distribution Feedback */}
+                <CutsDistributionBar
+                  cuts={targetSubject?.cuts || []}
+                  proposedCutWeight={{
+                    cutId: editingCut?.cut.id,
+                    weight: Number(cutWeight) || 0
+                  }}
+                />
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowCutModal(false)}
+                    className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-xs font-bold text-slate-950 bg-[#C5A059] hover:bg-amber-600 rounded-xl"
+                  >
+                    Guardar Corte
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleSaveCutEdit} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Nombre del Corte</label>
-                <input
-                  type="text"
-                  value={editCutName}
-                  onChange={e => setEditCutName(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Peso en la asignatura (%)</label>
-                <input
-                  type="number"
-                  value={editCutWeight}
-                  onChange={e => setEditCutWeight(Number(e.target.value))}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setEditingCut(null)}
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-slate-950 bg-[#C5A059] hover:bg-amber-600 rounded-xl"
-                >
-                  Guardar Corte
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* ========================================================= */}
+      {/* MODAL EVALUACIÓN / ACTIVIDAD (EDITAR DETALLES & NOTA)    */}
+      {/* ========================================================= */}
+      {editingActivity && (() => {
+        const targetSubj = subjects.find(s => s.id === editingActivity.subjectId);
+        const targetCut = targetSubj?.cuts?.find(c => c.id === editingActivity.cutId);
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-base font-serif font-bold text-white">Editar Evaluación / Actividad</h3>
+                <button onClick={() => setEditingActivity(null)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveActivityEdit} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre de la Evaluación *</label>
+                  <input
+                    type="text"
+                    value={editActName}
+                    onChange={e => setEditActName(e.target.value)}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Tipo de Actividad</label>
+                    <select
+                      value={editActType}
+                      onChange={e => setEditActType(e.target.value as any)}
+                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                    >
+                      <option value="Parcial">Parcial</option>
+                      <option value="Quiz">Quiz</option>
+                      <option value="Taller">Taller</option>
+                      <option value="Laboratorio">Laboratorio</option>
+                      <option value="Exposición">Exposición</option>
+                      <option value="Proyecto">Proyecto</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Peso en Corte (%)</label>
+                    <input
+                      type="number"
+                      value={editActWeight}
+                      onChange={e => setEditActWeight(Number(e.target.value))}
+                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Fecha Programada</label>
+                    <input
+                      type="date"
+                      value={editActDate}
+                      onChange={e => setEditActDate(e.target.value)}
+                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Calificación (0.0 - 5.0)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      placeholder="Sin nota"
+                      value={editActGrade}
+                      onChange={e => setEditActGrade(e.target.value)}
+                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                {/* Live Activities Distribution Bar */}
+                {targetCut && (
+                  <ActivitiesDistributionBar
+                    activities={targetCut.activities || []}
+                    proposedActivityWeight={{
+                      actId: editingActivity.activity.id,
+                      weight: Number(editActWeight) || 0
+                    }}
+                  />
+                )}
+
+                <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteActivity(editingActivity.subjectId, editingActivity.cutId, editingActivity.activity)}
+                    className="px-3 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/20 rounded-xl border border-rose-500/30"
+                  >
+                    Eliminar Evaluación
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingActivity(null)}
+                      className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-xs font-bold text-slate-950 bg-[#C5A059] hover:bg-amber-600 rounded-xl"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
