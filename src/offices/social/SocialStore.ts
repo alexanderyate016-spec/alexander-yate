@@ -7,10 +7,53 @@ export const SocialStore = {
   },
 
   // PEOPLE
-  addPerson(person: Omit<SocialPerson, 'id' | 'tags'>) {
+  addPerson(person: Omit<SocialPerson, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'prsn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-      draft.offices.vidaSocial.people.push({ ...person, id, tags: [] });
+      draft.offices.vidaSocial.people.push({ ...person, id, tags: person.tags || [] });
+    });
+  },
+
+  updatePerson(id: string, updates: Partial<SocialPerson>) {
+    storeInstance.updateState(draft => {
+      const pIndex = draft.offices.vidaSocial.people.findIndex(p => p.id === id);
+      if (pIndex !== -1) {
+        draft.offices.vidaSocial.people[pIndex] = {
+          ...draft.offices.vidaSocial.people[pIndex],
+          ...updates
+        };
+      }
+    });
+  },
+
+  toggleFavorite(id: string) {
+    storeInstance.updateState(draft => {
+      const person = draft.offices.vidaSocial.people.find(p => p.id === id);
+      if (person) {
+        person.isFavorite = !person.isFavorite;
+      }
+    });
+  },
+
+  addCustomDate(personId: string, customDate: { title: string; date: string }) {
+    storeInstance.updateState(draft => {
+      const person = draft.offices.vidaSocial.people.find(p => p.id === personId);
+      if (person) {
+        if (!person.customDates) person.customDates = [];
+        person.customDates.push({
+          id: 'cdate_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          ...customDate
+        });
+      }
+    });
+  },
+
+  deleteCustomDate(personId: string, customDateId: string) {
+    storeInstance.updateState(draft => {
+      const person = draft.offices.vidaSocial.people.find(p => p.id === personId);
+      if (person && person.customDates) {
+        person.customDates = person.customDates.filter(cd => cd.id !== customDateId);
+      }
     });
   },
 

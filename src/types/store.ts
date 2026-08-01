@@ -258,25 +258,40 @@ export interface FinancialOfficeData {
 // -------------------------------------------------------------
 // OFICINA DE VIDA SOCIAL
 // -------------------------------------------------------------
+export interface CustomPersonDate {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD or MM-DD
+}
+
 export interface SocialPerson {
   id: string;
   name: string;
+  photoUrl?: string;
   birthday?: string; // YYYY-MM-DD
+  anniversaryDate?: string; // YYYY-MM-DD
   phone?: string;
+  email?: string;
+  address?: string;
+  profession?: string;
+  organization?: string;
   relationship: string;
-  category: 'Familia' | 'Amigos' | 'Compañeros de universidad' | 'Profesores' | 'Otros';
+  category: 'Familia' | 'Amigos' | 'Compañeros de universidad' | 'Profesores' | 'Trabajo' | 'Otros';
   importanceLevel: 'Muy importante' | 'Importante' | 'Frecuente' | 'Ocasional';
   notes?: string;
   interests?: string;
   memoryContext?: string;
   tags: string[];
+  isFavorite?: boolean;
+  customDates?: CustomPersonDate[];
 }
 
 export interface SocialInteraction {
   id: string;
   personId: string;
   date: string;
-  type: 'Conversación' | 'Llamada' | 'Reunión' | 'Mensaje' | 'Otro';
+  time?: string;
+  type: 'Conversación' | 'Llamada' | 'Reunión' | 'Mensaje' | 'Salida' | 'Clase' | 'Otro';
   description: string;
 }
 
@@ -290,6 +305,7 @@ export interface SocialCommitment {
   peopleIds: string[];
   description?: string;
   priority: 'low' | 'medium' | 'high';
+  type?: 'Reunión' | 'Almuerzo' | 'Clase' | 'Llamada' | 'Celebración' | 'Salida' | 'Otro';
 }
 
 export interface SpecialDateItem {
