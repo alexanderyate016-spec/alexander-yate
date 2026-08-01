@@ -3,7 +3,30 @@ import { SocialOfficeData } from '../../types/store';
 import { SocialStore } from './SocialStore';
 import { SocialCalculations } from './SocialCalculations';
 import { getTodayDateString, getGreetingByTime } from '../../utils/dates';
-import { Users, Heart, Calendar, Plus, Trash2, MessageSquare, AlertCircle, Flag } from 'lucide-react';
+import {
+  GlassPanel,
+  ExecutiveCard,
+  ExecutiveButton,
+  ExecutiveMetricCard,
+  ExecutiveSectionHeader,
+  ExecutiveBadge,
+  ExecutiveEmptyState,
+  ExecutiveInput,
+  ExecutiveSelect,
+  ExecutiveForm,
+} from '../../components/executive';
+import {
+  Users,
+  Heart,
+  Calendar,
+  Plus,
+  Trash2,
+  MessageSquare,
+  AlertCircle,
+  Flag,
+  UserPlus,
+  Cake
+} from 'lucide-react';
 
 interface Props {
   data: SocialOfficeData;
@@ -11,7 +34,8 @@ interface Props {
 }
 
 export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
-  const [activeTab, setActiveTab] = useState<'people' | 'interactions' | 'commitments' | 'holidays'>('people');
+  const [activeTab, setActiveTab] = useState<'people' | 'interactions' | 'commitments'>('people');
+  const [searchQuery, setSearchQuery] = useState('');
   const todayStr = getTodayDateString();
   const todayMMDD = todayStr.substring(5);
 
@@ -52,6 +76,8 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
     });
     setPName('');
     setPBday('');
+    setPPhone('');
+    setPNotes('');
   };
 
   const handleCreateInteraction = (e: React.FormEvent) => {
@@ -79,180 +105,399 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
     setComTitle('');
   };
 
-  return (
-    <div className="space-y-6">
-      {/* 1. ENCABEZADO INSTITUCIONAL */}
-      <div className="bg-presidential-navy text-white p-6 rounded-lg border-b-2 border-gold-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-rose-900/60 rounded border border-rose-700/50 text-rose-300">
-              <Users className="w-6 h-6 text-gold-accent" />
-            </span>
-            <h2 className="text-2xl font-serif-presidential font-bold tracking-tight text-white">
-              Oficina de Vida Social y Relaciones
-            </h2>
-          </div>
-          <p className="text-slate-300 text-sm mt-1">
-            Agencia Superior de Coordinación de Relaciones Humanas, Fechas Patrias y Compromisos
-          </p>
-        </div>
-      </div>
+  const filteredPeople = data.people.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      {/* 2. CENTRO DE RELACIONES (EJECUTIVO) */}
-      <div className="presidential-card-gold p-5 rounded-lg space-y-3">
-        <div className="flex justify-between items-center border-b border-gold-accent/30 pb-2">
-          <h3 className="font-serif-presidential font-bold text-lg text-amber-950">
+  return (
+    <div className="space-y-6 text-slate-100 font-sans pb-12">
+      {/* 1. SECTION HEADER INSTITUCIONAL (PURPLE ACCENT) */}
+      <ExecutiveSectionHeader
+        title="Oficina de Vida Social y Relaciones"
+        subtitle="Agencia Superior de Coordinación de Relaciones Humanas, Fechas Patrias y Compromisos Social-Institucionales"
+        icon={<Users className="w-6 h-6 text-purple-400" />}
+        accentColor="purple"
+        badgeText="Relaciones & Agenda"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Buscar contactos..."
+      />
+
+      {/* 2. CENTRO DE RELACIONES EJECUTIVO */}
+      <GlassPanel accentColor="purple" padding="md">
+        <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+          <h3 className="font-serif font-bold text-white text-base sm:text-lg">
             Centro de Relaciones Ejecutivo
           </h3>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded gold-badge">
+          <ExecutiveBadge variant="solid" accentColor="purple">
             {greeting}
-          </span>
+          </ExecutiveBadge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           {/* Cumpleaños */}
-          <div className="p-3 bg-amber-50/60 border border-amber-200/60 rounded">
-            <div className="font-bold text-amber-900 text-xs uppercase mb-1">🎂 Cumpleaños Hoy</div>
+          <div className="p-3.5 bg-[#132337]/90 border border-purple-500/30 rounded-xl space-y-1">
+            <div className="font-bold text-purple-300 uppercase text-[11px] flex items-center gap-1">
+              <Cake className="w-3.5 h-3.5 text-purple-400" /> Cumpleaños Hoy
+            </div>
             {todayBdays.length === 0 ? (
-              <div className="text-xs text-slate-500">Sin cumpleaños registrados para hoy.</div>
+              <p className="text-slate-400">Sin cumpleaños registrados para hoy.</p>
             ) : (
               todayBdays.map(p => (
-                <div key={p.id} className="font-bold text-amber-950 text-xs">
-                  • {p.name} ({p.category})
+                <div key={p.id} className="font-bold text-amber-300">
+                  🎂 {p.name} ({p.category})
                 </div>
               ))
             )}
           </div>
 
-          {/* Seguimiento */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded">
-            <div className="font-bold text-slate-800 text-xs uppercase mb-1">🤝 Alertas de Seguimiento</div>
+          {/* Alertas de Seguimiento */}
+          <div className="p-3.5 bg-[#132337]/90 border border-purple-500/30 rounded-xl space-y-1">
+            <div className="font-bold text-purple-300 uppercase text-[11px] flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 text-purple-400" /> Alertas de Seguimiento
+            </div>
             {uncontacted.length === 0 ? (
-              <div className="text-xs text-slate-500">Relaciones al día.</div>
+              <p className="text-slate-400">Relaciones al día. No hay alertas.</p>
             ) : (
-              <div className="text-xs text-slate-700">
-                Hace {uncontacted[0].daysAgo} días no registras contacto con <strong>{uncontacted[0].person.name}</strong>.
-              </div>
+              <p className="text-slate-300">
+                Hace <strong className="text-purple-300">{uncontacted[0].daysAgo} días</strong> no registras contacto con <strong>{uncontacted[0].person.name}</strong>.
+              </p>
             )}
           </div>
 
-          {/* Fecha Patria */}
-          <div className="p-3 bg-blue-50/60 border border-blue-200/60 rounded">
-            <div className="font-bold text-blue-900 text-xs uppercase mb-1 flex items-center gap-1">
-              <Flag className="w-3.5 h-3.5 text-blue-700" /> Fecha Especial / Patria
+          {/* Fecha Especial / Patria */}
+          <div className="p-3.5 bg-[#132337]/90 border border-purple-500/30 rounded-xl space-y-1">
+            <div className="font-bold text-purple-300 uppercase text-[11px] flex items-center gap-1">
+              <Flag className="w-3.5 h-3.5 text-blue-400" /> Fecha Especial / Patria
             </div>
             {todayHoliday ? (
-              <div className="text-xs text-blue-950 font-bold">
+              <p className="text-blue-300 font-bold">
                 🇨🇴 {todayHoliday.title}: {todayHoliday.message}
-              </div>
+              </p>
             ) : (
-              <div className="text-xs text-slate-500">Hoy es una jornada ordinaria.</div>
+              <p className="text-slate-400">Hoy es una jornada ordinaria en el calendario patriótico.</p>
             )}
           </div>
         </div>
-      </div>
+      </GlassPanel>
 
-      {/* PESTAÑAS */}
-      <div className="border-b border-slate-200 flex space-x-4">
-        <button onClick={() => setActiveTab('people')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'people' ? 'border-rose-800 text-rose-950' : 'border-transparent text-slate-500'}`}>
+      {/* 3. TABS DE NAVEGACIÓN */}
+      <div className="flex border-b border-white/10 space-x-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('people')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'people'
+              ? 'border-purple-400 bg-purple-500/15 text-purple-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Users className="w-4 h-4" />
           Directorio de Contactos ({data.people.length})
         </button>
-        <button onClick={() => setActiveTab('interactions')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'interactions' ? 'border-rose-800 text-rose-950' : 'border-transparent text-slate-500'}`}>
+
+        <button
+          onClick={() => setActiveTab('interactions')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'interactions'
+              ? 'border-purple-400 bg-purple-500/15 text-purple-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
           Historial de Interacciones ({data.interactions.length})
         </button>
-        <button onClick={() => setActiveTab('commitments')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'commitments' ? 'border-rose-800 text-rose-950' : 'border-transparent text-slate-500'}`}>
+
+        <button
+          onClick={() => setActiveTab('commitments')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'commitments'
+              ? 'border-purple-400 bg-purple-500/15 text-purple-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
           Compromisos Sociales ({data.commitments.length})
         </button>
       </div>
 
-      {/* TAB 1: PERSONAS */}
+      {/* TAB 1: DIRECTORIO DE CONTACTOS */}
       {activeTab === 'people' && (
         <div className="space-y-6">
-          <form onSubmit={handleCreatePerson} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Nombre completo *" value={pName} onChange={e => setPName(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1 min-w-[180px]" required />
-            <select value={pCat} onChange={e => setPCat(e.target.value as any)} className="text-xs p-2 border rounded bg-white">
-              <option value="Familia">Familia</option>
-              <option value="Amigos">Amigos</option>
-              <option value="Compañeros de universidad">Compañeros de universidad</option>
-              <option value="Profesores">Profesores</option>
-              <option value="Otros">Otros</option>
-            </select>
-            <input type="date" placeholder="Cumpleaños" value={pBday} onChange={e => setPBday(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <button type="submit" className="text-xs bg-rose-800 text-white font-bold px-4 py-2 rounded hover:bg-rose-700">
-              + Registrar Persona
-            </button>
-          </form>
+          <GlassPanel accentColor="purple" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-purple-400" />
+              Registrar Nuevo Contacto
+            </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.people.map(p => (
-              <div key={p.id} className="presidential-card p-4 rounded-lg space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-slate-900 text-base">{p.name}</div>
-                    <div className="text-xs text-slate-500">{p.category} | {p.importanceLevel}</div>
-                  </div>
-                  <button onClick={() => SocialStore.deletePerson(p.id)} className="text-slate-400 hover:text-rose-600 text-xs">×</button>
-                </div>
-                {p.birthday && <div className="text-xs text-rose-700 font-semibold">🎂 Cumpleaños: {p.birthday}</div>}
+            <ExecutiveForm onSubmit={handleCreatePerson}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                <ExecutiveInput
+                  label="Nombre Completo *"
+                  placeholder="Ej: Laura Gómez"
+                  value={pName}
+                  onChange={e => setPName(e.target.value)}
+                  accentColor="purple"
+                  required
+                />
+
+                <ExecutiveSelect
+                  label="Categoría"
+                  value={pCat}
+                  onChange={e => setPCat(e.target.value as any)}
+                  accentColor="purple"
+                  options={[
+                    { value: 'Familia', label: 'Familia' },
+                    { value: 'Amigos', label: 'Amigos' },
+                    { value: 'Compañeros de universidad', label: 'Compañeros de universidad' },
+                    { value: 'Profesores', label: 'Profesores' },
+                    { value: 'Otros', label: 'Otros' }
+                  ]}
+                />
+
+                <ExecutiveSelect
+                  label="Importancia / Frecuencia"
+                  value={pImp}
+                  onChange={e => setPImp(e.target.value as any)}
+                  accentColor="purple"
+                  options={[
+                    { value: 'Muy importante', label: 'Muy Importante' },
+                    { value: 'Importante', label: 'Importante' },
+                    { value: 'Frecuente', label: 'Frecuente' },
+                    { value: 'Ocasional', label: 'Ocasional' }
+                  ]}
+                />
+
+                <ExecutiveInput
+                  label="Fecha de Cumpleaños"
+                  type="date"
+                  value={pBday}
+                  onChange={e => setPBday(e.target.value)}
+                  accentColor="purple"
+                />
               </div>
-            ))}
-          </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
+                  Registrar Persona
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {filteredPeople.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Users className="w-8 h-8 text-purple-400" />}
+              title="Sin Contactos Guardados"
+              description="No hay personas o contactos guardados en el directorio de relaciones."
+              accentColor="purple"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPeople.map(p => (
+                <ExecutiveCard
+                  key={p.id}
+                  accentColor="purple"
+                  accentBorderLeft
+                  header={
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-serif font-bold text-white text-base">{p.name}</h4>
+                        <p className="text-xs text-slate-400">{p.category} • {p.importanceLevel}</p>
+                      </div>
+                      <button
+                        onClick={() => SocialStore.deletePerson(p.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  }
+                >
+                  {p.birthday && (
+                    <div className="text-xs text-amber-300 font-bold mt-1">
+                      🎂 Cumpleaños: {p.birthday}
+                    </div>
+                  )}
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 2: INTERACCIONES */}
+      {/* TAB 2: HISTORIAL DE INTERACCIONES */}
       {activeTab === 'interactions' && (
         <div className="space-y-6">
-          <form onSubmit={handleCreateInteraction} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <select value={intPersonId} onChange={e => setIntPersonId(e.target.value)} className="text-xs p-2 border rounded bg-white" required>
-              <option value="">Seleccionar Persona...</option>
-              {data.people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <input type="text" placeholder="Descripción de la interacción..." value={intDesc} onChange={e => setIntDesc(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1 min-w-[200px]" required />
-            <button type="submit" className="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded hover:bg-slate-800">
-              + Registrar Interacción
-            </button>
-          </form>
+          <GlassPanel accentColor="purple" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-purple-400" />
+              Registrar Interacción o Conversación
+            </h3>
 
-          <div className="space-y-2">
-            {data.interactions.map(i => {
-              const person = data.people.find(p => p.id === i.personId);
-              return (
-                <div key={i.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center text-xs">
-                  <div>
-                    <span className="font-bold text-slate-900">{person?.name || 'Contacto'}</span>: {i.description}
-                    <span className="text-slate-400 ml-2">[{i.date}]</span>
-                  </div>
-                  <button onClick={() => SocialStore.deleteInteraction(i.id)} className="text-slate-400 hover:text-rose-600">×</button>
+            <ExecutiveForm onSubmit={handleCreateInteraction}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <ExecutiveSelect
+                  label="Persona *"
+                  value={intPersonId}
+                  onChange={e => setIntPersonId(e.target.value)}
+                  accentColor="purple"
+                  required
+                  options={[
+                    { value: '', label: '-- Seleccionar Persona --' },
+                    ...data.people.map(p => ({ value: p.id, label: p.name }))
+                  ]}
+                />
+
+                <ExecutiveSelect
+                  label="Tipo de Interacción"
+                  value={intType}
+                  onChange={e => setIntType(e.target.value as any)}
+                  accentColor="purple"
+                  options={[
+                    { value: 'Llamada', label: 'Llamada' },
+                    { value: 'Conversación', label: 'Conversación presencial' },
+                    { value: 'Reunión', label: 'Reunión' },
+                    { value: 'Mensaje', label: 'Mensaje' },
+                    { value: 'Otro', label: 'Otro' }
+                  ]}
+                />
+
+                <div className="sm:col-span-1 lg:col-span-2">
+                  <ExecutiveInput
+                    label="Descripción de la Interacción *"
+                    placeholder="Ej: Conversación sobre proyectos o almuerzo"
+                    value={intDesc}
+                    onChange={e => setIntDesc(e.target.value)}
+                    accentColor="purple"
+                    required
+                  />
                 </div>
-              );
-            })}
-          </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
+                  Guardar Interacción
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.interactions.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<MessageSquare className="w-8 h-8 text-purple-400" />}
+              title="Sin Interacciones Registradas"
+              description="No hay un historial de llamadas, mensajes o conversaciones registradas."
+              accentColor="purple"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.interactions.map(i => {
+                const person = data.people.find(p => p.id === i.personId);
+
+                return (
+                  <ExecutiveCard key={i.id} accentColor="purple">
+                    <div className="flex justify-between items-center text-xs">
+                      <div>
+                        <h4 className="font-serif font-bold text-white text-sm">
+                          {person?.name || 'Contacto'} <span className="text-xs text-purple-300 font-sans font-normal">[{i.type}]</span>
+                        </h4>
+                        <p className="text-slate-300">{i.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-slate-400 font-mono text-[11px]">{i.date}</span>
+                        <button
+                          onClick={() => SocialStore.deleteInteraction(i.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </ExecutiveCard>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 3: COMPROMISOS */}
+      {/* TAB 3: COMPROMISOS SOCIALES */}
       {activeTab === 'commitments' && (
-        <div className="space-y-4">
-          <form onSubmit={handleCreateCommitment} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Compromiso (Ej: Reunión con compañeros)" value={comTitle} onChange={e => setComTitle(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1 min-w-[180px]" required />
-            <input type="date" value={comDate} onChange={e => setComDate(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <input type="time" value={comStart} onChange={e => setComStart(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <button type="submit" className="text-xs bg-blue-900 text-white font-bold px-4 py-2 rounded hover:bg-blue-800">
-              + Crear Compromiso
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="purple" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-purple-400" />
+              Crear Compromiso Social
+            </h3>
 
-          <div className="space-y-2">
-            {data.commitments.map(c => (
-              <div key={c.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center text-xs">
-                <div>
-                  <span className="font-bold text-slate-900">{c.title}</span> - {c.date} a las {c.startTime}
+            <ExecutiveForm onSubmit={handleCreateCommitment}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Título del Compromiso *"
+                    placeholder="Ej: Cena de graduación o reunión de grupo"
+                    value={comTitle}
+                    onChange={e => setComTitle(e.target.value)}
+                    accentColor="purple"
+                    required
+                  />
                 </div>
-                <button onClick={() => SocialStore.deleteCommitment(c.id)} className="text-slate-400 hover:text-rose-600">×</button>
+
+                <ExecutiveInput
+                  label="Fecha"
+                  type="date"
+                  value={comDate}
+                  onChange={e => setComDate(e.target.value)}
+                  accentColor="purple"
+                />
+
+                <ExecutiveInput
+                  label="Hora"
+                  type="time"
+                  value={comStart}
+                  onChange={e => setComStart(e.target.value)}
+                  accentColor="purple"
+                />
               </div>
-            ))}
-          </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
+                  Guardar Compromiso
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.commitments.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Calendar className="w-8 h-8 text-purple-400" />}
+              title="Sin Compromisos Agendados"
+              description="No hay compromisos o eventos sociales agendados."
+              accentColor="purple"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.commitments.map(c => (
+                <ExecutiveCard key={c.id} accentColor="purple">
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-serif font-bold text-white text-sm">{c.title}</h4>
+                      <p className="text-slate-400 font-mono">Fecha: {c.date} a las {c.startTime}</p>
+                    </div>
+
+                    <button
+                      onClick={() => SocialStore.deleteCommitment(c.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

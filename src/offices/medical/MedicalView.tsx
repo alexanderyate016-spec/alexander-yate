@@ -3,7 +3,32 @@ import { MedicalOfficeData } from '../../types/store';
 import { MedicalStore } from './MedicalStore';
 import { MedicalCalculations } from './MedicalCalculations';
 import { getTodayDateString } from '../../utils/dates';
-import { Stethoscope, Heart, Activity, Plus, Trash2, Calendar, ShieldCheck, Droplet, Moon, Scale } from 'lucide-react';
+import {
+  GlassPanel,
+  ExecutiveCard,
+  ExecutiveButton,
+  ExecutiveMetricCard,
+  ExecutiveSectionHeader,
+  ExecutiveBadge,
+  ExecutiveEmptyState,
+  ExecutiveInput,
+  ExecutiveSelect,
+  ExecutiveForm,
+} from '../../components/executive';
+import {
+  Stethoscope,
+  Heart,
+  Activity,
+  Plus,
+  Trash2,
+  Calendar,
+  ShieldCheck,
+  Droplet,
+  Moon,
+  Scale,
+  Pill,
+  AlertTriangle
+} from 'lucide-react';
 
 interface Props {
   data: MedicalOfficeData;
@@ -11,6 +36,7 @@ interface Props {
 
 export const MedicalView: React.FC<Props> = ({ data }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'meds' | 'appointments' | 'vaccines'>('daily');
+  const [searchQuery, setSearchQuery] = useState('');
   const todayStr = getTodayDateString();
 
   // Daily log state
@@ -62,6 +88,8 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
       startDate: todayStr
     });
     setMedName('');
+    setMedDose('');
+    setMedSchedule('');
   };
 
   const handleCreateApt = (e: React.FormEvent) => {
@@ -74,6 +102,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
       startTime: aptStart
     });
     setAptTitle('');
+    setAptSpec('');
   };
 
   const handleCreateVac = (e: React.FormEvent) => {
@@ -90,182 +119,414 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. ENCABEZADO INSTITUCIONAL */}
-      <div className="bg-presidential-navy text-white p-6 rounded-lg border-b-2 border-gold-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-emerald-900/60 rounded border border-emerald-700/50 text-emerald-300">
-              <Stethoscope className="w-6 h-6 text-gold-accent" />
-            </span>
-            <h2 className="text-2xl font-serif-presidential font-bold tracking-tight text-white">
-              Oficina Médica y Salud Personal
-            </h2>
-          </div>
-          <p className="text-slate-300 text-sm mt-1">
-            Agencia Superior de Salud, Registro Físico, Medicamentos e Inmunizaciones
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 text-slate-100 font-sans pb-12">
+      {/* 1. SECTION HEADER INSTITUCIONAL (ROSO VINO ACCENT) */}
+      <ExecutiveSectionHeader
+        title="Oficina Médica y Salud Personal"
+        subtitle="Agencia Superior de Salud, Registro Físico, Control Farmacéutico e Inmunizaciones"
+        icon={<Stethoscope className="w-6 h-6 text-rose-400" />}
+        accentColor="rose"
+        badgeText="Salud & Bienestar"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Buscar en registros..."
+      />
 
-      {/* 2. PANEL GENERAL CON ALERTAS */}
+      {/* 2. DASHBOARD DE INDICADORES DE SALUD Y ALERTAS REALES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Último Peso</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
-            {metrics.weight !== null ? `${metrics.weight} kg` : 'N/R'}
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Último Peso Registrado"
+          value={metrics.weight !== null ? `${metrics.weight} kg` : 'Sin datos'}
+          subtitle="Métrica de peso corporal"
+          icon={<Scale className="w-5 h-5 text-rose-300" />}
+          accentColor="rose"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Horas de Sueño</div>
-          <div className="text-2xl font-bold text-blue-900 mt-1">
-            {metrics.sleep !== null ? `${metrics.sleep} hrs` : 'N/R'}
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Horas de Sueño"
+          value={metrics.sleep !== null ? `${metrics.sleep} hrs` : 'Sin datos'}
+          subtitle="Descanso acumulado"
+          icon={<Moon className="w-5 h-5 text-indigo-300" />}
+          accentColor="rose"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hidratación</div>
-          <div className="text-2xl font-bold text-cyan-600 mt-1">
-            {metrics.hydrationLiters !== null ? `${metrics.hydrationLiters.toFixed(1)} L` : 'N/R'}
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Nivel de Hidratación"
+          value={metrics.hydrationLiters !== null ? `${metrics.hydrationLiters.toFixed(1)} L` : 'Sin datos'}
+          subtitle="Consumo diario de agua"
+          icon={<Droplet className="w-5 h-5 text-cyan-300" />}
+          accentColor="rose"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Citas Pendientes</div>
-          <div className="text-2xl font-bold text-emerald-700 mt-1">
-            {data.appointments.length}
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Citas Médicas Pendientes"
+          value={data.appointments.length}
+          subtitle="Programadas en agenda"
+          icon={<Calendar className="w-5 h-5 text-rose-400" />}
+          accentColor="rose"
+        />
       </div>
 
       {alerts.length > 0 && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
-          <div className="font-bold text-amber-900 text-xs uppercase">Alertas de Salud Informativas</div>
-          {alerts.map((al, idx) => <div key={idx} className="text-xs text-amber-950">{al}</div>)}
-        </div>
+        <GlassPanel accentColor="rose" padding="sm" className="bg-rose-950/30 border-rose-500/40">
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertTriangle className="w-4 h-4 text-rose-400" />
+            <h4 className="font-serif font-bold text-rose-300 text-xs uppercase tracking-wider">
+              Alertas del Sistema Médico
+            </h4>
+          </div>
+          <div className="space-y-1">
+            {alerts.map((al, idx) => (
+              <p key={idx} className="text-xs text-rose-200">{al}</p>
+            ))}
+          </div>
+        </GlassPanel>
       )}
 
-      {/* PESTAÑAS */}
-      <div className="border-b border-slate-200 flex space-x-4">
-        <button onClick={() => setActiveTab('daily')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'daily' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500'}`}>
+      {/* 3. TABS DE NAVEGACIÓN DE LA OFICINA */}
+      <div className="flex border-b border-white/10 space-x-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('daily')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'daily'
+              ? 'border-rose-400 bg-rose-500/15 text-rose-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
           Salud Diaria ({data.healthRecords.length})
         </button>
-        <button onClick={() => setActiveTab('meds')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'meds' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500'}`}>
+
+        <button
+          onClick={() => setActiveTab('meds')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'meds'
+              ? 'border-rose-400 bg-rose-500/15 text-rose-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Pill className="w-4 h-4" />
           Medicamentos ({data.medications.length})
         </button>
-        <button onClick={() => setActiveTab('appointments')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'appointments' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500'}`}>
+
+        <button
+          onClick={() => setActiveTab('appointments')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'appointments'
+              ? 'border-rose-400 bg-rose-500/15 text-rose-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
           Citas Médicas ({data.appointments.length})
         </button>
-        <button onClick={() => setActiveTab('vaccines')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'vaccines' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500'}`}>
-          Inmunizaciones / Vacunas ({data.immunizations.length})
+
+        <button
+          onClick={() => setActiveTab('vaccines')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'vaccines'
+              ? 'border-rose-400 bg-rose-500/15 text-rose-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Inmunizaciones ({data.immunizations.length})
         </button>
       </div>
 
       {/* TAB 1: SALUD DIARIA */}
       {activeTab === 'daily' && (
         <div className="space-y-6">
-          <form onSubmit={handleSaveHealthRecord} className="presidential-card p-5 rounded-lg grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Peso (kg)</label>
-              <input type="number" step="0.1" placeholder="Ej: 72.5" value={weight} onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))} className="w-full text-xs p-2 border rounded bg-white" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Sueño (horas)</label>
-              <input type="number" step="0.5" placeholder="Ej: 7.5" value={sleep} onChange={e => setSleep(e.target.value === '' ? '' : Number(e.target.value))} className="w-full text-xs p-2 border rounded bg-white" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Agua (Vasos)</label>
-              <input type="number" placeholder="Ej: 8 vasos" value={waterGlasses} onChange={e => setWaterGlasses(e.target.value === '' ? '' : Number(e.target.value))} className="w-full text-xs p-2 border rounded bg-white" />
-            </div>
-            <button type="submit" className="bg-emerald-800 text-white font-bold text-xs p-2 rounded hover:bg-emerald-700">
-              + Registrar Día
-            </button>
-          </form>
+          <GlassPanel accentColor="rose" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-rose-400" />
+              Registrar Indicadores Físicos del Día
+            </h3>
 
-          <div className="space-y-2">
-            {data.healthRecords.map(r => (
-              <div key={r.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between text-xs">
-                <div>
-                  <span className="font-bold text-slate-900">{r.date}</span>: Peso {r.weightKg || 'N/R'}kg | Sueño {r.sleepHours || 'N/R'}hrs | Agua {r.hydrationGlasses || 'N/R'} vasos ({((r.hydrationGlasses || 0) * 0.25).toFixed(1)}L)
+            <ExecutiveForm onSubmit={handleSaveHealthRecord}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <ExecutiveInput
+                  label="Peso Corporal (kg)"
+                  type="number"
+                  step="0.1"
+                  placeholder="Ej: 72.5"
+                  value={weight}
+                  onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="rose"
+                  icon={<Scale className="w-4 h-4" />}
+                />
+
+                <ExecutiveInput
+                  label="Sueño (horas)"
+                  type="number"
+                  step="0.5"
+                  placeholder="Ej: 7.5"
+                  value={sleep}
+                  onChange={e => setSleep(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="rose"
+                  icon={<Moon className="w-4 h-4" />}
+                />
+
+                <ExecutiveInput
+                  label="Hidratación (Vasos)"
+                  type="number"
+                  placeholder="Ej: 8 vasos"
+                  value={waterGlasses}
+                  onChange={e => setWaterGlasses(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="rose"
+                  icon={<Droplet className="w-4 h-4" />}
+                  helperText="1 vaso ≈ 250ml"
+                />
+
+                <div className="flex justify-end">
+                  <ExecutiveButton type="submit" variant="primary" accentColor="rose" icon={<Plus className="w-4 h-4" />}>
+                    Guardar Registro
+                  </ExecutiveButton>
                 </div>
               </div>
-            ))}
-          </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.healthRecords.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Heart className="w-8 h-8 text-rose-400" />}
+              title="Sin Registros Diarios"
+              description="No hay registros físicos de peso, sueño u hidratación guardados."
+              accentColor="rose"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.healthRecords.map(r => (
+                <ExecutiveCard key={r.id} accentColor="rose">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                    <span className="font-serif font-bold text-white text-sm">{r.date}</span>
+                    <div className="flex flex-wrap gap-3 font-mono text-slate-300">
+                      <span>⚖️ Peso: <strong className="text-rose-300">{r.weightKg ? `${r.weightKg} kg` : 'N/R'}</strong></span>
+                      <span>🌙 Sueño: <strong className="text-indigo-300">{r.sleepHours ? `${r.sleepHours} hrs` : 'N/R'}</strong></span>
+                      <span>💧 Agua: <strong className="text-cyan-300">{r.hydrationGlasses ? `${r.hydrationGlasses} vasos (${((r.hydrationGlasses || 0) * 0.25).toFixed(1)}L)` : 'N/R'}</strong></span>
+                    </div>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 2: MEDICAMENTOS */}
       {activeTab === 'meds' && (
-        <div className="space-y-4">
-          <form onSubmit={handleCreateMed} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Medicamento *" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1" required />
-            <input type="text" placeholder="Dosis (Ej: 500mg)" value={medDose} onChange={e => setMedDose(e.target.value)} className="text-xs p-2 border rounded bg-white w-28" />
-            <input type="text" placeholder="Horario (Ej: Cada 8h)" value={medSchedule} onChange={e => setMedSchedule(e.target.value)} className="text-xs p-2 border rounded bg-white w-32" />
-            <button type="submit" className="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded hover:bg-slate-800">
-              + Registrar
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="rose" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-rose-400" />
+              Registrar Medicamento / Tratamiento
+            </h3>
 
-          <div className="space-y-2">
-            {data.medications.map(m => (
-              <div key={m.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center text-xs">
-                <div>
-                  <span className="font-bold text-slate-900">{m.name}</span> - {m.dose} ({m.schedule})
+            <ExecutiveForm onSubmit={handleCreateMed}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <ExecutiveInput
+                  label="Nombre del Medicamento *"
+                  placeholder="Ej: Ibuprofeno / Vitamina D"
+                  value={medName}
+                  onChange={e => setMedName(e.target.value)}
+                  accentColor="rose"
+                  required
+                />
+
+                <ExecutiveInput
+                  label="Dosis"
+                  placeholder="Ej: 500mg / 1 cápsula"
+                  value={medDose}
+                  onChange={e => setMedDose(e.target.value)}
+                  accentColor="rose"
+                />
+
+                <ExecutiveInput
+                  label="Horario / Frecuencia"
+                  placeholder="Ej: Cada 8 horas"
+                  value={medSchedule}
+                  onChange={e => setMedSchedule(e.target.value)}
+                  accentColor="rose"
+                />
+
+                <div className="flex justify-end">
+                  <ExecutiveButton type="submit" variant="primary" accentColor="rose" icon={<Plus className="w-4 h-4" />}>
+                    Guardar Medicamento
+                  </ExecutiveButton>
                 </div>
-                <button onClick={() => MedicalStore.deleteMedication(m.id)} className="text-slate-400 hover:text-rose-600">×</button>
               </div>
-            ))}
-          </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.medications.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Pill className="w-8 h-8 text-rose-400" />}
+              title="Sin Medicamentos Activos"
+              description="No hay tratamientos o medicamentos guardados en el botiquín oficial."
+              accentColor="rose"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.medications.map(m => (
+                <ExecutiveCard key={m.id} accentColor="rose">
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-serif font-bold text-white text-sm">{m.name}</h4>
+                      <p className="text-slate-400 font-mono">Dosis: {m.dose} • Frecuencia: {m.schedule}</p>
+                    </div>
+                    <button
+                      onClick={() => MedicalStore.deleteMedication(m.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 3: CITAS MÉDICAS */}
       {activeTab === 'appointments' && (
-        <div className="space-y-4">
-          <form onSubmit={handleCreateApt} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Cita Médica *" value={aptTitle} onChange={e => setAptTitle(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1" required />
-            <input type="text" placeholder="Especialidad" value={aptSpec} onChange={e => setAptSpec(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <input type="date" value={aptDate} onChange={e => setAptDate(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <input type="time" value={aptStart} onChange={e => setAptStart(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <button type="submit" className="text-xs bg-emerald-800 text-white font-bold px-4 py-2 rounded hover:bg-emerald-700">
-              + Agendar Cita
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="rose" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-rose-400" />
+              Agendar Cita Médica
+            </h3>
 
-          <div className="space-y-2">
-            {data.appointments.map(a => (
-              <div key={a.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center text-xs">
-                <div>
-                  <span className="font-bold text-slate-900">{a.title}</span> ({a.specialty}) - {a.date} a las {a.startTime}
-                </div>
-                <button onClick={() => MedicalStore.deleteAppointment(a.id)} className="text-slate-400 hover:text-rose-600">×</button>
+            <ExecutiveForm onSubmit={handleCreateApt}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                <ExecutiveInput
+                  label="Concepto de la Cita *"
+                  placeholder="Ej: Control Odontológico"
+                  value={aptTitle}
+                  onChange={e => setAptTitle(e.target.value)}
+                  accentColor="rose"
+                  required
+                />
+
+                <ExecutiveInput
+                  label="Especialidad"
+                  placeholder="Ej: Odontología / Cardiología"
+                  value={aptSpec}
+                  onChange={e => setAptSpec(e.target.value)}
+                  accentColor="rose"
+                />
+
+                <ExecutiveInput
+                  label="Fecha"
+                  type="date"
+                  value={aptDate}
+                  onChange={e => setAptDate(e.target.value)}
+                  accentColor="rose"
+                />
+
+                <ExecutiveInput
+                  label="Hora"
+                  type="time"
+                  value={aptStart}
+                  onChange={e => setAptStart(e.target.value)}
+                  accentColor="rose"
+                />
               </div>
-            ))}
-          </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="rose" icon={<Plus className="w-4 h-4" />}>
+                  Agendar Cita
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.appointments.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Calendar className="w-8 h-8 text-rose-400" />}
+              title="Sin Citas Agendadas"
+              description="No hay citas o consultas médicas programadas."
+              accentColor="rose"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.appointments.map(a => (
+                <ExecutiveCard key={a.id} accentColor="rose">
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-serif font-bold text-white text-sm">{a.title}</h4>
+                      <p className="text-slate-400 font-mono">Especialidad: {a.specialty} • Fecha: {a.date} a las {a.startTime}</p>
+                    </div>
+                    <button
+                      onClick={() => MedicalStore.deleteAppointment(a.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 4: VACUNAS */}
       {activeTab === 'vaccines' && (
-        <div className="space-y-4">
-          <form onSubmit={handleCreateVac} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Vacuna *" value={vacName} onChange={e => setVacName(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1" required />
-            <button type="submit" className="text-xs bg-blue-900 text-white font-bold px-4 py-2 rounded hover:bg-blue-800">
-              + Registrar Vacuna
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="rose" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-rose-400" />
+              Registrar Vacuna / Inmunización
+            </h3>
 
-          <div className="space-y-2">
-            {data.immunizations.map(v => (
-              <div key={v.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center text-xs">
-                <div>
-                  <span className="font-bold text-slate-900">{v.name}</span> - Dosis aplicadas: {v.dosesReceived} / {v.dosesRequired}
+            <ExecutiveForm onSubmit={handleCreateVac}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div className="sm:col-span-2">
+                  <ExecutiveInput
+                    label="Nombre de la Vacuna *"
+                    placeholder="Ej: Influenza / Fiebre Amarilla"
+                    value={vacName}
+                    onChange={e => setVacName(e.target.value)}
+                    accentColor="rose"
+                    required
+                  />
                 </div>
-                <button onClick={() => MedicalStore.deleteImmunization(v.id)} className="text-slate-400 hover:text-rose-600">×</button>
+
+                <ExecutiveButton type="submit" variant="primary" accentColor="rose" icon={<Plus className="w-4 h-4" />}>
+                  Registrar Inmunización
+                </ExecutiveButton>
               </div>
-            ))}
-          </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.immunizations.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<ShieldCheck className="w-8 h-8 text-rose-400" />}
+              title="Sin Registro de Vacunas"
+              description="No hay vacunas o inmunizaciones registradas en la cartilla de salud."
+              accentColor="rose"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.immunizations.map(v => (
+                <ExecutiveCard key={v.id} accentColor="rose">
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-serif font-bold text-white text-sm">{v.name}</h4>
+                      <p className="text-slate-400 font-mono">Doses Aplicadas: {v.dosesReceived} / {v.dosesRequired}</p>
+                    </div>
+                    <button
+                      onClick={() => MedicalStore.deleteImmunization(v.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,22 @@
 import { AcademicSubject, AcademicSemester } from '../../types/store';
 import { getDayOfWeekNumber } from '../../utils/dates';
 
+export interface EvaluationItem {
+  subjectId: string;
+  cutId: string;
+  activityId: string;
+  subjectName: string;
+  subjectColor: string;
+  cutName: string;
+  activityName: string;
+  activityType: string;
+  activityDate: string;
+  weightPercent: number;
+  grade?: number;
+  status: 'pending' | 'graded';
+  daysDiff: number; // 0 = today, 1 = tomorrow, etc.
+}
+
 export const AcademicCalculations = {
   calculateSubjectAverage(subject: AcademicSubject): { average: number; totalGradedWeight: number; hasGrades: boolean } {
     if (!subject.cuts || subject.cuts.length === 0) {
@@ -13,8 +29,6 @@ export const AcademicCalculations = {
     subject.cuts.forEach(cut => {
       cut.activities.forEach(act => {
         if (act.status === 'graded' && act.grade !== undefined && act.grade !== null) {
-          // Weight of this activity relative to the subject overall = (cut.cutWeightPercent / 100) * (act.weightPercent / 100)
-          // Simplified: cut.cutWeightPercent * (act.weightPercent / 100)
           const effWeight = (cut.cutWeightPercent * act.weightPercent) / 100;
           weightedSum += act.grade * effWeight;
           totalGradedWeight += effWeight;
@@ -73,9 +87,6 @@ export const AcademicCalculations = {
       return { requiredGrade: 0, remainingWeight: 0, achievable: average >= targetGrade };
     }
 
-    // Needed total points = targetGrade * 100
-    // Current points accumulated = average * totalGradedWeight
-    // Needed remaining points = (targetGrade * 100) - (average * totalGradedWeight)
     const neededPoints = (targetGrade * 100) - (average * totalGradedWeight);
     const requiredGrade = neededPoints / remainingWeight;
 
@@ -86,19 +97,32 @@ export const AcademicCalculations = {
     };
   },
 
+  calculateSemesterProgress(semester?: AcademicSemester): number {
+    if (!semester || !semester.startDate || !semester.endDate) return 0;
+    const start = new Date(semester.startDate).getTime();
+    const end = new Date(semester.endDate).getTime();
+    const now = new Date().getTime();
+
+    if (end <= start) return 0;
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+
+    const progress = ((now - start) / (end - start)) * 100;
+    return Math.min(100, Math.max(0, Math.round(progress)));
+  },
+
   getTodayClasses(subjects: AcademicSubject[], dateStr: string) {
     const dayNum = getDayOfWeekNumber(dateStr);
     const result: Array<{ subject: AcademicSubject; session: any }> = [];
 
     subjects.forEach(sub => {
-      sub.scheduleSessions.forEach(ses => {
+      sub.scheduleSessions?.forEach(ses => {
         if (ses.day === dayNum) {
           result.push({ subject: sub, session: ses });
         }
       });
     });
 
-    // Sort by startTime
     result.sort((a, b) => a.session.startTime.localeCompare(b.session.startTime));
     return result;
   },
@@ -124,5 +148,96 @@ export const AcademicCalculations = {
 
     evals.sort((a, b) => a.activity.date.localeCompare(b.activity.date));
     return evals.slice(0, limit);
+  },
+
+  getGroupedEvaluations(subjects: AcademicSubject[], todayStr: string) {
+    const todayMs = new Date(todayStr + 'T00:00:00').getTime();
+    const items: EvaluationItem[] = [];
+
+    subjects.forEach(sub => {
+      sub.cuts?.forEach(cut => {
+        cut.activities.forEach(act => {
+          if (act.status === 'pending') {
+            const actMs = new Date(act.date + 'T00:00:00').getTime();
+            const daysDiff = Math.round((actMs - todayMs) / (1000 * 60 * 60 * 24));
+            
+            items.push({
+              subjectId: sub.id,
+              cutId: cut.id,
+              activityId: act.id,
+              subjectName: sub.name,
+              subjectColor: sub.color,
+              cutName: cut.cutName,
+              activityName: act.name,
+              activityType: act.type,
+              activityDate: act.date,
+              weightPercent: act.weightPercent,
+              status: act.status,
+              daysDiff
+            });
+          }
+        });
+      });
+    });
+
+    items.sort((a, b) => a.activityDate.localeCompare(b.activityDate));
+
+    const today = items.filter(i => i.daysDiff === 0);
+    const tomorrow = items.filter(i => i.daysDiff === 1);
+    const thisWeek = items.filter(i => i.daysDiff >= 2 && i.daysDiff <= 7);
+    const later = items.filter(i => i.daysDiff > 7 || i.daysDiff < 0);
+
+    return { today, tomorrow, thisWeek, later, total: items.length };
+  },
+
+  getAcademicGoalMessage(subjects: AcademicSubject[], targetGrade: number = 4.0): string {
+    if (!subjects || subjects.length === 0) {
+      return "Registra tus materias y cortes para calcular tu objetivo académico dinámico.";
+    }
+
+    // Find the subject with pending evaluations closest to target
+    let bestGoal = "";
+    for (const sub of subjects) {
+      const { average, totalGradedWeight, hasGrades } = this.calculateSubjectAverage(sub);
+      const { requiredGrade, remainingWeight, achievable } = this.calculateRequiredGradeToPass(sub, targetGrade);
+
+      if (remainingWeight > 0) {
+        if (achievable && requiredGrade > 0) {
+          const reqStr = (Math.round(requiredGrade * 10) / 10).toFixed(1);
+          bestGoal = `Necesitas ${reqStr} en la próxima evaluación de "${sub.name}" para terminar la materia con ${targetGrade.toFixed(1)}.`;
+          break;
+        } else if (!achievable) {
+          const passReq = this.calculateRequiredGradeToPass(sub, 3.0);
+          if (passReq.achievable) {
+            const reqStr = (Math.round(passReq.requiredGrade * 10) / 10).toFixed(1);
+            bestGoal = `En "${sub.name}" necesitas ${reqStr} en lo restante para aprobar con 3.0.`;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!bestGoal) {
+      // General GPA status message
+      const avgGPA = this.calculateSemesterGPA(subjects[0]?.semesterId || '', subjects);
+      if (avgGPA > 0) {
+        bestGoal = `Tu promedio actual del semestre es ${avgGPA.toFixed(2)}. Mantén el rendimiento para alcanzar tus metas.`;
+      } else {
+        bestGoal = "Ingresa las notas de tus actividades para calcular los promedios y metas de aprobación.";
+      }
+    }
+
+    return bestGoal;
+  },
+
+  getSubjectStatus(subject: AcademicSubject): { status: 'Aprobada' | 'En Riesgo' | 'En Cursado'; average: number; hasGrades: boolean } {
+    const { average, totalGradedWeight, hasGrades } = this.calculateSubjectAverage(subject);
+    if (!hasGrades) {
+      return { status: 'En Cursado', average: 0, hasGrades: false };
+    }
+    if (average >= 3.0) {
+      return { status: 'Aprobada', average, hasGrades: true };
+    }
+    return { status: 'En Riesgo', average, hasGrades: true };
   }
 };

@@ -3,19 +3,45 @@ import { DailyLifeOfficeData } from '../../types/store';
 import { DailyLifeStore } from './DailyLifeStore';
 import { DailyLifeCalculations } from './DailyLifeCalculations';
 import { getTodayDateString } from '../../utils/dates';
-import { CheckSquare, Flame, Clock, Plus, Trash2, Calendar, Target, Activity, Check } from 'lucide-react';
+import {
+  GlassPanel,
+  ExecutiveCard,
+  ExecutiveButton,
+  ExecutiveMetricCard,
+  ExecutiveSectionHeader,
+  ExecutiveBadge,
+  ExecutiveEmptyState,
+  ExecutiveInput,
+  ExecutiveSelect,
+  ExecutiveForm,
+} from '../../components/executive';
+import {
+  CheckSquare,
+  Flame,
+  Clock,
+  Plus,
+  Trash2,
+  Calendar,
+  Target,
+  Activity,
+  Check,
+  Zap,
+  ListTodo,
+  Smile
+} from 'lucide-react';
 
 interface Props {
   data: DailyLifeOfficeData;
 }
 
 export const DailyLifeView: React.FC<Props> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<'habits' | 'tasks' | 'timePlan' | 'routines' | 'objectives'>('habits');
+  const [activeTab, setActiveTab] = useState<'habits' | 'timePlan' | 'tasks' | 'objectives'>('habits');
+  const [searchQuery, setSearchQuery] = useState('');
   const todayStr = getTodayDateString();
 
   // New Habit State
   const [newHabitName, setNewHabitName] = useState('');
-  const [newHabitColor, setNewHabitColor] = useState('#10B981');
+  const [newHabitColor, setNewHabitColor] = useState('#F59E0B');
 
   // New Task State
   const [newTaskName, setNewTaskName] = useState('');
@@ -28,7 +54,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
   const [tplCategory, setTplCategory] = useState<'commute' | 'lunch' | 'breakfast' | 'dinner' | 'study' | 'rest' | 'gym' | 'shopping' | 'free_time' | 'personal'>('study');
   const [tplStart, setTplStart] = useState('14:00');
   const [tplDuration, setTplDuration] = useState(45);
-  const [tplColor, setTplColor] = useState('#3B82F6');
+  const [tplColor, setTplColor] = useState('#F59E0B');
 
   // New Objective State
   const [objTitle, setObjTitle] = useState('');
@@ -57,6 +83,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       startTime: newTaskStart || undefined
     });
     setNewTaskName('');
+    setNewTaskStart('');
   };
 
   const handleAddTimePlan = (e: React.FormEvent) => {
@@ -84,260 +111,333 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. ENCABEZADO INSTITUCIONAL DE LA OFICINA */}
-      <div className="bg-presidential-navy text-white p-6 rounded-lg border-b-2 border-gold-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-emerald-900/60 rounded border border-emerald-700/50 text-emerald-300">
-              <Activity className="w-6 h-6 text-gold-accent" />
-            </span>
-            <h2 className="text-2xl font-serif-presidential font-bold tracking-tight text-white">
-              Oficina de Vida Diaria
-            </h2>
-          </div>
-          <p className="text-slate-300 text-sm mt-1">
-            Agencia Superior de Organización Cotidiana, Hábitos y Planificación Personal
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 text-slate-100 font-sans pb-12">
+      {/* 1. SECTION HEADER INSTITUCIONAL (AMBER ACCENT) */}
+      <ExecutiveSectionHeader
+        title="Oficina de Vida Diaria"
+        subtitle="Agencia Superior de Organización Cotidiana, Hábitos y Planificación Personal"
+        icon={<Activity className="w-6 h-6 text-amber-400" />}
+        accentColor="amber"
+        badgeText="Hábitos & Rutinas"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Buscar en tareas o hábitos..."
+      />
 
-      {/* 2. PANEL GENERAL CON INDICADORES EJECUTIVOS */}
+      {/* 2. DASHBOARD DE METRICAS REALES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cumplimiento de Hábitos Hoy</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
-            {compliance.completed} / {compliance.total}
-          </div>
-          <div className="text-xs text-emerald-600 font-bold mt-1">
-            {compliance.percent}% de efectividad
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Efectividad de Hábitos Hoy"
+          value={`${compliance.completed} / ${compliance.total}`}
+          subtitle={`${compliance.percent}% completado`}
+          icon={<Flame className="w-5 h-5 text-amber-400" />}
+          accentColor="amber"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tareas Pendientes Hoy</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
-            {data.tasks.filter(t => t.date === todayStr && t.status === 'pending').length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            De {data.tasks.filter(t => t.date === todayStr).length} tareas programadas
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Tareas Pendientes Hoy"
+          value={data.tasks.filter(t => t.date === todayStr && t.status === 'pending').length}
+          subtitle={`De ${data.tasks.filter(t => t.date === todayStr).length} programadas`}
+          icon={<ListTodo className="w-5 h-5 text-amber-300" />}
+          accentColor="amber"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tiempo Planificado Hoy</div>
-          <div className="text-2xl font-bold text-blue-900 mt-1">
-            {Object.values(timeDist).reduce((a, b) => a + b, 0)} <span className="text-xs font-sans text-slate-500">mins</span>
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            Bloques de tiempo personales
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Tiempo Planificado Hoy"
+          value={`${Object.values(timeDist).reduce((a, b) => a + b, 0)}m`}
+          subtitle="Bloques de tiempo personales"
+          icon={<Clock className="w-5 h-5 text-amber-400" />}
+          accentColor="amber"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Objetivos del Día</div>
-          <div className="text-2xl font-bold text-amber-600 mt-1">
-            {data.objectives.filter(o => o.date === todayStr && o.status === 'completed').length} / {data.objectives.filter(o => o.date === todayStr).length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            Metas diarias completadas
-          </div>
-        </div>
+        <ExecutiveMetricCard
+          title="Objetivos Logrados Hoy"
+          value={`${data.objectives.filter(o => o.date === todayStr && o.status === 'completed').length} / ${data.objectives.filter(o => o.date === todayStr).length}`}
+          subtitle="Metas de la jornada"
+          icon={<Target className="w-5 h-5 text-amber-300" />}
+          accentColor="amber"
+        />
       </div>
 
-      {/* PESTAÑAS DE NAVEGACIÓN */}
-      <div className="border-b border-slate-200 flex space-x-4">
+      {/* 3. TABS DE NAVEGACIÓN */}
+      <div className="flex border-b border-white/10 space-x-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('habits')}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'habits' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'habits'
+              ? 'border-amber-400 bg-amber-500/15 text-amber-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
         >
-          Hábitos ({data.habits.length})
+          <Flame className="w-4 h-4" />
+          Hábitos Diarios ({data.habits.length})
         </button>
+
         <button
           onClick={() => setActiveTab('timePlan')}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'timePlan' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'timePlan'
+              ? 'border-amber-400 bg-amber-500/15 text-amber-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
         >
-          Planificación del Tiempo
+          <Clock className="w-4 h-4" />
+          Planificación del Tiempo ({data.timePlans.length})
         </button>
+
         <button
           onClick={() => setActiveTab('tasks')}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'tasks' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'tasks'
+              ? 'border-amber-400 bg-amber-500/15 text-amber-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
         >
-          Tareas Cotidianas
+          <CheckSquare className="w-4 h-4" />
+          Tareas Cotidianas ({data.tasks.length})
         </button>
+
         <button
           onClick={() => setActiveTab('objectives')}
-          className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'objectives' ? 'border-emerald-800 text-emerald-950' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+            activeTab === 'objectives'
+              ? 'border-amber-400 bg-amber-500/15 text-amber-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
         >
-          Objetivos Diarios
+          <Target className="w-4 h-4" />
+          Objetivos del Día ({data.objectives.length})
         </button>
       </div>
 
       {/* TAB 1: HÁBITOS */}
       {activeTab === 'habits' && (
         <div className="space-y-6">
-          <form onSubmit={handleAddHabit} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              placeholder="Nombre del nuevo hábito (Ej: Meditar 10 minutos)"
-              value={newHabitName}
-              onChange={e => setNewHabitName(e.target.value)}
-              className="text-xs p-2 border rounded bg-white flex-1 min-w-[200px]"
-              required
-            />
-            <input
-              type="color"
-              value={newHabitColor}
-              onChange={e => setNewHabitColor(e.target.value)}
-              className="w-10 h-8 p-1 border rounded cursor-pointer bg-white"
-            />
-            <button type="submit" className="text-xs bg-emerald-800 text-white font-bold px-4 py-2 rounded hover:bg-emerald-700">
-              + Crear Hábito
-            </button>
-          </form>
+          <GlassPanel accentColor="amber" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-amber-400" />
+              Crear Nuevo Hábito
+            </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.habits.length === 0 ? (
-              <div className="col-span-full p-8 text-center text-slate-500 bg-white rounded border border-dashed border-slate-200">
-                No hay hábitos configurados. Comienza agregando hábitos diarios.
+            <ExecutiveForm onSubmit={handleAddHabit}>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                <div className="sm:col-span-2">
+                  <ExecutiveInput
+                    label="Nombre del Hábito *"
+                    placeholder="Ej: Meditar 10 minutos / Leer 15 páginas"
+                    value={newHabitName}
+                    onChange={e => setNewHabitName(e.target.value)}
+                    accentColor="amber"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveInput
+                    label="Color del Hábito"
+                    type="color"
+                    value={newHabitColor}
+                    onChange={e => setNewHabitColor(e.target.value)}
+                    accentColor="amber"
+                  />
+                </div>
+
+                <ExecutiveButton type="submit" variant="primary" accentColor="amber" icon={<Plus className="w-4 h-4" />}>
+                  Crear Hábito
+                </ExecutiveButton>
               </div>
-            ) : (
-              data.habits.map(h => {
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.habits.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Flame className="w-8 h-8 text-amber-400" />}
+              title="Sin Hábitos Registrados"
+              description="Comienza definiendo tus hábitos personales para mantener rachas de cumplimiento diario."
+              accentColor="amber"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.habits.map(h => {
                 const isCheckedToday = Boolean(h.logs && h.logs[todayStr]);
                 const streak = DailyLifeCalculations.calculateHabitStreak(h, todayStr);
 
                 return (
-                  <div key={h.id} className="presidential-card p-4 rounded-lg flex justify-between items-center" style={{ borderLeftWidth: '4px', borderLeftColor: h.color }}>
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">{h.name}</div>
-                      <div className="flex items-center gap-1 text-xs text-amber-600 font-bold mt-1">
-                        <Flame className="w-3.5 h-3.5" /> Racha: {streak} días
+                  <ExecutiveCard
+                    key={h.id}
+                    accentColor="amber"
+                    accentBorderLeft
+                    header={
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-serif font-bold text-white text-base">{h.name}</h4>
+                          <span className="text-xs text-amber-400 font-bold flex items-center gap-1 mt-0.5">
+                            <Flame className="w-3.5 h-3.5 text-amber-400" /> Racha: {streak} días
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => DailyLifeStore.toggleHabitLog(h.id, todayStr)}
+                          className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isCheckedToday
+                              ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
+                              : 'border-white/20 hover:border-amber-400 text-slate-400'
+                          }`}
+                        >
+                          {isCheckedToday && <Check className="w-5 h-5" />}
+                        </button>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => DailyLifeStore.toggleHabitLog(h.id, todayStr)}
-                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${isCheckedToday ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 hover:border-emerald-500'}`}
-                      >
-                        {isCheckedToday && <Check className="w-5 h-5" />}
-                      </button>
-                      <button onClick={() => DailyLifeStore.deleteHabit(h.id)} className="text-slate-400 hover:text-rose-600 text-xs p-1">
-                        ×
-                      </button>
-                    </div>
-                  </div>
+                    }
+                    footer={
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => DailyLifeStore.deleteHabit(h.id)}
+                          className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                        </button>
+                      </div>
+                    }
+                  >
+                    <p className="text-xs text-slate-400">
+                      Estado hoy: <strong className={isCheckedToday ? 'text-amber-300' : 'text-slate-500'}>{isCheckedToday ? 'Completado' : 'Pendiente'}</strong>
+                    </p>
+                  </ExecutiveCard>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 2: PLANIFICACIÓN DEL TIEMPO */}
       {activeTab === 'timePlan' && (
         <div className="space-y-6">
-          <div className="presidential-card p-5 rounded-lg space-y-4">
-            <h3 className="font-serif-presidential font-bold text-slate-900 text-lg">
-              Programar Bloque Personal
+          <GlassPanel accentColor="amber" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-amber-400" />
+              Programar Bloque de Tiempo Personal
             </h3>
-            <form onSubmit={handleAddTimePlan} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
-              <div className="md:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la actividad</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Desplazamiento a Universidad"
-                  value={tplTitle}
-                  onChange={e => setTplTitle(e.target.value)}
-                  className="w-full text-xs p-2 border rounded bg-white text-slate-900"
-                  required
+
+            <ExecutiveForm onSubmit={handleAddTimePlan}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Nombre de la Actividad *"
+                    placeholder="Ej: Desplazamiento o Lectura"
+                    value={tplTitle}
+                    onChange={e => setTplTitle(e.target.value)}
+                    accentColor="amber"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveSelect
+                    label="Categoría"
+                    value={tplCategory}
+                    onChange={e => setTplCategory(e.target.value as any)}
+                    accentColor="amber"
+                    options={[
+                      { value: 'study', label: 'Estudio independiente' },
+                      { value: 'commute', label: 'Desplazamiento' },
+                      { value: 'lunch', label: 'Almuerzo' },
+                      { value: 'breakfast', label: 'Desayuno' },
+                      { value: 'dinner', label: 'Cena' },
+                      { value: 'rest', label: 'Descanso' },
+                      { value: 'gym', label: 'Gimnasio' },
+                      { value: 'shopping', label: 'Compras' },
+                      { value: 'free_time', label: 'Tiempo libre' },
+                      { value: 'personal', label: 'Actividad personal' }
+                    ]}
+                  />
+                </div>
+
+                <ExecutiveInput
+                  label="Hora de Inicio"
+                  type="time"
+                  value={tplStart}
+                  onChange={e => setTplStart(e.target.value)}
+                  accentColor="amber"
+                />
+
+                <ExecutiveSelect
+                  label="Duración"
+                  value={tplDuration}
+                  onChange={e => setTplDuration(Number(e.target.value))}
+                  accentColor="amber"
+                  options={[
+                    { value: '20', label: '20 minutos' },
+                    { value: '30', label: '30 minutos' },
+                    { value: '45', label: '45 minutos' },
+                    { value: '60', label: '1 hora' },
+                    { value: '90', label: '1.5 horas' }
+                  ]}
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Categoría</label>
-                <select value={tplCategory} onChange={e => setTplCategory(e.target.value as any)} className="w-full text-xs p-2 border rounded bg-white text-slate-900">
-                  <option value="study">Estudio independiente</option>
-                  <option value="commute">Desplazamiento</option>
-                  <option value="lunch">Almuerzo</option>
-                  <option value="breakfast">Desayuno</option>
-                  <option value="dinner">Cena</option>
-                  <option value="rest">Descanso</option>
-                  <option value="gym">Gimnasio</option>
-                  <option value="shopping">Compras</option>
-                  <option value="free_time">Tiempo libre</option>
-                  <option value="personal">Actividad personal</option>
-                </select>
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="amber" icon={<Plus className="w-4 h-4" />}>
+                  Agregar Bloque
+                </ExecutiveButton>
               </div>
+            </ExecutiveForm>
+          </GlassPanel>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Hora Inicio y Duración</label>
-                <div className="flex gap-1">
-                  <input type="time" value={tplStart} onChange={e => setTplStart(e.target.value)} className="w-1/2 text-xs p-2 border rounded bg-white" />
-                  <select value={tplDuration} onChange={e => setTplDuration(Number(e.target.value))} className="w-1/2 text-xs p-2 border rounded bg-white">
-                    <option value={20}>20 min</option>
-                    <option value={30}>30 min</option>
-                    <option value={45}>45 min</option>
-                    <option value={60}>60 min</option>
-                    <option value={90}>90 min</option>
-                  </select>
-                </div>
-              </div>
-
-              <button type="submit" className="bg-blue-900 text-white font-bold text-xs p-2 rounded hover:bg-blue-800">
-                + Agregar Bloque
-              </button>
-            </form>
-          </div>
-
-          {/* Panel de Distribución del Tiempo */}
-          <div className="presidential-card p-5 rounded-lg">
-            <h3 className="font-serif-presidential font-bold text-slate-900 text-base mb-3">
+          {/* MATRIZ DE DISTRIBUCIÓN DEL TIEMPO */}
+          <GlassPanel accentColor="amber" padding="sm">
+            <h4 className="font-serif font-bold text-amber-300 text-xs uppercase tracking-wider mb-3">
               Distribución del Tiempo de Hoy
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center">
-              <div className="p-2 bg-blue-50 border border-blue-200 rounded">
-                <div className="text-xs text-blue-800 font-bold">Estudio</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.estudio}m</div>
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-xs">
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Estudio</span>
+                <strong className="text-amber-300 text-base">{timeDist.estudio}m</strong>
               </div>
-              <div className="p-2 bg-amber-50 border border-amber-200 rounded">
-                <div className="text-xs text-amber-800 font-bold">Desplazamiento</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.desplazamiento}m</div>
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Desplazamiento</span>
+                <strong className="text-amber-300 text-base">{timeDist.desplazamiento}m</strong>
               </div>
-              <div className="p-2 bg-emerald-50 border border-emerald-200 rounded">
-                <div className="text-xs text-emerald-800 font-bold">Alimentación</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.alimentacion}m</div>
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Alimentación</span>
+                <strong className="text-amber-300 text-base">{timeDist.alimentacion}m</strong>
               </div>
-              <div className="p-2 bg-purple-50 border border-purple-200 rounded">
-                <div className="text-xs text-purple-800 font-bold">Descanso</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.descanso}m</div>
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Descanso</span>
+                <strong className="text-amber-300 text-base">{timeDist.descanso}m</strong>
               </div>
-              <div className="p-2 bg-rose-50 border border-rose-200 rounded">
-                <div className="text-xs text-rose-800 font-bold">Gimnasio</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.gimnasio}m</div>
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Gimnasio</span>
+                <strong className="text-amber-300 text-base">{timeDist.gimnasio}m</strong>
               </div>
-              <div className="p-2 bg-slate-100 border border-slate-200 rounded">
-                <div className="text-xs text-slate-800 font-bold">Personal</div>
-                <div className="text-lg font-bold text-slate-900">{timeDist.personal}m</div>
+              <div className="p-2.5 bg-[#132337] border border-white/10 rounded-xl">
+                <span className="text-slate-400 block text-[10px]">Personal</span>
+                <strong className="text-amber-300 text-base">{timeDist.personal}m</strong>
               </div>
             </div>
-          </div>
+          </GlassPanel>
 
-          {/* Bloques del día */}
-          <div className="space-y-2">
+          {/* LISTA DE BLOQUES */}
+          <div className="space-y-2.5">
             {data.timePlans.filter(p => p.date === todayStr).map(p => (
-              <div key={p.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center" style={{ borderLeftWidth: '4px', borderLeftColor: p.color }}>
-                <div>
-                  <span className="font-bold text-slate-900 text-sm">{p.title}</span>
-                  <span className="text-xs text-slate-500 ml-2">[{p.category}]</span>
+              <ExecutiveCard key={p.id} accentColor="amber">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <h4 className="font-serif font-bold text-white text-sm">{p.title}</h4>
+                    <span className="text-slate-400 font-mono">Categoría: {p.category}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <ExecutiveBadge variant="subtle" accentColor="amber">
+                      {p.startTime} – {p.endTime} ({p.durationMinutes}m)
+                    </ExecutiveBadge>
+                    <button
+                      onClick={() => DailyLifeStore.deleteTimePlan(p.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold bg-slate-100 px-2 py-1 rounded">
-                    {p.startTime} - {p.endTime} ({p.durationMinutes} min)
-                  </span>
-                  <button onClick={() => DailyLifeStore.deleteTimePlan(p.id)} className="text-slate-400 hover:text-rose-600">×</button>
-                </div>
-              </div>
+              </ExecutiveCard>
             ))}
           </div>
         </div>
@@ -345,88 +445,148 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
       {/* TAB 3: TAREAS COTIDIANAS */}
       {activeTab === 'tasks' && (
-        <div className="space-y-4">
-          <form onSubmit={handleAddTask} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              placeholder="Nueva tarea cotidiana..."
-              value={newTaskName}
-              onChange={e => setNewTaskName(e.target.value)}
-              className="text-xs p-2 border rounded bg-white flex-1 min-w-[200px]"
-              required
-            />
-            <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)} className="text-xs p-2 border rounded bg-white">
-              <option value="low">Baja Prioridad</option>
-              <option value="medium">Media Prioridad</option>
-              <option value="high">Alta Prioridad</option>
-            </select>
-            <input type="time" value={newTaskStart} onChange={e => setNewTaskStart(e.target.value)} className="text-xs p-2 border rounded bg-white" placeholder="Hora (opcional)" />
-            <button type="submit" className="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded hover:bg-slate-800">
-              + Guardar Tarea
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="amber" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-amber-400" />
+              Agregar Tarea Cotidiana
+            </h3>
 
-          <div className="space-y-2">
-            {data.tasks.map(t => (
-              <div key={t.id} className={`p-3 bg-white border rounded-lg flex justify-between items-center ${t.status === 'completed' ? 'opacity-60 bg-slate-50' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={t.status === 'completed'}
-                    onChange={() => DailyLifeStore.toggleTaskStatus(t.id)}
-                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+            <ExecutiveForm onSubmit={handleAddTask}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Nombre de la Tarea *"
+                    placeholder="Ej: Comprar insumos o enviar documento"
+                    value={newTaskName}
+                    onChange={e => setNewTaskName(e.target.value)}
+                    accentColor="amber"
+                    required
                   />
-                  <span className={`text-sm font-semibold ${t.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                    {t.name}
-                  </span>
-                  {t.startTime && (
-                    <span className="text-xs font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
-                      ⏰ {t.startTime}
-                    </span>
-                  )}
                 </div>
-                <button onClick={() => DailyLifeStore.deleteTask(t.id)} className="text-slate-400 hover:text-rose-600">×</button>
+
+                <ExecutiveSelect
+                  label="Prioridad"
+                  value={newTaskPriority}
+                  onChange={e => setNewTaskPriority(e.target.value as any)}
+                  accentColor="amber"
+                  options={[
+                    { value: 'low', label: 'Baja Prioridad' },
+                    { value: 'medium', label: 'Media Prioridad' },
+                    { value: 'high', label: 'Alta Prioridad' }
+                  ]}
+                />
+
+                <ExecutiveButton type="submit" variant="primary" accentColor="amber" icon={<Plus className="w-4 h-4" />}>
+                  Guardar Tarea
+                </ExecutiveButton>
               </div>
-            ))}
-          </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.tasks.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<CheckSquare className="w-8 h-8 text-amber-400" />}
+              title="Sin Tareas Pendientes"
+              description="No hay tareas registradas para la vida cotidiana."
+              accentColor="amber"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.tasks.map(t => (
+                <ExecutiveCard key={t.id} accentColor="amber">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={t.status === 'completed'}
+                        onChange={() => DailyLifeStore.toggleTaskStatus(t.id)}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500"
+                      />
+                      <span className={`font-serif text-sm ${t.status === 'completed' ? 'line-through text-slate-500' : 'text-white font-bold'}`}>
+                        {t.name}
+                      </span>
+                      {t.startTime && <span className="text-[10px] font-mono text-amber-300">⏰ {t.startTime}</span>}
+                    </div>
+
+                    <button
+                      onClick={() => DailyLifeStore.deleteTask(t.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 4: OBJETIVOS DIARIOS */}
       {activeTab === 'objectives' && (
-        <div className="space-y-4">
-          <form onSubmit={handleAddObjective} className="presidential-card p-4 rounded-lg flex gap-2">
-            <input
-              type="text"
-              placeholder="Nuevo objetivo del día (Ej: Leer 30 páginas de economía)..."
-              value={objTitle}
-              onChange={e => setObjTitle(e.target.value)}
-              className="text-xs p-2 border rounded bg-white flex-1"
-              required
-            />
-            <button type="submit" className="text-xs bg-amber-600 text-white font-bold px-4 py-2 rounded hover:bg-amber-700">
-              + Agregar Objetivo
-            </button>
-          </form>
+        <div className="space-y-6">
+          <GlassPanel accentColor="amber" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-amber-400" />
+              Nuevo Objetivo del Día
+            </h3>
 
-          <div className="space-y-2">
-            {data.objectives.map(o => (
-              <div key={o.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={o.status === 'completed'}
-                    onChange={() => DailyLifeStore.toggleObjective(o.id)}
-                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+            <ExecutiveForm onSubmit={handleAddObjective}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div className="sm:col-span-2">
+                  <ExecutiveInput
+                    label="Objetivo de la Jornada *"
+                    placeholder="Ej: Completar capítulo 4 de economía"
+                    value={objTitle}
+                    onChange={e => setObjTitle(e.target.value)}
+                    accentColor="amber"
+                    required
                   />
-                  <span className={`text-sm font-semibold ${o.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                    {o.title}
-                  </span>
                 </div>
-                <button onClick={() => DailyLifeStore.deleteObjective(o.id)} className="text-slate-400 hover:text-rose-600">×</button>
+
+                <ExecutiveButton type="submit" variant="primary" accentColor="amber" icon={<Plus className="w-4 h-4" />}>
+                  Agregar Objetivo
+                </ExecutiveButton>
               </div>
-            ))}
-          </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.objectives.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Target className="w-8 h-8 text-amber-400" />}
+              title="Sin Objetivos Registrados"
+              description="No hay objetivos trazados para la jornada."
+              accentColor="amber"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {data.objectives.map(o => (
+                <ExecutiveCard key={o.id} accentColor="amber">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={o.status === 'completed'}
+                        onChange={() => DailyLifeStore.toggleObjective(o.id)}
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500"
+                      />
+                      <span className={`font-serif text-sm ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-white font-bold'}`}>
+                        {o.title}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => DailyLifeStore.deleteObjective(o.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </ExecutiveCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

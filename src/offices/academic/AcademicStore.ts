@@ -1,11 +1,12 @@
 import { storeInstance } from '../../store/CasaBlancaStore';
-import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity } from '../../types/store';
+import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession } from '../../types/store';
 
 export const AcademicStore = {
   getData(): AcademicOfficeData {
     return storeInstance.getState().offices.academica;
   },
 
+  // SEMESTERS
   addSemester(semester: Omit<AcademicSemester, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'sem_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
@@ -13,6 +14,18 @@ export const AcademicStore = {
         draft.offices.academica.semesters.forEach(s => s.isActive = false);
       }
       draft.offices.academica.semesters.push({ ...semester, id });
+    });
+  },
+
+  updateSemester(semesterId: string, updates: Partial<AcademicSemester>) {
+    storeInstance.updateState(draft => {
+      const idx = draft.offices.academica.semesters.findIndex(s => s.id === semesterId);
+      if (idx !== -1) {
+        if (updates.isActive) {
+          draft.offices.academica.semesters.forEach(s => s.isActive = false);
+        }
+        draft.offices.academica.semesters[idx] = { ...draft.offices.academica.semesters[idx], ...updates };
+      }
     });
   },
 
@@ -32,6 +45,7 @@ export const AcademicStore = {
     });
   },
 
+  // SUBJECTS
   addSubject(subject: Omit<AcademicSubject, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
@@ -54,6 +68,39 @@ export const AcademicStore = {
     });
   },
 
+  // SESSIONS (SCHEDULE)
+  addSession(subjectId: string, session: Omit<AcademicSession, 'id'>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub) {
+        const id = 'ses_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        if (!sub.scheduleSessions) sub.scheduleSessions = [];
+        sub.scheduleSessions.push({ ...session, id });
+      }
+    });
+  },
+
+  updateSession(subjectId: string, sessionId: string, updates: Partial<AcademicSession>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.scheduleSessions) {
+        const idx = sub.scheduleSessions.findIndex(s => s.id === sessionId);
+        if (idx !== -1) {
+          sub.scheduleSessions[idx] = { ...sub.scheduleSessions[idx], ...updates };
+        }
+      }
+    });
+  },
+
+  deleteSession(subjectId: string, sessionId: string) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.scheduleSessions) {
+        sub.scheduleSessions = sub.scheduleSessions.filter(s => s.id !== sessionId);
+      }
+    });
+  },
+
   // EVALUATIONS & CUTS
   addCut(subjectId: string, cutName: string, cutWeightPercent: number) {
     storeInstance.updateState(draft => {
@@ -62,6 +109,27 @@ export const AcademicStore = {
         const id = 'cut_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
         if (!sub.cuts) sub.cuts = [];
         sub.cuts.push({ id, cutName, cutWeightPercent, activities: [] });
+      }
+    });
+  },
+
+  updateCut(subjectId: string, cutId: string, updates: Partial<AcademicCut>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.cuts) {
+        const idx = sub.cuts.findIndex(c => c.id === cutId);
+        if (idx !== -1) {
+          sub.cuts[idx] = { ...sub.cuts[idx], ...updates };
+        }
+      }
+    });
+  },
+
+  deleteCut(subjectId: string, cutId: string) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.cuts) {
+        sub.cuts = sub.cuts.filter(c => c.id !== cutId);
       }
     });
   },

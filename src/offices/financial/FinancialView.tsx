@@ -3,15 +3,41 @@ import { FinancialOfficeData, CurrencyCode, TransactionNature } from '../../type
 import { FinancialStore } from './FinancialStore';
 import { FinancialCalculations } from './FinancialCalculations';
 import { getTodayDateString, getCurrentTimeString } from '../../utils/dates';
-import { formatCurrency, formatPercent } from '../../utils/formatters';
-import { Wallet, Landmark, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp, Plus, Trash2, Calendar } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatters';
+import {
+  GlassPanel,
+  ExecutiveCard,
+  ExecutiveButton,
+  ExecutiveMetricCard,
+  ExecutiveSectionHeader,
+  ExecutiveBadge,
+  ExecutiveEmptyState,
+  ExecutiveInput,
+  ExecutiveSelect,
+  ExecutiveForm,
+} from '../../components/executive';
+import {
+  Landmark,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  TrendingUp,
+  Plus,
+  Trash2,
+  Calendar,
+  CreditCard,
+  DollarSign,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 
 interface Props {
   data: FinancialOfficeData;
 }
 
 export const FinancialView: React.FC<Props> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<'accounts' | 'transactions' | 'obligations' | 'investments'>('accounts');
+  const [activeTab, setActiveTab] = useState<'accounts' | 'transactions' | 'obligations'>('accounts');
+  const [searchQuery, setSearchQuery] = useState('');
   const todayStr = getTodayDateString();
   const timeStr = getCurrentTimeString();
 
@@ -20,20 +46,19 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [accInst, setAccInst] = useState('');
   const [accType, setAccType] = useState<'cash' | 'checking' | 'savings' | 'high_yield' | 'digital_wallet' | 'investment' | 'other'>('savings');
   const [accCurrency, setAccCurrency] = useState<CurrencyCode>('COP');
-  const [accInitial, setAccInitial] = useState(0);
-  const [accInterest, setAccInterest] = useState(0);
+  const [accInitial, setAccInitial] = useState<number | ''>('');
+  const [accInterest, setAccInterest] = useState<number | ''>('');
 
   // New Transaction state
   const [txNature, setTxNature] = useState<TransactionNature>('external_expense');
   const [txDesc, setTxDesc] = useState('');
-  const [txAmount, setTxAmount] = useState(0);
+  const [txAmount, setTxAmount] = useState<number | ''>('');
   const [txCurr, setTxCurr] = useState<CurrencyCode>('COP');
   const [txSourceAcc, setTxSourceAcc] = useState('');
-  const [txDestAcc, setTxDestAcc] = useState('');
 
   // New Obligation state
   const [obTitle, setObTitle] = useState('');
-  const [obAmount, setObAmount] = useState(0);
+  const [obAmount, setObAmount] = useState<number | ''>('');
   const [obCurr, setObCurr] = useState<CurrencyCode>('COP');
   const [obDueDate, setObDueDate] = useState(todayStr);
 
@@ -45,20 +70,21 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     if (!accName) return;
     FinancialStore.addAccount({
       name: accName,
-      institution: accInst || 'Entidad financiera',
+      institution: accInst || 'Entidad Financiera',
       type: accType,
       currency: accCurrency,
-      initialBalance: Number(accInitial),
-      annualInterestRate: accType === 'high_yield' ? Number(accInterest) : undefined
+      initialBalance: Number(accInitial || 0),
+      annualInterestRate: accType === 'high_yield' && accInterest ? Number(accInterest) : undefined
     });
     setAccName('');
     setAccInst('');
-    setAccInitial(0);
+    setAccInitial('');
+    setAccInterest('');
   };
 
   const handleCreateTransaction = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!txDesc || txAmount <= 0) return;
+    if (!txDesc || !txAmount || Number(txAmount) <= 0) return;
     FinancialStore.addTransaction({
       date: todayStr,
       time: timeStr,
@@ -67,278 +93,506 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       amount: Number(txAmount),
       currency: txCurr,
       sourceAccountId: txSourceAcc || undefined,
-      destinationAccountId: txDestAcc || undefined,
       tags: []
     });
     setTxDesc('');
-    setTxAmount(0);
+    setTxAmount('');
   };
 
   const handleCreateObligation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!obTitle || obAmount <= 0) return;
+    if (!obTitle || !obAmount || Number(obAmount) <= 0) return;
     FinancialStore.addObligation({
       title: obTitle,
       amount: Number(obAmount),
       currency: obCurr,
       dueDate: obDueDate,
       frequency: 'monthly',
-      category: 'Obligación general'
+      category: 'Obligación Recurrente'
     });
     setObTitle('');
-    setObAmount(0);
+    setObAmount('');
   };
 
+  const filteredTransactions = data.transactions.filter(t => 
+    t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.nature.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      {/* 1. ENCABEZADO INSTITUCIONAL DE LA OFICINA */}
-      <div className="bg-presidential-navy text-white p-6 rounded-lg border-b-2 border-gold-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-amber-900/60 rounded border border-amber-700/50 text-amber-300">
-              <Landmark className="w-6 h-6 text-gold-accent" />
-            </span>
-            <h2 className="text-2xl font-serif-presidential font-bold tracking-tight text-white">
-              Oficina Financiera
-            </h2>
-          </div>
-          <p className="text-slate-300 text-sm mt-1">
-            Agencia Superior de Gestión Patrimonial, Cuentas e Inversiones
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 text-slate-100 font-sans pb-12">
+      {/* 1. SECTION HEADER INSTITUCIONAL (EMERALD ACCENT) */}
+      <ExecutiveSectionHeader
+        title="Oficina Financiera"
+        subtitle="Agencia Superior de Gestión Patrimonial, Cuentas y Control Presupuestario"
+        icon={<Landmark className="w-6 h-6 text-emerald-400" />}
+        accentColor="emerald"
+        badgeText="Patrimonio & Cuentas"
+        searchQuery={activeTab === 'transactions' ? searchQuery : undefined}
+        onSearchChange={activeTab === 'transactions' ? setSearchQuery : undefined}
+        searchPlaceholder="Buscar en movimientos..."
+      />
 
-      {/* 2. PANEL GENERAL CON INDICADORES DE PATRIMONIO */}
+      {/* 2. DASHBOARD DE INDICADORES FINANCIEROS REALES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Patrimonio Líquido (COP)</div>
-          <div className="text-2xl font-serif-presidential font-bold text-slate-900 mt-1">
-            {formatCurrency(liquidNW.COP || 0, 'COP')}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">Efectivo + Bancos + Billeteras</div>
-        </div>
+        <ExecutiveMetricCard
+          title="Patrimonio Líquido (COP)"
+          value={formatCurrency(liquidNW.COP || 0, 'COP')}
+          subtitle="Efectivo + Bancos + Billeteras"
+          icon={<Wallet className="w-5 h-5" />}
+          accentColor="emerald"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Patrimonio Total (COP)</div>
-          <div className="text-2xl font-serif-presidential font-bold text-amber-700 mt-1">
-            {formatCurrency(totalNW.COP || 0, 'COP')}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">Líquido + Inversiones + Alto Rendimiento</div>
-        </div>
+        <ExecutiveMetricCard
+          title="Patrimonio Total (COP)"
+          value={formatCurrency(totalNW.COP || 0, 'COP')}
+          subtitle="Líquido + Alto Rendimiento + Inversiones"
+          icon={<TrendingUp className="w-5 h-5 text-emerald-300" />}
+          accentColor="emerald"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cuentas Registradas</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{data.accounts.length}</div>
-          <div className="text-xs text-slate-500 mt-1">Monedas: {Array.from(new Set(data.accounts.map(a => a.currency))).join(', ') || 'Ninguna'}</div>
-        </div>
+        <ExecutiveMetricCard
+          title="Cuentas Registradas"
+          value={data.accounts.length}
+          subtitle={`Monedas: ${Array.from(new Set(data.accounts.map(a => a.currency))).join(', ') || 'Sin cuentas'}`}
+          icon={<CreditCard className="w-5 h-5" />}
+          accentColor="emerald"
+        />
 
-        <div className="presidential-card p-4 rounded-lg">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Obligaciones Próximas</div>
-          <div className="text-2xl font-bold text-rose-600 mt-1">
-            {data.obligations.filter(o => !o.isPaid).length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">Pagos pendientes por saldar</div>
-        </div>
+        <ExecutiveMetricCard
+          title="Obligaciones Pendientes"
+          value={data.obligations.filter(o => !o.isPaid).length}
+          subtitle="Pagos recurrentes por saldar"
+          icon={<AlertCircle className="w-5 h-5 text-rose-400" />}
+          accentColor="rose"
+        />
       </div>
 
-      {/* PESTAÑAS */}
-      <div className="border-b border-slate-200 flex space-x-4">
-        <button onClick={() => setActiveTab('accounts')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'accounts' ? 'border-amber-700 text-amber-950' : 'border-transparent text-slate-500'}`}>
-          Cuentas ({data.accounts.length})
+      {/* 3. TABS DE NAVEGACIÓN DE LA OFICINA */}
+      <div className="flex border-b border-white/10 space-x-2">
+        <button
+          onClick={() => setActiveTab('accounts')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === 'accounts'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          Cuentas & Tesorería ({data.accounts.length})
         </button>
-        <button onClick={() => setActiveTab('transactions')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'transactions' ? 'border-amber-700 text-amber-950' : 'border-transparent text-slate-500'}`}>
-          Movimientos Financieros ({data.transactions.length})
+
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === 'transactions'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          Movimientos ({data.transactions.length})
         </button>
-        <button onClick={() => setActiveTab('obligations')} className={`pb-3 text-sm font-semibold border-b-2 ${activeTab === 'obligations' ? 'border-amber-700 text-amber-950' : 'border-transparent text-slate-500'}`}>
+
+        <button
+          onClick={() => setActiveTab('obligations')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === 'obligations'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
           Obligaciones Recurrentes ({data.obligations.length})
         </button>
       </div>
 
-      {/* TAB 1: CUENTAS */}
+      {/* TAB 1: CUENTAS BANCARIAS Y BILLETERAS */}
       {activeTab === 'accounts' && (
         <div className="space-y-6">
-          <div className="presidential-card p-5 rounded-lg">
-            <h3 className="font-serif-presidential font-bold text-slate-900 text-base mb-3">
-              Registrar Nueva Cuenta
+          <GlassPanel accentColor="emerald" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              Apertura y Registro de Nueva Cuenta Financiera
             </h3>
-            <form onSubmit={handleCreateAccount} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 items-end">
-              <div className="md:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la cuenta *</label>
-                <input type="text" placeholder="Ej: Cuenta Ahorros Principal" value={accName} onChange={e => setAccName(e.target.value)} className="w-full text-xs p-2 border rounded bg-white" required />
-              </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Entidad / Banco</label>
-                <input type="text" placeholder="Ej: Bancolombia" value={accInst} onChange={e => setAccInst(e.target.value)} className="w-full text-xs p-2 border rounded bg-white" />
-              </div>
+            <ExecutiveForm onSubmit={handleCreateAccount}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Nombre de la Cuenta *"
+                    placeholder="Ej: Ahorros Principal Bancolombia"
+                    value={accName}
+                    onChange={e => setAccName(e.target.value)}
+                    accentColor="emerald"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Tipo & Moneda</label>
-                <div className="flex gap-1">
-                  <select value={accType} onChange={e => setAccType(e.target.value as any)} className="w-1/2 text-xs p-2 border rounded bg-white">
-                    <option value="savings">Ahorros</option>
-                    <option value="checking">Corriente</option>
-                    <option value="cash">Efectivo</option>
-                    <option value="high_yield">Alto Rendimiento</option>
-                    <option value="digital_wallet">Billetera Digital</option>
-                    <option value="investment">Inversión</option>
-                  </select>
-                  <select value={accCurrency} onChange={e => setAccCurrency(e.target.value as any)} className="w-1/2 text-xs p-2 border rounded bg-white font-bold">
-                    <option value="COP">COP</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="BTC">BTC</option>
-                    <option value="ETH">ETH</option>
-                  </select>
+                <div>
+                  <ExecutiveInput
+                    label="Entidad / Banco"
+                    placeholder="Ej: Bancolombia / Lulo Bank"
+                    value={accInst}
+                    onChange={e => setAccInst(e.target.value)}
+                    accentColor="emerald"
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveSelect
+                    label="Tipo de Cuenta"
+                    value={accType}
+                    onChange={e => setAccType(e.target.value as any)}
+                    accentColor="emerald"
+                    options={[
+                      { value: 'savings', label: 'Ahorros' },
+                      { value: 'checking', label: 'Corriente' },
+                      { value: 'cash', label: 'Efectivo' },
+                      { value: 'high_yield', label: 'Alto Rendimiento (Nu/Lulo)' },
+                      { value: 'digital_wallet', label: 'Billetera Digital (Nequi/Daviplata)' },
+                      { value: 'investment', label: 'Inversión' }
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveSelect
+                    label="Moneda Principal"
+                    value={accCurrency}
+                    onChange={e => setAccCurrency(e.target.value as any)}
+                    accentColor="emerald"
+                    options={[
+                      { value: 'COP', label: 'COP ($)' },
+                      { value: 'USD', label: 'USD ($)' },
+                      { value: 'EUR', label: 'EUR (€)' },
+                      { value: 'BTC', label: 'BTC (₿)' },
+                      { value: 'ETH', label: 'ETH (Ξ)' }
+                    ]}
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Saldo Inicial</label>
-                <input type="number" value={accInitial} onChange={e => setAccInitial(Number(e.target.value))} className="w-full text-xs p-2 border rounded bg-white" />
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+                <ExecutiveInput
+                  label="Saldo Inicial / Actual"
+                  type="number"
+                  placeholder="0.00"
+                  value={accInitial}
+                  onChange={e => setAccInitial(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="emerald"
+                />
 
-              <button type="submit" className="bg-amber-700 text-white font-bold text-xs p-2 rounded hover:bg-amber-800">
-                + Crear Cuenta
-              </button>
-            </form>
-          </div>
+                {accType === 'high_yield' && (
+                  <ExecutiveInput
+                    label="Tasa de Interés Anual (E.A. %)"
+                    type="number"
+                    step="0.1"
+                    placeholder="Ej: 13.0"
+                    value={accInterest}
+                    onChange={e => setAccInterest(e.target.value === '' ? '' : Number(e.target.value))}
+                    accentColor="emerald"
+                    helperText="Calcula rendimiento diario automático"
+                  />
+                )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.accounts.length === 0 ? (
-              <div className="col-span-full p-8 text-center text-slate-500 bg-white rounded border border-dashed border-slate-200">
-                No hay cuentas bancarias registradas. Comienza registrando tu primera cuenta.
+                <div className="sm:col-span-1 flex justify-end">
+                  <ExecutiveButton type="submit" variant="primary" accentColor="emerald" icon={<Plus className="w-4 h-4" />}>
+                    Crear Cuenta
+                  </ExecutiveButton>
+                </div>
               </div>
-            ) : (
-              data.accounts.map(acc => {
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {/* LISTA DE CUENTAS */}
+          {data.accounts.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Landmark className="w-8 h-8 text-emerald-400" />}
+              title="Sin Cuentas Registradas"
+              description="No hay cuentas de tesorería registradas. Registra tu primera cuenta bancaria, efectivo o billetera digital arriba."
+              accentColor="emerald"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.accounts.map(acc => {
                 const calculatedBalance = FinancialCalculations.calculateAccountBalance(acc, data.transactions);
-                const dailyEstYield = FinancialCalculations.calculateDailyYieldEstimated(acc, data.transactions);
+                const dailyYieldEst = FinancialCalculations.calculateDailyYieldEstimated(acc, data.transactions);
 
                 return (
-                  <div key={acc.id} className="presidential-card p-4 rounded-lg space-y-3">
-                    <div className="flex justify-between items-start">
+                  <ExecutiveCard
+                    key={acc.id}
+                    accentColor="emerald"
+                    accentBorderLeft
+                    header={
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-serif font-bold text-white text-base">{acc.name}</h4>
+                          <p className="text-xs text-slate-400">{acc.institution} • {acc.type}</p>
+                        </div>
+                        <ExecutiveBadge variant="subtle" accentColor="emerald">
+                          {acc.currency}
+                        </ExecutiveBadge>
+                      </div>
+                    }
+                    footer={
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400 font-mono text-[10px]">ID: {acc.id.slice(0, 8)}</span>
+                        <ExecutiveButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => FinancialStore.deleteAccount(acc.id)}
+                          className="text-rose-400 hover:text-rose-300"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar
+                        </ExecutiveButton>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-3 py-1">
                       <div>
-                        <span className="font-bold text-slate-900 text-base">{acc.name}</span>
-                        <div className="text-xs text-slate-500">{acc.institution} ({acc.type})</div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Balance Calculado</span>
+                        <div className="text-2xl font-serif font-bold text-emerald-400 mt-0.5">
+                          {formatCurrency(calculatedBalance, acc.currency)}
+                        </div>
                       </div>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">
-                        {acc.currency}
+
+                      {acc.type === 'high_yield' && acc.annualInterestRate && (
+                        <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 space-y-0.5">
+                          <div className="font-bold">TEA: {acc.annualInterestRate}%</div>
+                          <div className="text-[11px] text-emerald-300">
+                            Rendimiento diario est.: <strong>{formatCurrency(dailyYieldEst, acc.currency)}/día</strong>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </ExecutiveCard>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: MOVIMIENTOS FINANCIEROS */}
+      {activeTab === 'transactions' && (
+        <div className="space-y-6">
+          <GlassPanel accentColor="emerald" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              Nuevo Registro de Movimiento Financiero
+            </h3>
+
+            <ExecutiveForm onSubmit={handleCreateTransaction}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                <div>
+                  <ExecutiveSelect
+                    label="Naturaleza *"
+                    value={txNature}
+                    onChange={e => setTxNature(e.target.value as any)}
+                    accentColor="emerald"
+                    options={[
+                      { value: 'external_expense', label: 'Gasto / Salida Externa' },
+                      { value: 'external_income', label: 'Ingreso Externo' },
+                      { value: 'internal_transfer', label: 'Transferencia Interna' },
+                      { value: 'financial_yield', label: 'Rendimiento Financiero' },
+                      { value: 'reconciliation_adj', label: 'Ajuste de Conciliación' }
+                    ]}
+                  />
+                </div>
+
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Descripción *"
+                    placeholder="Ej: Pago de supermercado o nómina"
+                    value={txDesc}
+                    onChange={e => setTxDesc(e.target.value)}
+                    accentColor="emerald"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveInput
+                    label="Monto *"
+                    type="number"
+                    placeholder="0.00"
+                    value={txAmount}
+                    onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                    accentColor="emerald"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <ExecutiveSelect
+                    label="Cuenta de Origen"
+                    value={txSourceAcc}
+                    onChange={e => setTxSourceAcc(e.target.value)}
+                    accentColor="emerald"
+                    options={[
+                      { value: '', label: '-- Sin especificar --' },
+                      ...data.accounts.map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="emerald" icon={<Plus className="w-4 h-4" />}>
+                  Guardar Movimiento
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {/* HISTORIAL DE MOVIMIENTOS */}
+          {filteredTransactions.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<DollarSign className="w-8 h-8 text-emerald-400" />}
+              title="Sin Movimientos Registrados"
+              description="No hay transacciones guardadas. Agrega tu primer movimiento financiero para actualizar balances."
+              accentColor="emerald"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {filteredTransactions.map(tx => {
+                const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield';
+
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-between gap-4 hover:border-white/30 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl border ${isIncome ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
+                        {isIncome ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <h4 className="font-serif font-bold text-white text-sm">{tx.description}</h4>
+                        <div className="text-xs text-slate-400 font-mono">
+                          {tx.date} • {tx.time} | <span className="uppercase text-slate-300">{tx.nature.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <span className={`text-base font-serif font-bold ${isIncome ? 'text-emerald-400' : 'text-slate-200'}`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
                       </span>
-                    </div>
-
-                    <div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Balance Calculado</div>
-                      <div className="text-2xl font-serif-presidential font-bold text-slate-900 mt-0.5">
-                        {formatCurrency(calculatedBalance, acc.currency)}
-                      </div>
-                    </div>
-
-                    {acc.type === 'high_yield' && acc.annualInterestRate && (
-                      <div className="p-2 bg-amber-50 rounded border border-amber-200 text-xs text-amber-900">
-                        <div>TEA: <strong>{acc.annualInterestRate}%</strong></div>
-                        <div>Rendimiento diario est.: <strong>{formatCurrency(dailyEstYield, acc.currency)}/día</strong></div>
-                      </div>
-                    )}
-
-                    <div className="text-right pt-1 border-t border-slate-100">
-                      <button onClick={() => FinancialStore.deleteAccount(acc.id)} className="text-xs text-rose-600 hover:underline">
-                        Eliminar Cuenta
+                      <button
+                        onClick={() => FinancialStore.deleteTransaction(tx.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                        title="Eliminar movimiento"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 2: MOVIMIENTOS */}
-      {activeTab === 'transactions' && (
-        <div className="space-y-6">
-          <div className="presidential-card p-5 rounded-lg space-y-4">
-            <h3 className="font-serif-presidential font-bold text-slate-900 text-base">
-              Registrar Nuevo Movimiento Financiero
-            </h3>
-            <form onSubmit={handleCreateTransaction} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Naturaleza</label>
-                <select value={txNature} onChange={e => setTxNature(e.target.value as any)} className="w-full text-xs p-2 border rounded bg-white text-slate-900">
-                  <option value="external_expense">Gasto / Salida Externa</option>
-                  <option value="external_income">Ingreso Externo</option>
-                  <option value="internal_transfer">Transferencia Interna</option>
-                  <option value="financial_yield">Rendimiento Financiero</option>
-                  <option value="reconciliation_adj">Ajuste de Conciliación</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Descripción</label>
-                <input type="text" placeholder="Ej: Compra de mercado semanal" value={txDesc} onChange={e => setTxDesc(e.target.value)} className="w-full text-xs p-2 border rounded bg-white text-slate-900" required />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Monto & Moneda</label>
-                <div className="flex gap-1">
-                  <input type="number" placeholder="Monto" value={txAmount || ''} onChange={e => setTxAmount(Number(e.target.value))} className="w-2/3 text-xs p-2 border rounded bg-white" required />
-                  <select value={txCurr} onChange={e => setTxCurr(e.target.value as any)} className="w-1/3 text-xs p-2 border rounded bg-white font-bold">
-                    <option value="COP">COP</option>
-                    <option value="USD">USD</option>
-                  </select>
-                </div>
-              </div>
-
-              <button type="submit" className="bg-slate-900 text-white font-bold text-xs p-2 rounded hover:bg-slate-800">
-                + Guardar Movimiento
-              </button>
-            </form>
-          </div>
-
-          <div className="space-y-2">
-            {data.transactions.map(tx => (
-              <div key={tx.id} className="p-3 bg-white border border-slate-200 rounded-lg flex justify-between items-center">
-                <div>
-                  <div className="font-bold text-slate-900 text-sm">{tx.description}</div>
-                  <div className="text-xs text-slate-500">{tx.date} {tx.time} | Naturaleza: {tx.nature}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`font-serif-presidential font-bold text-sm ${tx.nature === 'external_income' || tx.nature === 'financial_yield' ? 'text-emerald-700' : 'text-slate-900'}`}>
-                    {tx.nature === 'external_income' || tx.nature === 'financial_yield' ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
-                  </span>
-                  <button onClick={() => FinancialStore.deleteTransaction(tx.id)} className="text-slate-400 hover:text-rose-600">×</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: OBLIGACIONES */}
+      {/* TAB 3: OBLIGACIONES RECURRENTES */}
       {activeTab === 'obligations' && (
         <div className="space-y-6">
-          <form onSubmit={handleCreateObligation} className="presidential-card p-4 rounded-lg flex flex-wrap gap-2 items-center">
-            <input type="text" placeholder="Obligación (Ej: Matrícula Universidad / Arriendo)" value={obTitle} onChange={e => setObTitle(e.target.value)} className="text-xs p-2 border rounded bg-white flex-1 min-w-[180px]" required />
-            <input type="number" placeholder="Monto" value={obAmount || ''} onChange={e => setObAmount(Number(e.target.value))} className="w-24 text-xs p-2 border rounded bg-white" required />
-            <input type="date" value={obDueDate} onChange={e => setObDueDate(e.target.value)} className="text-xs p-2 border rounded bg-white" />
-            <button type="submit" className="text-xs bg-rose-700 text-white font-bold px-4 py-2 rounded hover:bg-rose-800">
-              + Agregar Obligación
-            </button>
-          </form>
+          <GlassPanel accentColor="emerald" padding="md">
+            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              Registrar Obligación / Pago Recurrente
+            </h3>
 
-          <div className="space-y-2">
-            {data.obligations.map(ob => (
-              <div key={ob.id} className={`p-3 bg-white border rounded-lg flex justify-between items-center ${ob.isPaid ? 'opacity-60 bg-slate-50' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" checked={ob.isPaid} onChange={() => FinancialStore.toggleObligationPaid(ob.id)} className="w-4 h-4 text-emerald-600 rounded cursor-pointer" />
-                  <span className={`text-sm font-semibold ${ob.isPaid ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                    {ob.title} - {formatCurrency(ob.amount, ob.currency)}
-                  </span>
-                  <span className="text-xs text-slate-500">Vence: {ob.dueDate}</span>
+            <ExecutiveForm onSubmit={handleCreateObligation}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+                <div className="lg:col-span-2">
+                  <ExecutiveInput
+                    label="Concepto de la Obligación *"
+                    placeholder="Ej: Matrícula Semestral / Arriendo"
+                    value={obTitle}
+                    onChange={e => setObTitle(e.target.value)}
+                    accentColor="emerald"
+                    required
+                  />
                 </div>
-                <button onClick={() => FinancialStore.deleteObligation(ob.id)} className="text-slate-400 hover:text-rose-600">×</button>
+
+                <ExecutiveInput
+                  label="Monto *"
+                  type="number"
+                  placeholder="0.00"
+                  value={obAmount}
+                  onChange={e => setObAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="emerald"
+                  required
+                />
+
+                <ExecutiveInput
+                  label="Fecha Límite Vencimiento"
+                  type="date"
+                  value={obDueDate}
+                  onChange={e => setObDueDate(e.target.value)}
+                  accentColor="emerald"
+                />
               </div>
-            ))}
-          </div>
+
+              <div className="flex justify-end pt-2">
+                <ExecutiveButton type="submit" variant="primary" accentColor="emerald" icon={<Plus className="w-4 h-4" />}>
+                  Agregar Obligación
+                </ExecutiveButton>
+              </div>
+            </ExecutiveForm>
+          </GlassPanel>
+
+          {data.obligations.length === 0 ? (
+            <ExecutiveEmptyState
+              icon={<Calendar className="w-8 h-8 text-emerald-400" />}
+              title="Sin Obligaciones Pendientes"
+              description="No hay compromisos u obligaciones financieras registradas."
+              accentColor="emerald"
+            />
+          ) : (
+            <div className="space-y-3">
+              {data.obligations.map(ob => (
+                <div
+                  key={ob.id}
+                  className={`p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-between gap-4 transition-all ${
+                    ob.isPaid ? 'opacity-60 bg-[#0B1528]/50' : 'hover:border-white/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={ob.isPaid}
+                      onChange={() => FinancialStore.toggleObligationPaid(ob.id)}
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer accent-emerald-500"
+                    />
+                    <div>
+                      <h4 className={`font-serif font-bold text-sm ${ob.isPaid ? 'line-through text-slate-400' : 'text-white'}`}>
+                        {ob.title}
+                      </h4>
+                      <p className="text-xs text-slate-400 font-mono">
+                        Monto: <strong className="text-emerald-300">{formatCurrency(ob.amount, ob.currency)}</strong> • Vence: {ob.dueDate}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <ExecutiveBadge variant={ob.isPaid ? 'subtle' : 'solid'} accentColor={ob.isPaid ? 'emerald' : 'rose'}>
+                      {ob.isPaid ? 'PAGADO' : 'PENDIENTE'}
+                    </ExecutiveBadge>
+                    <button
+                      onClick={() => FinancialStore.deleteObligation(ob.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
