@@ -162,12 +162,45 @@ export interface TimePlan {
   description?: string;
 }
 
+export interface DailyHistoryDetailItem {
+  id: string;
+  name: string;
+  category?: string;
+  completed: boolean;
+  extraInfo?: string;
+}
+
+export interface DailyHistoryRecord {
+  date: string; // YYYY-MM-DD
+  dayOfWeek: string; // e.g. "Viernes 1 de agosto de 2026"
+  overallCompliancePercent: number;
+  habitsCount: { completed: number; total: number; percent: number };
+  tasksCount: { completed: number; total: number; percent: number };
+  objectivesCount: { completed: number; total: number; percent: number };
+  routinesCount?: { completed: number; total: number; percent: number };
+  productiveTimeMinutes: number; // e.g. 435 mins (7 h 15 min)
+  habitsDetail?: DailyHistoryDetailItem[];
+  tasksDetail?: DailyHistoryDetailItem[];
+  objectivesDetail?: DailyHistoryDetailItem[];
+  timePlansDetail?: Array<{ id: string; title: string; category: string; durationMinutes: number }>;
+}
+
+export interface WelcomeDayMessage {
+  dateStr: string;
+  text: string;
+  yesterdayScore: number;
+  dismissed?: boolean;
+}
+
 export interface DailyLifeOfficeData {
   habits: HabitItem[];
   tasks: DailyTask[];
   routines: RoutineItem[];
   objectives: DailyObjective[];
   timePlans: TimePlan[];
+  lastActiveDate?: string;
+  dailyHistory?: DailyHistoryRecord[];
+  welcomeMessage?: WelcomeDayMessage | null;
 }
 
 // -------------------------------------------------------------

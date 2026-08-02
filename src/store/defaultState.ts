@@ -182,7 +182,10 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
         tasks: [],
         routines: [],
         objectives: [],
-        timePlans: []
+        timePlans: [],
+        lastActiveDate: '',
+        dailyHistory: [],
+        welcomeMessage: null
       },
       financiera: {
         accounts: [],

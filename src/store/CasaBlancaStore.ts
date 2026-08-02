@@ -65,7 +65,10 @@ class CasaBlancaStore {
           tasks: parsed?.offices?.vidaDiaria?.tasks || initial.offices.vidaDiaria.tasks || [],
           routines: parsed?.offices?.vidaDiaria?.routines || initial.offices.vidaDiaria.routines || [],
           objectives: parsed?.offices?.vidaDiaria?.objectives || initial.offices.vidaDiaria.objectives || [],
-          timePlans: parsed?.offices?.vidaDiaria?.timePlans || initial.offices.vidaDiaria.timePlans || []
+          timePlans: parsed?.offices?.vidaDiaria?.timePlans || initial.offices.vidaDiaria.timePlans || [],
+          lastActiveDate: parsed?.offices?.vidaDiaria?.lastActiveDate || '',
+          dailyHistory: parsed?.offices?.vidaDiaria?.dailyHistory || [],
+          welcomeMessage: parsed?.offices?.vidaDiaria?.welcomeMessage || null
         },
         financiera: {
           accounts: parsed?.offices?.financiera?.accounts || initial.offices.financiera.accounts || [],
@@ -115,7 +118,11 @@ class CasaBlancaStore {
   }
 
   public updateState(updater: (draft: CasaBlancaStoreData) => void) {
-    updater(this.data);
+    const nextData: CasaBlancaStoreData = typeof structuredClone === 'function'
+      ? structuredClone(this.data)
+      : JSON.parse(JSON.stringify(this.data));
+    updater(nextData);
+    this.data = nextData;
     this.saveToStorage(this.data);
     this.notify();
   }

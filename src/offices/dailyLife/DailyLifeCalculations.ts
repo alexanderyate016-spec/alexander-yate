@@ -1,4 +1,5 @@
-import { DailyLifeOfficeData, HabitItem } from '../../types/store';
+import { DailyLifeOfficeData, HabitItem, DailyHistoryRecord, DailyHistoryDetailItem } from '../../types/store';
+import { formatFriendlyDate } from '../../utils/dates';
 
 export interface FreeTimeGap {
   id: string;
@@ -24,6 +25,7 @@ export interface DayProgressSummary {
   routinesPercent: number;
   totalActivities: number;
   completedActivities: number;
+  productiveTimeMinutes: number;
 }
 
 export interface WorkloadMetrics {
@@ -48,7 +50,6 @@ export const DailyLifeCalculations = {
         streak++;
         current.setDate(current.getDate() - 1);
       } else {
-        // If today is not checked yet, check yesterday to continue streak
         if (dateKey === todayStr) {
           current.setDate(current.getDate() - 1);
           continue;
@@ -100,6 +101,12 @@ export const DailyLifeCalculations = {
     return dist;
   },
 
+  calculateProductiveTimeMinutes(data: DailyLifeOfficeData, dateStr: string): number {
+    const timePlans = data?.timePlans || [];
+    const dayPlans = timePlans.filter(p => p.date === dateStr);
+    return dayPlans.reduce((sum, p) => sum + (p.durationMinutes || 0), 0);
+  },
+
   calculateOverallDayProgress(data: DailyLifeOfficeData, todayStr: string): DayProgressSummary {
     const habits = data?.habits || [];
     const tasks = data?.tasks || [];
@@ -115,13 +122,13 @@ export const DailyLifeCalculations = {
     const habitsPercent = habitsTotal > 0 ? Math.round((habitsCompleted / habitsTotal) * 100) : 100;
 
     // Tasks today
-    const todayTasks = tasks.filter(t => t.date === todayStr || !t.date);
+    const todayTasks = tasks.filter(t => t.date === todayStr || (!t.date && todayStr === new Date().toISOString().split('T')[0]));
     const tasksTotal = todayTasks.length;
     const tasksCompleted = todayTasks.filter(t => t.status === 'completed').length;
     const tasksPercent = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 100;
 
     // Objectives today
-    const todayObjs = objectives.filter(o => o.date === todayStr || !o.date);
+    const todayObjs = objectives.filter(o => o.date === todayStr || (!o.date && todayStr === new Date().toISOString().split('T')[0]));
     const objectivesTotal = todayObjs.length;
     const objectivesCompleted = todayObjs.filter(o => o.status === 'completed').length;
     const objectivesPercent = objectivesTotal > 0 ? Math.round((objectivesCompleted / objectivesTotal) * 100) : 100;
@@ -148,6 +155,8 @@ export const DailyLifeCalculations = {
       overallPercent = 0;
     }
 
+    const productiveTimeMinutes = this.calculateProductiveTimeMinutes(data, todayStr);
+
     return {
       overallPercent,
       habitsCompleted,
@@ -163,8 +172,92 @@ export const DailyLifeCalculations = {
       routinesTotal,
       routinesPercent,
       totalActivities,
-      completedActivities
+      completedActivities,
+      productiveTimeMinutes
     };
+  },
+
+  getHistoryDetailForDate(data: DailyLifeOfficeData, dateStr: string): DailyHistoryRecord {
+    const summary = this.calculateOverallDayProgress(data, dateStr);
+
+    const habitsDetail: DailyHistoryDetailItem[] = (data.habits || []).map(h => ({
+      id: h.id,
+      name: h.name,
+      completed: Boolean(h.logs?.[dateStr]),
+      extraInfo: h.frequency === 'daily' ? 'Diario' : 'Frecuente'
+    }));
+
+    const tasksDetail: DailyHistoryDetailItem[] = (data.tasks || [])
+      .filter(t => t.date === dateStr || !t.date)
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        category: t.priority === 'high' ? 'Alta Prioridad' : t.priority === 'medium' ? 'Prioridad Media' : 'Prioridad Baja',
+        completed: t.status === 'completed',
+        extraInfo: t.startTime ? `${t.startTime} - ${t.endTime || ''}` : undefined
+      }));
+
+    const objectivesDetail: DailyHistoryDetailItem[] = (data.objectives || [])
+      .filter(o => o.date === dateStr || !o.date)
+      .map(o => ({
+        id: o.id,
+        name: o.title,
+        completed: o.status === 'completed',
+        extraInfo: o.description
+      }));
+
+    const timePlansDetail = (data.timePlans || [])
+      .filter(p => p.date === dateStr)
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        durationMinutes: p.durationMinutes
+      }));
+
+    return {
+      date: dateStr,
+      dayOfWeek: formatFriendlyDate(dateStr) || dateStr,
+      overallCompliancePercent: summary.overallPercent,
+      habitsCount: { completed: summary.habitsCompleted, total: summary.habitsTotal, percent: summary.habitsPercent },
+      tasksCount: { completed: summary.tasksCompleted, total: summary.tasksTotal, percent: summary.tasksPercent },
+      objectivesCount: { completed: summary.objectivesCompleted, total: summary.objectivesTotal, percent: summary.objectivesPercent },
+      routinesCount: { completed: summary.routinesCompleted, total: summary.routinesTotal, percent: summary.routinesPercent },
+      productiveTimeMinutes: summary.productiveTimeMinutes,
+      habitsDetail,
+      tasksDetail,
+      objectivesDetail,
+      timePlansDetail
+    };
+  },
+
+  getUnifiedHistory(data: DailyLifeOfficeData): DailyHistoryRecord[] {
+    const recordsMap = new Map<string, DailyHistoryRecord>();
+
+    // 1. Add explicitly saved history
+    (data.dailyHistory || []).forEach(record => {
+      recordsMap.set(record.date, record);
+    });
+
+    // 2. Discover dates from habit logs, tasks, timePlans, objectives
+    const datesSet = new Set<string>();
+    (data.habits || []).forEach(h => {
+      if (h.logs) {
+        Object.keys(h.logs).forEach(d => datesSet.add(d));
+      }
+    });
+    (data.tasks || []).forEach(t => { if (t.date) datesSet.add(t.date); });
+    (data.timePlans || []).forEach(p => { if (p.date) datesSet.add(p.date); });
+    (data.objectives || []).forEach(o => { if (o.date) datesSet.add(o.date); });
+
+    datesSet.forEach(d => {
+      if (!recordsMap.has(d)) {
+        recordsMap.set(d, this.getHistoryDetailForDate(data, d));
+      }
+    });
+
+    // Convert map values to array and sort descending (newest first)
+    return Array.from(recordsMap.values()).sort((a, b) => b.date.localeCompare(a.date));
   },
 
   calculateDailyWorkload(data: DailyLifeOfficeData, todayStr: string): WorkloadMetrics {
@@ -250,7 +343,6 @@ export const DailyLifeCalculations = {
       const pEnd = timeToMins(plan.endTime);
 
       if (pStart > currentCursor + 20) {
-        // Found gap
         const duration = pStart - currentCursor;
         gaps.push({
           id: `gap_${idx}_${currentCursor}`,
