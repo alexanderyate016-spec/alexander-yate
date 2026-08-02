@@ -2,11 +2,11 @@ import { AcademicOfficeData, UnifiedExecutiveEvent } from '../../types/store';
 import { getDayOfWeekNumber } from '../../utils/dates';
 
 export const AcademicSync = {
-  projectAcademicEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
+  // Horario = Actividades recurrentes (Clases semanales)
+  projectHorarioEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
     const events: UnifiedExecutiveEvent[] = [];
     const dayNum = getDayOfWeekNumber(targetDateStr);
 
-    // 1. Classes for target date
     (data?.subjects || []).forEach(sub => {
       (sub?.scheduleSessions || []).forEach(ses => {
         if (ses.day === dayNum) {
@@ -25,8 +25,17 @@ export const AcademicSync = {
           });
         }
       });
+    });
 
-      // 2. Scheduled Evaluations for target date
+    return events;
+  },
+
+  // Agenda = Eventos puntuales con fecha concreta (Evaluaciones y Actividades Académicas)
+  projectAgendaEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
+    const events: UnifiedExecutiveEvent[] = [];
+
+    (data?.subjects || []).forEach(sub => {
+      // 1. Scheduled Evaluations for target date
       (sub?.cuts || []).forEach(cut => {
         (cut?.activities || []).forEach(act => {
           if (act.date === targetDateStr && act.status === 'pending') {
@@ -48,7 +57,7 @@ export const AcademicSync = {
         });
       });
 
-      // 3. Academic Activities (non-graded) for target date
+      // 2. Academic Activities (salida de campo, conferencia, seminario, entrega, sustentación, reunión con profesor, asesoría, práctica extraordinaria, etc.)
       (sub?.academicActivities || []).forEach(act => {
         if (act.date === targetDateStr && act.status !== 'Cancelada') {
           events.push({
@@ -70,5 +79,13 @@ export const AcademicSync = {
     });
 
     return events;
+  },
+
+  // Proyección unificada completa (Horario + Agenda) para cálculo de ocupación y detección de conflictos
+  projectAcademicEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
+    return [
+      ...this.projectHorarioEvents(data, targetDateStr),
+      ...this.projectAgendaEvents(data, targetDateStr)
+    ];
   }
 };

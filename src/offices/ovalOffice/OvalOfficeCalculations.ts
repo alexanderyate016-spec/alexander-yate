@@ -15,8 +15,10 @@ export interface AgendaItem {
   color: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
-  type: 'task' | 'habit' | 'objective' | 'obligation' | 'commitment' | 'medical' | 'reflection';
+  type: 'task' | 'habit' | 'objective' | 'obligation' | 'commitment' | 'medical' | 'reflection' | 'academic_activity' | 'evaluation';
   date: string;
+  startTime?: string;
+  endTime?: string;
   rawObject?: any;
 }
 
@@ -39,8 +41,57 @@ export interface ExecutiveSuggestion {
   actionPayload?: any;
 }
 
+export interface FreeTimeGap {
+  id: string;
+  startTime: string; // HH:MM
+  endTime: string;   // HH:MM
+  durationMinutes: number;
+  durationFormatted: string;
+  suggestions: string[];
+}
+
+export const formatMinutesToHumanReadable = (mins: number): string => {
+  if (mins < 60) {
+    return `${mins} minutos`;
+  }
+  const hours = Math.floor(mins / 60);
+  const remainder = mins % 60;
+  if (remainder === 0) {
+    return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  }
+  return `${hours} ${hours === 1 ? 'hora' : 'horas'} y ${remainder} minutos`;
+};
+
 export const OvalOfficeCalculations = {
-  // Timed events for a single date
+  // Horario = Actividades recurrentes y estructurales (Clases semanales)
+  getHorarioEventsForDate(state: MasterState, targetDateStr: string): UnifiedExecutiveEvent[] {
+    const events: UnifiedExecutiveEvent[] = [
+      ...AcademicSync.projectHorarioEvents(state.offices.academica, targetDateStr),
+      ...DailyLifeSync.projectDailyLifeEvents(state.offices.vidaDiaria, targetDateStr)
+    ];
+
+    events.sort((a, b) => {
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+
+    return events;
+  },
+
+  // Horario para la semana entera (7 días)
+  getHorarioEventsForWeek(state: MasterState, dateInWeek: string): Map<string, UnifiedExecutiveEvent[]> {
+    const weekDays = getWeekDaysForDate(dateInWeek);
+    const weekMap = new Map<string, UnifiedExecutiveEvent[]>();
+
+    weekDays.forEach(day => {
+      weekMap.set(day.dateStr, this.getHorarioEventsForDate(state, day.dateStr));
+    });
+
+    return weekMap;
+  },
+
+  // Timed events unificados para un día específico (Horario + Agenda) para ocupación y detección de conflictos
   getUnifiedEventsForDate(state: MasterState, targetDateStr: string): UnifiedExecutiveEvent[] {
     const events: UnifiedExecutiveEvent[] = [
       ...AcademicSync.projectAcademicEvents(state.offices.academica, targetDateStr),
@@ -60,7 +111,7 @@ export const OvalOfficeCalculations = {
     return events;
   },
 
-  // Timed events for the entire 7-day week
+  // Timed events for the entire 7-day week (Unificado total)
   getUnifiedEventsForWeek(state: MasterState, dateInWeek: string): Map<string, UnifiedExecutiveEvent[]> {
     const weekDays = getWeekDaysForDate(dateInWeek);
     const weekMap = new Map<string, UnifiedExecutiveEvent[]>();
@@ -72,17 +123,64 @@ export const OvalOfficeCalculations = {
     return weekMap;
   },
 
-  // Agenda / Checklist items WITHOUT fixed time
+  // Agenda = Eventos puntuales con fecha concreta (Actividades académicas, evaluaciones, citas, pagos, tareas)
   getAgendaItems(state: MasterState, selectedDate: string): AgendaItem[] {
     const items: AgendaItem[] = [];
 
-    // 1. Vida Diaria Tasks (WITHOUT startTime)
+    // 1. Actividades Académicas puntualizadas para selectedDate -> AGENDA
+    (state.offices.academica?.subjects || []).forEach(sub => {
+      (sub.academicActivities || []).forEach(act => {
+        if (act.date === selectedDate && act.status !== 'Cancelada') {
+          const timeStr = act.startTime ? `${act.startTime}${act.endTime ? ' - ' + act.endTime : ''}` : '';
+          items.push({
+            id: `agenda_acad_act_${sub.id}_${act.id}`,
+            title: `Actividad: ${act.name} (${sub.name})`,
+            subtitle: `${act.type}${timeStr ? ' • ' + timeStr : ''}${act.location ? ' • ' + act.location : ''}`,
+            sourceOffice: 'academica',
+            officeLabel: 'Oficina Académica',
+            color: sub.color || '#3B82F6',
+            priority: 'medium',
+            status: act.status === 'Realizada' ? 'completed' : 'pending',
+            type: 'academic_activity',
+            date: act.date,
+            startTime: act.startTime,
+            endTime: act.endTime,
+            rawObject: { subject: sub, academicActivity: act }
+          });
+        }
+      });
+
+      // 2. Evaluaciones Programadas para selectedDate -> AGENDA
+      (sub.cuts || []).forEach(cut => {
+        (cut.activities || []).forEach(act => {
+          if (act.date === selectedDate) {
+            items.push({
+              id: `agenda_acad_eval_${sub.id}_${act.id}`,
+              title: `Evaluación: ${act.name} (${sub.name})`,
+              subtitle: `${cut.cutName} (${act.weightPercent}%)${act.time ? ' • ' + act.time : ''}`,
+              sourceOffice: 'academica',
+              officeLabel: 'Oficina Académica',
+              color: '#8B5CF6',
+              priority: 'high',
+              status: act.status === 'graded' ? 'completed' : 'pending',
+              type: 'evaluation',
+              date: act.date,
+              startTime: act.time || '09:00',
+              endTime: act.time ? `${parseInt(act.time.split(':')[0]) + 1}:${act.time.split(':')[1]}` : '10:00',
+              rawObject: { subject: sub, cut, activity: act }
+            });
+          }
+        });
+      });
+    });
+
+    // 3. Vida Diaria Tasks
     (state.offices.vidaDiaria?.tasks || []).forEach(task => {
-      if (task.date === selectedDate && !task.startTime) {
+      if (task.date === selectedDate) {
         items.push({
           id: task.id,
           title: task.name,
-          subtitle: task.description,
+          subtitle: task.description || (task.startTime ? `Hora: ${task.startTime}` : undefined),
           sourceOffice: 'vidaDiaria',
           officeLabel: 'Vida Diaria',
           color: '#F59E0B',
@@ -90,12 +188,14 @@ export const OvalOfficeCalculations = {
           status: task.status === 'completed' ? 'completed' : 'pending',
           type: 'task',
           date: task.date,
+          startTime: task.startTime,
+          endTime: task.endTime,
           rawObject: task
         });
       }
     });
 
-    // 2. Vida Diaria Habits for selectedDate
+    // 4. Vida Diaria Habits for selectedDate
     (state.offices.vidaDiaria?.habits || []).forEach(habit => {
       const isDone = habit.logs?.[selectedDate] || false;
       items.push({
@@ -113,7 +213,7 @@ export const OvalOfficeCalculations = {
       });
     });
 
-    // 3. Daily Objectives
+    // 5. Daily Objectives
     (state.offices.vidaDiaria?.objectives || []).forEach(obj => {
       if (obj.date === selectedDate) {
         items.push({
@@ -132,7 +232,7 @@ export const OvalOfficeCalculations = {
       }
     });
 
-    // 4. Financial Obligations due on/before selectedDate (unpaid, without time)
+    // 6. Financial Obligations due on selectedDate
     (state.offices.financiera?.obligations || []).forEach(ob => {
       if (ob.dueDate === selectedDate && !ob.isPaid) {
         items.push({
@@ -151,13 +251,13 @@ export const OvalOfficeCalculations = {
       }
     });
 
-    // 5. Social Commitments without time
+    // 7. Social Commitments for selectedDate
     (state.offices.vidaSocial?.commitments || []).forEach(com => {
-      if (com.date === selectedDate && !com.startTime) {
+      if (com.date === selectedDate) {
         items.push({
           id: `agenda_soc_${com.id}`,
           title: `Compromiso: ${com.title}`,
-          subtitle: com.location ? `Lugar: ${com.location}` : undefined,
+          subtitle: com.location ? `Lugar: ${com.location}${com.startTime ? ' • ' + com.startTime : ''}` : (com.startTime ? `Hora: ${com.startTime}` : undefined),
           sourceOffice: 'vidaSocial',
           officeLabel: 'Relaciones',
           color: '#8B5CF6',
@@ -165,12 +265,14 @@ export const OvalOfficeCalculations = {
           status: 'pending',
           type: 'commitment',
           date: com.date,
+          startTime: com.startTime,
+          endTime: com.endTime,
           rawObject: com
         });
       }
     });
 
-    // 6. Medical Medications pending today
+    // 8. Medical Medications pending today
     (state.offices.medica?.medications || []).forEach(med => {
       items.push({
         id: `agenda_med_${med.id}`,
@@ -350,5 +452,98 @@ export const OvalOfficeCalculations = {
     }
 
     return conflicts;
+  },
+
+  // Identification of Free Time Gaps between scheduled events
+  findFreeTimeGaps(events: UnifiedExecutiveEvent[], dayStartHour = 7, dayEndHour = 22): FreeTimeGap[] {
+    const parseMins = (timeStr?: string): number | null => {
+      if (!timeStr) return null;
+      const [h, m] = timeStr.split(':').map(Number);
+      if (isNaN(h) || isNaN(m)) return null;
+      return h * 60 + m;
+    };
+
+    const formatMins = (mins: number): string => {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    // Filter events with valid times and sort by startTime
+    const timedEvents = events
+      .map(e => ({
+        startM: parseMins(e.startTime),
+        endM: parseMins(e.endTime || e.startTime)
+      }))
+      .filter((e): e is { startM: number; endM: number } => e.startM !== null && e.endM !== null && e.endM > e.startM)
+      .sort((a, b) => a.startM - b.startM);
+
+    if (timedEvents.length === 0) return [];
+
+    // Merge overlapping/adjacent intervals to get actual busy blocks
+    const busyBlocks: Array<{ startM: number; endM: number }> = [];
+    timedEvents.forEach(evt => {
+      if (busyBlocks.length === 0) {
+        busyBlocks.push({ ...evt });
+      } else {
+        const last = busyBlocks[busyBlocks.length - 1];
+        if (evt.startM <= last.endM) {
+          last.endM = Math.max(last.endM, evt.endM);
+        } else {
+          busyBlocks.push({ ...evt });
+        }
+      }
+    });
+
+    const gaps: FreeTimeGap[] = [];
+    const minDayM = dayStartHour * 60;
+    const maxDayM = dayEndHour * 60;
+
+    // Check gap before first busy block
+    if (busyBlocks[0].startM - minDayM >= 20) {
+      const dur = busyBlocks[0].startM - minDayM;
+      gaps.push({
+        id: `gap_start_${minDayM}`,
+        startTime: formatMins(minDayM),
+        endTime: formatMins(busyBlocks[0].startM),
+        durationMinutes: dur,
+        durationFormatted: formatMinutesToHumanReadable(dur),
+        suggestions: ['estudiar', 'completar tareas', 'descansar', 'realizar hábitos', 'adelantar objetivos']
+      });
+    }
+
+    // Check gaps between consecutive busy blocks
+    for (let i = 0; i < busyBlocks.length - 1; i++) {
+      const currentEnd = busyBlocks[i].endM;
+      const nextStart = busyBlocks[i + 1].startM;
+      const gapMins = nextStart - currentEnd;
+
+      if (gapMins >= 15) {
+        gaps.push({
+          id: `gap_${i}_${currentEnd}`,
+          startTime: formatMins(currentEnd),
+          endTime: formatMins(nextStart),
+          durationMinutes: gapMins,
+          durationFormatted: formatMinutesToHumanReadable(gapMins),
+          suggestions: ['estudiar', 'completar tareas', 'descansar', 'realizar hábitos', 'adelantar objetivos']
+        });
+      }
+    }
+
+    // Check gap after last busy block
+    const lastEnd = busyBlocks[busyBlocks.length - 1].endM;
+    if (maxDayM - lastEnd >= 30) {
+      const dur = maxDayM - lastEnd;
+      gaps.push({
+        id: `gap_end_${lastEnd}`,
+        startTime: formatMins(lastEnd),
+        endTime: formatMins(maxDayM),
+        durationMinutes: dur,
+        durationFormatted: formatMinutesToHumanReadable(dur),
+        suggestions: ['estudiar', 'completar tareas', 'descansar', 'realizar hábitos', 'adelantar objetivos']
+      });
+    }
+
+    return gaps;
   }
 };

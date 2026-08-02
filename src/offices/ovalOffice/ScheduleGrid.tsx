@@ -57,8 +57,8 @@ export const ScheduleGrid: React.FC<Props> = ({
       }}
       onNavigateToOffice={onNavigateToOffice}
       accentColor="gold"
-      title="Horario Ejecutivo Unificado"
-      subtitle="Proyección cronológica integrada de todas las oficinas con bloques de horario continuos"
+      title="Horario Semanal Recurrente"
+      subtitle="Estructura fija de actividades recurrentes de la semana (Clases y Rutinas fijas únicamente)"
     />
   );
 };

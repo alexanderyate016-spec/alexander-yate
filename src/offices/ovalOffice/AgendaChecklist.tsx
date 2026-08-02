@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AgendaItem } from './OvalOfficeCalculations';
 import { CheckSquare, Square, Clock, Plus, Trash2, Tag, Calendar, AlertCircle } from 'lucide-react';
 import { DailyLifeStore } from '../dailyLife/DailyLifeStore';
+import { AcademicStore } from '../academic/AcademicStore';
 
 interface Props {
   items: AgendaItem[];
@@ -35,6 +36,11 @@ export const AgendaChecklist: React.FC<Props> = ({
       } else if (item.type === 'objective') {
         DailyLifeStore.toggleObjective(item.rawObject.id);
       }
+    } else if (item.sourceOffice === 'academica') {
+      if (item.type === 'academic_activity' && item.rawObject?.academicActivity?.id) {
+        const newStatus = item.status === 'completed' ? 'Pendiente' : 'Realizada';
+        AcademicStore.updateAcademicActivity(item.rawObject.academicActivity.id, { status: newStatus });
+      }
     }
   };
 
@@ -46,6 +52,10 @@ export const AgendaChecklist: React.FC<Props> = ({
         DailyLifeStore.deleteHabit(item.rawObject.id);
       } else if (item.type === 'objective') {
         DailyLifeStore.deleteObjective(item.rawObject.id);
+      }
+    } else if (item.sourceOffice === 'academica') {
+      if (item.type === 'academic_activity' && item.rawObject?.academicActivity?.id) {
+        AcademicStore.deleteAcademicActivity(item.rawObject.academicActivity.id);
       }
     }
   };
@@ -141,9 +151,16 @@ export const AgendaChecklist: React.FC<Props> = ({
                     )}
                   </button>
 
-                  <span className={`font-sans truncate ${item.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-                    {item.title}
-                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className={`font-sans truncate ${item.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                      {item.title}
+                    </span>
+                    {item.subtitle && (
+                      <span className="text-[10px] text-slate-400 font-sans truncate">
+                        {item.subtitle}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0 font-mono text-[11px]">

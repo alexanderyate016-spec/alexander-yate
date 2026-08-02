@@ -4,6 +4,7 @@ import { OvalOfficeCalculations, AgendaItem } from './OvalOfficeCalculations';
 import { ExecutiveDeskView } from './ExecutiveDeskView';
 import { ScheduleGrid } from './ScheduleGrid';
 import { AgendaChecklist } from './AgendaChecklist';
+import { ExecutiveDailyAgenda } from './ExecutiveDailyAgenda';
 import { NotificationsModal } from './NotificationsModal';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { ConflictPanel } from './ConflictPanel';
@@ -44,11 +45,12 @@ export const OvalOfficeView: React.FC<Props> = ({
   const greeting = getGreetingByTime(userName);
 
   const eventsToday = OvalOfficeCalculations.getUnifiedEventsForDate(state, selectedDate);
-  const eventsWeek = OvalOfficeCalculations.getUnifiedEventsForWeek(state, selectedDate);
+  const eventsWeek = OvalOfficeCalculations.getHorarioEventsForWeek(state, selectedDate);
   const agendaItems = OvalOfficeCalculations.getAgendaItems(state, selectedDate);
   const notifications = OvalOfficeCalculations.getNotifications(state, selectedDate);
   const rawSuggestions = OvalOfficeCalculations.getSuggestions(state, selectedDate);
   const rawConflicts = OvalOfficeCalculations.detectScheduleConflicts(eventsToday);
+  const freeGaps = OvalOfficeCalculations.findFreeTimeGaps(eventsToday);
 
   // Filter out dismissed items
   const activeSuggestions = rawSuggestions.filter(s => !dismissedSuggestionIds.includes(s.id));
@@ -176,10 +178,38 @@ export const OvalOfficeView: React.FC<Props> = ({
         onFocusAgenda={handleFocusAgenda}
       />
 
-      {/* 4. MAIN SCHEDULE & AGENDA GRID (2-COLUMN LAYOUT) */}
+      {/* 4. AGENDA EJECUTIVA DEL DÍA (NUEVO COMPONENTE DESTACADO PRINCIPAL DE LA OVAL OFFICE) */}
+      <div ref={agendaRef}>
+        <ExecutiveDailyAgenda
+          selectedDate={selectedDate}
+          eventsToday={eventsToday}
+          freeGaps={freeGaps}
+          conflicts={activeConflicts}
+          onNavigateToOffice={onNavigateToOffice}
+          onOpenQuickAdd={() => setIsQuickAddTaskOpen(true)}
+          onDismissConflict={handleDismissConflict}
+          onOpenAssignTimeModal={(evt) => {
+            const agItem: AgendaItem = {
+              id: evt.id,
+              title: evt.title,
+              sourceOffice: evt.sourceOffice as any,
+              officeLabel: evt.officeLabel,
+              color: evt.color || '#3B82F6',
+              priority: 'medium',
+              status: 'pending',
+              type: 'task',
+              date: evt.date,
+              rawObject: evt.rawObject
+            };
+            handleOpenAssignTime(agItem);
+          }}
+        />
+      </div>
+
+      {/* 5. MAIN SCHEDULE & AGENDA CHECKLIST (2-COLUMN LAYOUT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* HORARIO EJECUTIVO UNIFICADO (8 COLS) */}
+        {/* HORARIO SEMANAL RECURRENTE (8 COLS) */}
         <div className="lg:col-span-8">
           <ScheduleGrid
             selectedDate={selectedDate}
@@ -193,8 +223,8 @@ export const OvalOfficeView: React.FC<Props> = ({
           />
         </div>
 
-        {/* AGENDA EJECUTIVA CHECKLIST (4 COLS) */}
-        <div ref={agendaRef} className="lg:col-span-4 h-full">
+        {/* CHECKLIST DE PENDIENTES (4 COLS) */}
+        <div className="lg:col-span-4 h-full">
           <AgendaChecklist
             items={agendaItems}
             selectedDate={selectedDate}
