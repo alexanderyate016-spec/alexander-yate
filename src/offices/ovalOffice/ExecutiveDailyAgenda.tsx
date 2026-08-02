@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MasterState, UnifiedExecutiveEvent } from '../../types/store';
 import { OvalOfficeCalculations, FreeTimeGap } from './OvalOfficeCalculations';
+import { ConflictResolverModal } from './ConflictResolverModal';
 import {
   Calendar,
   Clock,
@@ -27,7 +28,8 @@ import {
   HeartPulse,
   DollarSign,
   Gift,
-  FileText
+  FileText,
+  Check
 } from 'lucide-react';
 import {
   getTodayDateString,
@@ -58,6 +60,7 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
   onDismissConflict
 }) => {
   const [editingEvent, setEditingEvent] = useState<UnifiedExecutiveEvent | null>(null);
+  const [activeConflictToResolve, setActiveConflictToResolve] = useState<{ eventA: UnifiedExecutiveEvent; eventB: UnifiedExecutiveEvent } | null>(null);
   const [newStartTime, setNewStartTime] = useState<string>('09:00');
   const [newEndTime, setNewEndTime] = useState<string>('10:00');
   const [expandedGapId, setExpandedGapId] = useState<string | null>(null);
@@ -465,21 +468,17 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
 
                 <div className="flex items-center gap-2 shrink-0 font-sans text-[11px]">
                   <button
-                    onClick={() => handleShiftOneHour(eventB)}
-                    className="px-2.5 py-1.5 bg-[#162A45] hover:bg-rose-900 border border-rose-400 text-rose-200 font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1"
+                    onClick={() => setActiveConflictToResolve({ eventA, eventB })}
+                    className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold uppercase tracking-wider rounded-lg transition-all shadow-md flex items-center gap-1.5 active:scale-95"
                   >
-                    <Clock className="w-3 h-3" /> Mover 2do evento +1h
+                    <AlertTriangle className="w-3.5 h-3.5" /> Resolver Conflicto
                   </button>
 
                   <button
-                    onClick={() => {
-                      setEditingEvent(eventB);
-                      setNewStartTime(eventB.startTime || '09:00');
-                      setNewEndTime(eventB.endTime || '10:00');
-                    }}
-                    className="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1"
+                    onClick={() => handleShiftOneHour(eventB)}
+                    className="px-2.5 py-1.5 bg-[#162A45] hover:bg-rose-900 border border-rose-400 text-rose-200 font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1"
                   >
-                    <Edit3 className="w-3 h-3" /> Cambiar Hora
+                    <Clock className="w-3 h-3" /> +1h
                   </button>
 
                   <button
@@ -568,6 +567,12 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
                         <p className="text-xs text-slate-300 font-sans">
                           {evt.subtitle}
                         </p>
+                      )}
+
+                      {evt.replacesClassNote && (
+                        <div className="text-xs text-amber-300 font-medium bg-amber-950/40 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 mt-1">
+                          <span>{evt.replacesClassNote}</span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -750,6 +755,50 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. CONFLICT RESOLVER MODAL */}
+      {activeConflictToResolve && (
+        <ConflictResolverModal
+          conflict={activeConflictToResolve}
+          onClose={() => setActiveConflictToResolve(null)}
+          onResolved={() => setActiveConflictToResolve(null)}
+        />
+      )}
+
+      {/* 8. HISTORIAL DE RESOLUCIONES DE CONFLICTOS */}
+      {state.executive?.conflictResolutions && state.executive.conflictResolutions.length > 0 && (
+        <div className="bg-[#081225] border border-[#C5A059]/40 p-4 rounded-xl space-y-3">
+          <div className="flex justify-between items-center border-b border-white/10 pb-2">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#C5A059]" />
+              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-[#C5A059]">
+                Historial de Resoluciones de Conflictos ({state.executive.conflictResolutions.length})
+              </h4>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">
+              Registro oficial de permutas y permisos
+            </span>
+          </div>
+
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {state.executive.conflictResolutions.slice().reverse().map((rec) => (
+              <div key={rec.id} className="p-3 bg-[#0F233D] border border-slate-700/60 rounded-xl text-xs space-y-1">
+                <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                  <span className="text-amber-400 font-bold">{rec.date}</span>
+                  <span>{new Date(rec.resolvedAt).toLocaleDateString('es-CO')}</span>
+                </div>
+                <div className="font-bold text-white">
+                  Conflicto: <span className="text-amber-300">{rec.eventATitle}</span> ↔ <span className="text-blue-300">{rec.eventBTitle}</span>
+                </div>
+                <div className="text-emerald-300 font-medium text-[11px] flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span><strong>{rec.resolutionTitle}:</strong> {rec.details}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -69,6 +69,7 @@ export interface AcademicActivity {
   professor?: string;
   description?: string;
   status: AcademicActivityStatus;
+  classRelation?: 'replaces' | 'complements' | 'independent';
 }
 
 export interface AcademicCut {
@@ -623,6 +624,22 @@ export interface CrisisCenterData {
 }
 
 // -------------------------------------------------------------
+// HISTORIAL DE RESOLUCIÓN DE CONFLICTOS
+// -------------------------------------------------------------
+export interface ConflictResolutionRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  eventAId: string;
+  eventATitle: string;
+  eventBId: string;
+  eventBTitle: string;
+  resolutionType: 'permitted_absence' | 'class_rescheduled' | 'activity_rescheduled' | 'appointment_rescheduled' | 'event_cancelled' | 'ignored';
+  resolutionTitle: string;
+  details: string;
+  resolvedAt: string;
+}
+
+// -------------------------------------------------------------
 // PROYECCIONES & EVENTO EJECUTIVO UNIFICADO
 // -------------------------------------------------------------
 export interface UnifiedExecutiveEvent {
@@ -638,6 +655,11 @@ export interface UnifiedExecutiveEvent {
   type: 'class' | 'evaluation' | 'academic_activity' | 'task' | 'time_plan' | 'habit' | 'obligation' | 'appointment' | 'commitment' | 'birthday';
   priority?: 'low' | 'medium' | 'high';
   rawObject: any;
+  replacesClassNote?: string;
+  isJustifiedAbsence?: boolean;
+  absenceNote?: string;
+  status?: string;
+  classRelation?: 'replaces' | 'complements' | 'independent';
 }
 
 // -------------------------------------------------------------
@@ -659,6 +681,8 @@ export interface CasaBlancaStoreData {
   };
   executive: {
     notes?: string;
+    conflictResolutions?: ConflictResolutionRecord[];
+    dismissedConflicts?: string[];
   };
 }
 

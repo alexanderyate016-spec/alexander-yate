@@ -311,6 +311,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [acadActProfessor, setAcadActProfessor] = useState('');
   const [acadActDescription, setAcadActDescription] = useState('');
   const [acadActStatus, setAcadActStatus] = useState<AcademicActivityStatus>('Pendiente');
+  const [acadActClassRelation, setAcadActClassRelation] = useState<'replaces' | 'complements' | 'independent'>('replaces');
 
   const todayStr = getTodayDateString();
 
@@ -784,6 +785,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setAcadActProfessor(act.professor || '');
       setAcadActDescription(act.description || '');
       setAcadActStatus(act.status || 'Pendiente');
+      setAcadActClassRelation(act.classRelation || 'replaces');
     } else {
       setEditingAcademicActivity(null);
       setAcadActName('');
@@ -797,6 +799,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setAcadActProfessor('');
       setAcadActDescription('');
       setAcadActStatus('Pendiente');
+      setAcadActClassRelation('replaces');
     }
     setShowAcademicActivityModal(true);
   };
@@ -825,7 +828,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         location: acadActLocation.trim(),
         professor: acadActProfessor.trim(),
         description: acadActDescription.trim(),
-        status: acadActStatus
+        status: acadActStatus,
+        classRelation: acadActClassRelation
       });
       showToast(`Actividad "${acadActName.trim()}" actualizada.`);
     } else {
@@ -839,7 +843,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         location: acadActLocation.trim(),
         professor: acadActProfessor.trim(),
         description: acadActDescription.trim(),
-        status: acadActStatus
+        status: acadActStatus,
+        classRelation: acadActClassRelation
       });
       showToast(`Actividad "${acadActName.trim()}" creada con éxito.`);
     }
@@ -3405,8 +3410,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 />
               </div>
 
-              {/* Type & Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Type, Status & Class Relation */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-300 block mb-1">Tipo de Actividad *</label>
                   <select
@@ -3440,6 +3445,19 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     <option value="Realizada">✅ Realizada</option>
                     <option value="Cancelada">❌ Cancelada</option>
                     <option value="Reprogramada">🔄 Reprogramada</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Relación con Clase</label>
+                  <select
+                    value={acadActClassRelation}
+                    onChange={e => setAcadActClassRelation(e.target.value as 'replaces' | 'complements' | 'independent')}
+                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-amber-200 font-bold focus:outline-none focus:border-emerald-400"
+                  >
+                    <option value="replaces">📍 Sustituye la clase</option>
+                    <option value="complements">🤝 Complementa la clase</option>
+                    <option value="independent">⭐ Evento independiente</option>
                   </select>
                 </div>
               </div>

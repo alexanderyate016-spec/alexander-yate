@@ -90,5 +90,17 @@ export const SocialStore = {
     storeInstance.updateState(draft => {
       draft.offices.vidaSocial.commitments = draft.offices.vidaSocial.commitments.filter(c => c.id !== id);
     });
+  },
+
+  updateCommitment(id: string, updates: Partial<SocialCommitment>) {
+    storeInstance.updateState(draft => {
+      const idx = draft.offices.vidaSocial.commitments.findIndex(c => c.id === id);
+      if (idx !== -1) {
+        draft.offices.vidaSocial.commitments[idx] = {
+          ...draft.offices.vidaSocial.commitments[idx],
+          ...updates
+        };
+      }
+    });
   }
 };

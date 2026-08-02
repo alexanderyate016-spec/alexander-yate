@@ -42,6 +42,18 @@ export const MedicalStore = {
     });
   },
 
+  updateAppointment(id: string, updates: Partial<MedicalAppointment>) {
+    storeInstance.updateState(draft => {
+      const idx = draft.offices.medica.appointments.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        draft.offices.medica.appointments[idx] = {
+          ...draft.offices.medica.appointments[idx],
+          ...updates
+        };
+      }
+    });
+  },
+
   // VACCINES
   addImmunization(vac: Omit<ImmunizationRecord, 'id'>) {
     storeInstance.updateState(draft => {

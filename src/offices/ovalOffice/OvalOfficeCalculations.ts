@@ -433,9 +433,10 @@ export const OvalOfficeCalculations = {
     return suggestions;
   },
 
-  // Conflict Detection
-  detectScheduleConflicts(events: UnifiedExecutiveEvent[]): Array<{ eventA: UnifiedExecutiveEvent; eventB: UnifiedExecutiveEvent }> {
+  // Conflict Detection - Only detects real conflicts between competing commitments
+  detectScheduleConflicts(events: UnifiedExecutiveEvent[], state?: MasterState): Array<{ eventA: UnifiedExecutiveEvent; eventB: UnifiedExecutiveEvent }> {
     const conflicts: Array<{ eventA: UnifiedExecutiveEvent; eventB: UnifiedExecutiveEvent }> = [];
+    const dismissed = new Set(state?.executive?.dismissedConflicts || []);
 
     for (let i = 0; i < events.length; i++) {
       for (let j = i + 1; j < events.length; j++) {
@@ -443,6 +444,31 @@ export const OvalOfficeCalculations = {
         const b = events[j];
 
         if (!a.startTime || !a.endTime || !b.startTime || !b.endTime) continue;
+
+        // 1. Skip cancelled events
+        if (a.status === 'Cancelada' || a.status === 'cancelled' || b.status === 'Cancelada' || b.status === 'cancelled') continue;
+        if (a.rawObject?.status === 'Cancelada' || a.rawObject?.academicActivity?.status === 'Cancelada' || b.rawObject?.status === 'Cancelada' || b.rawObject?.academicActivity?.status === 'Cancelada') continue;
+
+        // 2. Skip events with justified absence
+        if (a.isJustifiedAbsence || b.isJustifiedAbsence || a.rawObject?.isJustifiedAbsence || b.rawObject?.isJustifiedAbsence) continue;
+
+        // 3. Skip same-subject class & activity substitutions or complements
+        const subA = a.rawObject?.subject?.id;
+        const subB = b.rawObject?.subject?.id;
+        if (subA && subB && subA === subB) {
+          if ((a.type === 'class' && b.type === 'academic_activity') || (b.type === 'class' && a.type === 'academic_activity')) {
+            const act = a.type === 'academic_activity' ? a : b;
+            const relation = act.classRelation || 'replaces';
+            if (relation === 'replaces' || relation === 'complements') {
+              continue; // Substitution or complement, NOT a conflict
+            }
+          }
+        }
+
+        // 4. Skip if conflict key was resolved or dismissed
+        const confKey1 = `${a.id}_${b.id}`;
+        const confKey2 = `${b.id}_${a.id}`;
+        if (dismissed.has(confKey1) || dismissed.has(confKey2)) continue;
 
         // Check time overlap: (StartA < EndB) and (EndA > StartB)
         if (a.startTime < b.endTime && a.endTime > b.startTime) {
@@ -550,7 +576,7 @@ export const OvalOfficeCalculations = {
   // Resumen de métricas para el encabezado del día
   getDaySummaryMetrics(state: MasterState, dateStr: string) {
     const events = this.getUnifiedEventsForDate(state, dateStr);
-    const conflicts = this.detectScheduleConflicts(events);
+    const conflicts = this.detectScheduleConflicts(events, state);
     const gaps = this.findFreeTimeGaps(events);
 
     let occupiedMins = 0;
@@ -582,7 +608,7 @@ export const OvalOfficeCalculations = {
   // Indicadores visuales para las píldoras del selector de 7 días
   getDayIndicatorFlags(state: MasterState, dateStr: string) {
     const events = this.getUnifiedEventsForDate(state, dateStr);
-    const conflicts = this.detectScheduleConflicts(events);
+    const conflicts = this.detectScheduleConflicts(events, state);
 
     return {
       hasConflicts: conflicts.length > 0,

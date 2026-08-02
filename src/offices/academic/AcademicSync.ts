@@ -81,11 +81,76 @@ export const AcademicSync = {
     return events;
   },
 
-  // Proyección unificada completa (Horario + Agenda) para cálculo de ocupación y detección de conflictos
+  // Proyección unificada completa (Horario + Agenda) con lógica de sustitución/complemento de clases
   projectAcademicEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
-    return [
-      ...this.projectHorarioEvents(data, targetDateStr),
-      ...this.projectAgendaEvents(data, targetDateStr)
-    ];
+    const classEvents = this.projectHorarioEvents(data, targetDateStr);
+    const agendaEvents = this.projectAgendaEvents(data, targetDateStr);
+
+    // Identify academic activities for this date
+    const replacedClassSubjectIds = new Set<string>();
+    const groupedComplementKeys = new Set<string>();
+
+    // Process academic activity relations with classes
+    const processedAgendaEvents: UnifiedExecutiveEvent[] = [];
+
+    agendaEvents.forEach(evt => {
+      if (evt.type === 'academic_activity' && evt.rawObject?.academicActivity) {
+        const act = evt.rawObject.academicActivity;
+        const sub = evt.rawObject.subject;
+        const relation = act.classRelation || 'replaces'; // Default to replaces if same subject on class day
+
+        const matchingClass = classEvents.find(c => c.rawObject?.subject?.id === sub?.id);
+
+        if (relation === 'replaces' && matchingClass) {
+          // Replaces the class for this day
+          replacedClassSubjectIds.add(sub.id);
+          const timeStart = matchingClass.startTime || '08:00';
+          const timeEnd = matchingClass.endTime || '12:00';
+
+          processedAgendaEvents.push({
+            ...evt,
+            title: `🚌 ${act.name} — ${sub.name}`,
+            subtitle: `${act.type} ${act.location ? '| ' + act.location : ''}`,
+            replacesClassNote: `📍 Sustituye la clase programada de ${timeStart} a ${timeEnd}`,
+            classRelation: 'replaces'
+          });
+        } else if (relation === 'complements' && matchingClass) {
+          // Complements the class
+          if (matchingClass.startTime === evt.startTime && matchingClass.endTime === evt.endTime) {
+            // Group exact same time slot into a single complementary block
+            replacedClassSubjectIds.add(sub.id);
+            processedAgendaEvents.push({
+              ...evt,
+              title: `📘 ${sub.name}: Clase y ${act.type} (${act.name})`,
+              subtitle: `Sesión integrada | ${act.location ? act.location : 'Aula habitual'}`,
+              replacesClassNote: `📍 Complementa la sesión de clase (${evt.startTime} - ${evt.endTime})`,
+              classRelation: 'complements'
+            });
+          } else {
+            // Different times, keep both but tag relation
+            processedAgendaEvents.push({
+              ...evt,
+              classRelation: 'complements'
+            });
+          }
+        } else {
+          // Independent or no matching class
+          processedAgendaEvents.push({
+            ...evt,
+            classRelation: relation
+          });
+        }
+      } else {
+        processedAgendaEvents.push(evt);
+      }
+    });
+
+    // Filter out classes that were replaced or grouped
+    const finalClassEvents = classEvents.filter(c => {
+      const subId = c.rawObject?.subject?.id;
+      return !replacedClassSubjectIds.has(subId);
+    });
+
+    return [...finalClassEvents, ...processedAgendaEvents];
   }
 };
