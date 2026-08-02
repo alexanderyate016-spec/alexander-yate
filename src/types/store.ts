@@ -393,6 +393,13 @@ export interface SocialOfficeData {
 // -------------------------------------------------------------
 // OFICINA MÉDICA
 // -------------------------------------------------------------
+export interface CustomWaterBottle {
+  id: string;
+  name: string;
+  capacityMl: number;
+  icon?: string;
+}
+
 export interface HealthRecord {
   id: string;
   date: string;
@@ -401,13 +408,15 @@ export interface HealthRecord {
   sleepQuality?: number; // 1 - 5
   hydrationLiters?: number;
   hydrationGlasses?: number;
+  notes?: string;
 }
 
 export interface NutritionRecord {
   id: string;
   date: string;
-  mealType: 'Desayuno' | 'Almuerzo' | 'Cena' | 'Snack';
+  mealType: 'Desayuno' | 'Almuerzo' | 'Cena' | 'Refrigerio' | 'Snack';
   description: string;
+  notes?: string;
   estimatedCalories?: number;
 }
 
@@ -416,9 +425,12 @@ export interface MedicationItem {
   name: string;
   dose: string;
   schedule: string;
+  timeOfDay?: string; // e.g. "08:00"
   startDate: string;
   endDate?: string;
+  instructions?: string;
   notes?: string;
+  status?: 'active' | 'completed' | 'paused';
   lastTakenTime?: string;
 }
 
@@ -426,21 +438,26 @@ export interface MedicalAppointment {
   id: string;
   title: string;
   specialty: string;
+  doctor?: string;
+  institution?: string; // Clínica / Centro
   date: string;
   startTime: string;
   endTime?: string;
-  location?: string;
-  doctor?: string;
+  reason?: string; // Motivo de la consulta
   notes?: string;
+  status?: 'Programada' | 'Realizada' | 'Cancelada' | 'Reprogramada';
+  location?: string;
 }
 
 export interface MedicalExam {
   id: string;
-  name: string;
+  name: string; // Tipo o nombre de examen
   date: string;
   location?: string;
   doctor?: string;
   resultSummary?: string;
+  nextControlDate?: string;
+  status?: 'Pendiente' | 'Completado' | 'En revisión';
   notes?: string;
 }
 
@@ -455,11 +472,18 @@ export interface HealthCondition {
 export interface ImmunizationRecord {
   id: string;
   name: string;
+  preventsDisease?: string; // Enfermedad que previene
+  manufacturer?: string; // Fabricante (opcional)
   dosesRequired: number;
   dosesReceived: number;
   applicationDates: string[];
+  lastApplicationDate?: string;
+  locationApplied?: string; // Lugar donde fue aplicada
+  batchNumber?: string; // Lote (opcional)
+  administeredBy?: string; // Profesional que la aplicó (opcional)
   nextDoseDate?: string;
-  frequency: 'single' | 'multiple' | 'booster' | 'annual';
+  frequency: 'single' | 'multiple' | 'booster' | 'annual' | 'custom';
+  frequencyYears?: number;
   notes?: string;
 }
 
@@ -471,6 +495,8 @@ export interface MedicalOfficeData {
   medicalExams: MedicalExam[];
   conditions: HealthCondition[];
   immunizations: ImmunizationRecord[];
+  customBottles?: CustomWaterBottle[];
+  dailyWaterTargetLiters?: number;
 }
 
 // -------------------------------------------------------------
