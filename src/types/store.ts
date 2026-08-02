@@ -41,6 +41,36 @@ export interface AcademicEvaluationActivity {
   description?: string;
 }
 
+export type AcademicActivityType =
+  | 'Salida de campo'
+  | 'Laboratorio'
+  | 'Práctica'
+  | 'Clase especial'
+  | 'Conferencia'
+  | 'Seminario'
+  | 'Tutoría'
+  | 'Asesoría'
+  | 'Entrega de documentos'
+  | 'Inscripción'
+  | 'Reunión'
+  | 'Otro';
+
+export type AcademicActivityStatus = 'Pendiente' | 'Realizada' | 'Cancelada' | 'Reprogramada';
+
+export interface AcademicActivity {
+  id: string;
+  subjectId: string;
+  name: string;
+  type: AcademicActivityType | string;
+  date: string; // YYYY-MM-DD
+  startTime?: string; // HH:mm
+  endTime?: string;   // HH:mm
+  location?: string;
+  professor?: string;
+  description?: string;
+  status: AcademicActivityStatus;
+}
+
 export interface AcademicCut {
   id: string;
   cutName: string;
@@ -57,6 +87,7 @@ export interface AcademicSubject {
   classroom?: string;
   scheduleSessions: AcademicSession[];
   cuts: AcademicCut[];
+  academicActivities?: AcademicActivity[];
 }
 
 export interface AcademicSemester {
@@ -70,6 +101,7 @@ export interface AcademicSemester {
 export interface AcademicOfficeData {
   semesters: AcademicSemester[];
   subjects: AcademicSubject[];
+  academicActivities?: AcademicActivity[];
 }
 
 // -------------------------------------------------------------
@@ -570,7 +602,7 @@ export interface UnifiedExecutiveEvent {
   date: string; // YYYY-MM-DD
   startTime?: string; // HH:mm
   endTime?: string;   // HH:mm
-  type: 'class' | 'evaluation' | 'task' | 'time_plan' | 'habit' | 'obligation' | 'appointment' | 'commitment' | 'birthday';
+  type: 'class' | 'evaluation' | 'academic_activity' | 'task' | 'time_plan' | 'habit' | 'obligation' | 'appointment' | 'commitment' | 'birthday';
   priority?: 'low' | 'medium' | 'high';
   rawObject: any;
 }

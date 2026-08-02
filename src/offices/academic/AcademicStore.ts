@@ -1,5 +1,5 @@
 import { storeInstance } from '../../store/CasaBlancaStore';
-import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession } from '../../types/store';
+import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession, AcademicActivity } from '../../types/store';
 
 export const AcademicStore = {
   getData(): AcademicOfficeData {
@@ -176,6 +176,65 @@ export const AcademicStore = {
           cut.activities = cut.activities.filter(a => a.id !== activityId);
         }
       }
+    });
+  },
+
+  // ACADEMIC ACTIVITIES (NON-GRADED EVENTS)
+  addAcademicActivity(activity: Omit<AcademicActivity, 'id'>) {
+    storeInstance.updateState(draft => {
+      const id = 'acad_act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const newAct: AcademicActivity = { ...activity, id };
+      
+      const sub = draft.offices.academica.subjects.find(s => s.id === activity.subjectId);
+      if (sub) {
+        if (!sub.academicActivities) sub.academicActivities = [];
+        sub.academicActivities.push(newAct);
+      }
+      
+      if (!draft.offices.academica.academicActivities) {
+        draft.offices.academica.academicActivities = [];
+      }
+      draft.offices.academica.academicActivities.push(newAct);
+    });
+  },
+
+  updateAcademicActivity(activityId: string, updates: Partial<AcademicActivity>) {
+    storeInstance.updateState(draft => {
+      // Update in global array
+      if (draft.offices.academica.academicActivities) {
+        const idx = draft.offices.academica.academicActivities.findIndex(a => a.id === activityId);
+        if (idx !== -1) {
+          draft.offices.academica.academicActivities[idx] = {
+            ...draft.offices.academica.academicActivities[idx],
+            ...updates
+          };
+        }
+      }
+      // Update in subject's array
+      draft.offices.academica.subjects.forEach(sub => {
+        if (sub.academicActivities) {
+          const sIdx = sub.academicActivities.findIndex(a => a.id === activityId);
+          if (sIdx !== -1) {
+            sub.academicActivities[sIdx] = {
+              ...sub.academicActivities[sIdx],
+              ...updates
+            };
+          }
+        }
+      });
+    });
+  },
+
+  deleteAcademicActivity(activityId: string) {
+    storeInstance.updateState(draft => {
+      if (draft.offices.academica.academicActivities) {
+        draft.offices.academica.academicActivities = draft.offices.academica.academicActivities.filter(a => a.id !== activityId);
+      }
+      draft.offices.academica.subjects.forEach(sub => {
+        if (sub.academicActivities) {
+          sub.academicActivities = sub.academicActivities.filter(a => a.id !== activityId);
+        }
+      });
     });
   }
 };

@@ -329,5 +329,38 @@ export const AcademicCalculations = {
       return { status: 'Aprobada', average, hasGrades: true };
     }
     return { status: 'En Riesgo', average, hasGrades: true };
+  },
+
+  getActivityTypeIcon(type: string): string {
+    const t = type.toLowerCase();
+    if (t.includes('laboratorio')) return '🧪';
+    if (t.includes('salida') || t.includes('campo')) return '🚌';
+    if (t.includes('conferencia') || t.includes('seminario') || t.includes('exposición')) return '🎤';
+    if (t.includes('tutoría') || t.includes('tutoria') || t.includes('asesoría') || t.includes('asesoria')) return '👨‍🏫';
+    if (t.includes('documento') || t.includes('entrega') || t.includes('informe')) return '📄';
+    if (t.includes('clase') || t.includes('práctica') || t.includes('practica')) return '🏫';
+    if (t.includes('inscripción') || t.includes('inscripcion') || t.includes('reunión') || t.includes('reunion')) return '📅';
+    return '📅';
+  },
+
+  getUpcomingAcademicActivities(subjects: AcademicSubject[], limit: number = 10) {
+    const today = new Date().toISOString().split('T')[0];
+    const items: Array<{ subject: AcademicSubject; activity: any }> = [];
+
+    subjects.forEach(sub => {
+      sub.academicActivities?.forEach(act => {
+        if (act.date >= today && act.status !== 'Cancelada' && act.status !== 'Realizada') {
+          items.push({ subject: sub, activity: act });
+        }
+      });
+    });
+
+    items.sort((a, b) => {
+      const dComp = a.activity.date.localeCompare(b.activity.date);
+      if (dComp !== 0) return dComp;
+      return (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00');
+    });
+
+    return items.slice(0, limit);
   }
 };

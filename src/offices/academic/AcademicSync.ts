@@ -47,6 +47,26 @@ export const AcademicSync = {
           }
         });
       });
+
+      // 3. Academic Activities (non-graded) for target date
+      (sub?.academicActivities || []).forEach(act => {
+        if (act.date === targetDateStr && act.status !== 'Cancelada') {
+          events.push({
+            id: `acad_act_${sub.id}_${act.id}`,
+            sourceOffice: 'academica',
+            officeLabel: 'Oficina Académica',
+            color: sub.color || '#3B82F6',
+            title: `Actividad: ${act.name} (${sub.name})`,
+            subtitle: `${act.type} ${act.location ? '| ' + act.location : ''} ${act.professor ? '| Responsable: ' + act.professor : ''}`,
+            date: act.date,
+            startTime: act.startTime || '08:00',
+            endTime: act.endTime || (act.startTime ? `${parseInt(act.startTime.split(':')[0]) + 1}:${act.startTime.split(':')[1]}` : '09:00'),
+            type: 'academic_activity',
+            priority: 'medium',
+            rawObject: { subject: sub, academicActivity: act }
+          });
+        }
+      });
     });
 
     return events;
