@@ -4,7 +4,7 @@ import { DailyLifeSync } from '../dailyLife/DailyLifeSync';
 import { FinancialSync } from '../financial/FinancialSync';
 import { SocialSync } from '../social/SocialSync';
 import { MedicalSync } from '../medical/MedicalSync';
-import { getWeekDaysForDate, COLOMBIAN_NATIONAL_HOLIDAYS } from '../../utils/dates';
+import { getWeekDaysForDate, getTodayDateString, addDaysToDateStr, getDaysDifference, COLOMBIAN_NATIONAL_HOLIDAYS } from '../../utils/dates';
 
 export interface AgendaItem {
   id: string;
@@ -545,5 +545,95 @@ export const OvalOfficeCalculations = {
     }
 
     return gaps;
+  },
+
+  // Resumen de métricas para el encabezado del día
+  getDaySummaryMetrics(state: MasterState, dateStr: string) {
+    const events = this.getUnifiedEventsForDate(state, dateStr);
+    const conflicts = this.detectScheduleConflicts(events);
+    const gaps = this.findFreeTimeGaps(events);
+
+    let occupiedMins = 0;
+    events.forEach(e => {
+      if (e.startTime && e.endTime) {
+        const [h1, m1] = e.startTime.split(':').map(Number);
+        const [h2, m2] = e.endTime.split(':').map(Number);
+        if (!isNaN(h1) && !isNaN(m1) && !isNaN(h2) && !isNaN(m2)) {
+          const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (diff > 0) occupiedMins += diff;
+        }
+      } else if (e.startTime) {
+        occupiedMins += 60; // Default 1 hr if no end time
+      }
+    });
+
+    let freeMins = gaps.reduce((acc, g) => acc + g.durationMinutes, 0);
+
+    return {
+      eventsCount: events.length,
+      conflictsCount: conflicts.length,
+      occupiedMinutes: occupiedMins,
+      occupiedFormatted: formatMinutesToHumanReadable(occupiedMins),
+      freeMinutes: freeMins,
+      freeFormatted: formatMinutesToHumanReadable(freeMins)
+    };
+  },
+
+  // Indicadores visuales para las píldoras del selector de 7 días
+  getDayIndicatorFlags(state: MasterState, dateStr: string) {
+    const events = this.getUnifiedEventsForDate(state, dateStr);
+    const conflicts = this.detectScheduleConflicts(events);
+
+    return {
+      hasConflicts: conflicts.length > 0,
+      hasBirthday: events.some(e => e.type === 'birthday' || e.sourceOffice === 'vidaSocial'),
+      hasMedical: events.some(e => e.type === 'appointment' || e.sourceOffice === 'medica'),
+      hasEvaluation: events.some(e => e.type === 'evaluation'),
+      hasFinancial: events.some(e => e.type === 'obligation' || e.sourceOffice === 'financiera'),
+      isHighVolume: events.length > 4
+    };
+  },
+
+  // Próximos eventos destacados a partir de la fecha de inicio
+  getUpcomingEvents(state: MasterState, fromDateStr: string = getTodayDateString(), limit = 5) {
+    const upcoming: Array<{
+      event: UnifiedExecutiveEvent;
+      dateStr: string;
+      relativeLabel: string;
+    }> = [];
+
+    const todayStr = getTodayDateString();
+
+    for (let i = 0; i < 14; i++) {
+      const curDate = addDaysToDateStr(fromDateStr, i);
+      const events = this.getUnifiedEventsForDate(state, curDate);
+
+      const diff = getDaysDifference(todayStr, curDate);
+      let relativeLabel = `En ${diff} días`;
+      if (diff === 0) relativeLabel = 'Hoy';
+      else if (diff === 1) relativeLabel = 'Mañana';
+
+      events.forEach(evt => {
+        upcoming.push({
+          event: evt,
+          dateStr: curDate,
+          relativeLabel
+        });
+      });
+
+      if (upcoming.length >= limit * 3) break;
+    }
+
+    // Sort chronologically
+    upcoming.sort((a, b) => {
+      if (a.dateStr !== b.dateStr) {
+        return a.dateStr.localeCompare(b.dateStr);
+      }
+      const timeA = a.event.startTime || '00:00';
+      const timeB = b.event.startTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+
+    return upcoming.slice(0, limit);
   }
 };

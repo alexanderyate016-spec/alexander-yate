@@ -81,6 +81,15 @@ export function getDaysDifference(dateStr1: string, dateStr2: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+export function addDaysToDateStr(dateStr: string, daysToAdd: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + daysToAdd);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function getWeekDaysForDate(dateStr: string): Array<{ dateStr: string; dayNum: number; dayShort: string; dayNumberStr: string; isToday: boolean }> {
   const d = new Date(dateStr + 'T12:00:00');
   const day = d.getDay(); // 0 is Sunday, 1 is Monday...

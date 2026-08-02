@@ -181,10 +181,9 @@ export const OvalOfficeView: React.FC<Props> = ({
       {/* 4. AGENDA EJECUTIVA DEL DÍA (NUEVO COMPONENTE DESTACADO PRINCIPAL DE LA OVAL OFFICE) */}
       <div ref={agendaRef}>
         <ExecutiveDailyAgenda
+          state={state}
           selectedDate={selectedDate}
-          eventsToday={eventsToday}
-          freeGaps={freeGaps}
-          conflicts={activeConflicts}
+          onSelectDate={setSelectedDate}
           onNavigateToOffice={onNavigateToOffice}
           onOpenQuickAdd={() => setIsQuickAddTaskOpen(true)}
           onDismissConflict={handleDismissConflict}

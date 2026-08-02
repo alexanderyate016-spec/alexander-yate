@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { UnifiedExecutiveEvent } from '../../types/store';
-import { FreeTimeGap } from './OvalOfficeCalculations';
+import { MasterState, UnifiedExecutiveEvent } from '../../types/store';
+import { OvalOfficeCalculations, FreeTimeGap } from './OvalOfficeCalculations';
 import {
   Calendar,
   Clock,
@@ -19,16 +19,30 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Edit3
+  Edit3,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Layers,
+  HeartPulse,
+  DollarSign,
+  Gift,
+  FileText
 } from 'lucide-react';
+import {
+  getTodayDateString,
+  formatFriendlyDate,
+  addDaysToDateStr,
+  getDayOfWeekName,
+  getDayOfWeekNumber
+} from '../../utils/dates';
 import { DailyLifeStore } from '../dailyLife/DailyLifeStore';
 import { AcademicStore } from '../academic/AcademicStore';
 
 interface Props {
+  state: MasterState;
   selectedDate: string;
-  eventsToday: UnifiedExecutiveEvent[];
-  freeGaps: FreeTimeGap[];
-  conflicts: Array<{ eventA: UnifiedExecutiveEvent; eventB: UnifiedExecutiveEvent }>;
+  onSelectDate: (dateStr: string) => void;
   onNavigateToOffice: (officeKey: string) => void;
   onOpenQuickAdd: () => void;
   onDismissConflict: (idA: string, idB: string) => void;
@@ -36,10 +50,9 @@ interface Props {
 }
 
 export const ExecutiveDailyAgenda: React.FC<Props> = ({
+  state,
   selectedDate,
-  eventsToday,
-  freeGaps,
-  conflicts,
+  onSelectDate,
   onNavigateToOffice,
   onOpenQuickAdd,
   onDismissConflict
@@ -49,7 +62,53 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
   const [newEndTime, setNewEndTime] = useState<string>('10:00');
   const [expandedGapId, setExpandedGapId] = useState<string | null>(null);
 
-  // Helper to toggle event status if applicable
+  // Offset for 7-day selector window (0 means starting from today)
+  const [windowOffset, setWindowOffset] = useState<number>(0);
+
+  const todayStr = getTodayDateString();
+
+  // Calculate 7 days for selector based on windowOffset
+  const windowDays = Array.from({ length: 7 }).map((_, idx) => {
+    const dStr = addDaysToDateStr(todayStr, windowOffset + idx);
+    const dayNum = getDayOfWeekNumber(dStr);
+    const dayName = getDayOfWeekName(dayNum);
+    const parts = dStr.split('-');
+    const dayMonthStr = `${parseInt(parts[2])} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(parts[1]) - 1]}`;
+
+    let relativeLabel = dayName;
+    if (dStr === todayStr) relativeLabel = 'Hoy';
+    else if (dStr === addDaysToDateStr(todayStr, 1)) relativeLabel = 'Mañana';
+    else if (dStr === addDaysToDateStr(todayStr, 2)) relativeLabel = 'Pasado mañana';
+
+    const flags = OvalOfficeCalculations.getDayIndicatorFlags(state, dStr);
+
+    return {
+      dateStr: dStr,
+      dayName,
+      dayMonthStr,
+      relativeLabel,
+      flags,
+      isSelected: dStr === selectedDate,
+      isToday: dStr === todayStr
+    };
+  });
+
+  // Dynamic calculations for selectedDate
+  const eventsToday = OvalOfficeCalculations.getUnifiedEventsForDate(state, selectedDate);
+  const freeGaps = OvalOfficeCalculations.findFreeTimeGaps(eventsToday);
+  const rawConflicts = OvalOfficeCalculations.detectScheduleConflicts(eventsToday);
+  const metrics = OvalOfficeCalculations.getDaySummaryMetrics(state, selectedDate);
+  const upcomingEvents = OvalOfficeCalculations.getUpcomingEvents(state, todayStr, 5);
+
+  // Navigation handlers for 7-day selector
+  const handlePrevWindow = () => setWindowOffset(prev => prev - 1);
+  const handleNextWindow = () => setWindowOffset(prev => prev + 1);
+  const handleResetToToday = () => {
+    setWindowOffset(0);
+    onSelectDate(todayStr);
+  };
+
+  // Helper to toggle event status
   const handleToggleEventStatus = (evt: UnifiedExecutiveEvent) => {
     if (evt.sourceOffice === 'vidaDiaria') {
       if (evt.type === 'task' && evt.rawObject?.id) {
@@ -86,7 +145,7 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
     setEditingEvent(null);
   };
 
-  // Quick move 1 hour for conflict resolution
+  // Quick shift +1 hour
   const handleShiftOneHour = (evt: UnifiedExecutiveEvent) => {
     if (!evt.startTime) return;
     const [h, m] = evt.startTime.split(':').map(Number);
@@ -170,54 +229,223 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
   return (
     <div className="bg-[#0A192F]/90 border-2 border-[#C5A059] rounded-2xl p-4 sm:p-6 shadow-2xl space-y-6 text-white font-sans">
       
-      {/* HEADER SECTION */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#C5A059]/40 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-[#C5A059]/20 border border-[#C5A059]/50 text-[#C5A059] rounded-xl shadow-inner">
-            <Calendar className="w-6 h-6 text-[#C5A059]" />
+      {/* 1. TOP SELECTOR: 7-DAY NAVIGATION WITH INDICATOR BADGES */}
+      <div className="space-y-3 border-b border-[#C5A059]/40 pb-5">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[#C5A059]" />
+            <h3 className="font-serif font-bold text-base text-white tracking-wide">
+              Planificación Temporal (Próximos 7 Días)
+            </h3>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-serif font-bold text-lg sm:text-xl text-white tracking-wide">
-                Agenda Ejecutiva del Día
-              </h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/40">
-                00:00 – 23:59
-              </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetToToday}
+              className="px-2.5 py-1 bg-[#C5A059]/20 hover:bg-[#C5A059]/30 text-[#C5A059] border border-[#C5A059]/50 font-mono text-xs font-bold rounded-lg transition-colors"
+            >
+              Ir a Hoy
+            </button>
+            <div className="flex items-center gap-1 bg-[#081225] p-1 rounded-lg border border-white/10">
+              <button
+                onClick={handlePrevWindow}
+                className="p-1.5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition-colors"
+                title="Día anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextWindow}
+                className="p-1.5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition-colors"
+                title="Día siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-xs text-slate-300 font-sans mt-0.5">
-              Línea de tiempo cronológica unificada • Programación real e integrada de todas las oficinas
-            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* 7-DAY HORIZONTAL CAROUSEL PILLS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+          {windowDays.map((day) => (
+            <button
+              key={day.dateStr}
+              onClick={() => onSelectDate(day.dateStr)}
+              className={`p-2.5 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between min-h-[76px] ${
+                day.isSelected
+                  ? 'bg-[#162A45] border-[#C5A059] shadow-lg ring-2 ring-[#C5A059]/40 text-white'
+                  : 'bg-[#081225]/80 border-white/10 hover:border-white/30 text-slate-300 hover:bg-[#0F233D]'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className={`text-xs font-serif font-bold ${day.isSelected ? 'text-[#C5A059]' : 'text-slate-200'}`}>
+                  {day.relativeLabel}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {day.dayMonthStr}
+                </span>
+              </div>
+
+              {/* INDICATOR DOTS / BADGES */}
+              <div className="flex flex-wrap items-center gap-1 mt-2">
+                {day.flags.hasConflicts && (
+                  <span className="inline-flex items-center gap-0.5 px-1 py-0.2 text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded" title="Conflictos detectados">
+                    🔴
+                  </span>
+                )}
+                {day.flags.hasEvaluation && (
+                  <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded" title="Evaluación programada">
+                    📝
+                  </span>
+                )}
+                {day.flags.hasMedical && (
+                  <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40 rounded" title="Cita médica">
+                    🩺
+                  </span>
+                )}
+                {day.flags.hasFinancial && (
+                  <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded" title="Obligación financiera">
+                    💰
+                  </span>
+                )}
+                {day.flags.hasBirthday && (
+                  <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded" title="Cumpleaños / Compromiso">
+                    🎂
+                  </span>
+                )}
+                {day.flags.isHighVolume && (
+                  <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded" title="Alta densidad de eventos">
+                    📅
+                  </span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. CARD: PRÓXIMOS EVENTOS DE LA LÍNEA DE TIEMPO */}
+      {upcomingEvents.length > 0 && (
+        <div className="bg-[#081225] border border-[#C5A059]/40 p-4 rounded-xl space-y-3 shadow-md">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#C5A059]" />
+              <h4 className="font-serif font-bold text-xs uppercase tracking-wider text-[#C5A059]">
+                Próximos Eventos Destacados
+              </h4>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">
+              Siguientes en la agenda
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
+            {upcomingEvents.map((item, idx) => (
+              <div
+                key={`up_evt_${item.event.id}_${idx}`}
+                onClick={() => onSelectDate(item.dateStr)}
+                className="p-2.5 bg-[#0F233D] hover:bg-[#162A45] border border-white/10 hover:border-[#C5A059]/60 rounded-lg cursor-pointer transition-all space-y-1 group"
+              >
+                <div className="flex justify-between items-center text-[10px] font-mono">
+                  <span className="px-1.5 py-0.5 rounded bg-[#C5A059]/20 text-[#C5A059] font-bold">
+                    {item.relativeLabel}
+                  </span>
+                  <span className="text-slate-400">
+                    {item.event.startTime || 'Todo el día'}
+                  </span>
+                </div>
+                <div className="font-serif font-bold text-xs text-white group-hover:text-amber-200 truncate">
+                  {getEventIcon(item.event)} {item.event.title}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  {item.event.officeLabel}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. ENCABEZADO DEL DÍA SELECCIONADO & SUMMARY METRICS */}
+      <div className="bg-[#0F233D]/90 border border-[#C5A059]/40 p-4 rounded-2xl space-y-3 shadow-lg">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase font-mono font-bold text-[#C5A059]">
+                Agenda Ejecutiva del Día
+              </span>
+              {selectedDate === todayStr && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  HOY
+                </span>
+              )}
+            </div>
+            <h2 className="font-serif font-bold text-lg sm:text-xl text-white capitalize">
+              {formatFriendlyDate(selectedDate)}
+            </h2>
+          </div>
+
           <button
             onClick={onOpenQuickAdd}
             className="px-3.5 py-2 bg-[#C5A059] hover:bg-[#D4AF37] text-[#0A192F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95"
           >
-            <Plus className="w-4 h-4" /> Agregar Evento
+            <Plus className="w-4 h-4" /> Programar Actividad
           </button>
+        </div>
+
+        {/* SUMMARY METRICS ROW */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 text-xs font-sans">
+          <div className="p-2.5 bg-[#081225] rounded-xl border border-white/10 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+            <div>
+              <span className="text-[10px] text-slate-400 block uppercase">Eventos Totales</span>
+              <span className="font-mono font-bold text-white text-sm">{metrics.eventsCount}</span>
+            </div>
+          </div>
+
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${metrics.conflictsCount > 0 ? 'bg-rose-950/40 border-rose-500/50 text-rose-200' : 'bg-[#081225] border-white/10 text-white'}`}>
+            <AlertTriangle className={`w-4 h-4 shrink-0 ${metrics.conflictsCount > 0 ? 'text-rose-400' : 'text-slate-400'}`} />
+            <div>
+              <span className="text-[10px] text-slate-400 block uppercase">Conflictos</span>
+              <span className="font-mono font-bold text-sm">{metrics.conflictsCount}</span>
+            </div>
+          </div>
+
+          <div className="p-2.5 bg-[#081225] rounded-xl border border-white/10 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <span className="text-[10px] text-slate-400 block uppercase">Tiempo Ocupado</span>
+              <span className="font-mono font-bold text-white text-xs">{metrics.occupiedFormatted}</span>
+            </div>
+          </div>
+
+          <div className="p-2.5 bg-[#081225] rounded-xl border border-white/10 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <span className="text-[10px] text-slate-400 block uppercase">Tiempo Libre</span>
+              <span className="font-mono font-bold text-emerald-300 text-xs">{metrics.freeFormatted}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* CONFLICT DETECTION WARNING PANEL */}
-      {conflicts.length > 0 && (
+      {/* 4. CONFLICT DETECTION WARNING PANEL */}
+      {rawConflicts.length > 0 && (
         <div className="bg-rose-950/60 border-2 border-rose-500 p-4 rounded-xl space-y-3 shadow-xl">
           <div className="flex items-center gap-2 border-b border-rose-500/40 pb-2">
             <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
             <div>
               <h4 className="font-serif font-bold text-sm text-rose-200">
-                ⚠️ Conflictos de Horario Detectados en la Agenda ({conflicts.length})
+                ⚠️ Conflictos de Horario Detectados en la Agenda ({rawConflicts.length})
               </h4>
               <p className="text-xs text-rose-300/90 font-sans">
-                Se detectaron traslapes de tiempo entre compromisos. Por favor aprueba la solución recomendada:
+                Se detectaron traslapes de tiempo. Requiere aprobación del usuario para reprogramar:
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            {conflicts.map(({ eventA, eventB }, idx) => (
+            {rawConflicts.map(({ eventA, eventB }, idx) => (
               <div
                 key={`agenda_conf_${eventA.id}_${eventB.id}_${idx}`}
                 className="p-3 bg-[#081225] border border-rose-500/50 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs"
@@ -268,12 +496,12 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
         </div>
       )}
 
-      {/* CHRONOLOGICAL TIMELINE EVENTS & FREE GAPS */}
+      {/* 5. CHRONOLOGICAL TIMELINE EVENTS & FREE GAPS */}
       {sortedItems.length === 0 ? (
         <div className="p-12 text-center bg-[#0d213a]/50 rounded-2xl border border-dashed border-[#C5A059]/30 space-y-3">
           <Clock className="w-12 h-12 text-[#C5A059]/60 mx-auto" />
           <p className="text-base font-serif font-bold text-amber-200">
-            No hay eventos programados en la Agenda para el {selectedDate}
+            No hay eventos programados en la Agenda para el {formatFriendlyDate(selectedDate)}
           </p>
           <p className="text-xs text-slate-400 max-w-md mx-auto font-sans">
             Las clases recurrentes, evaluaciones, actividades académicas, citas médicas y tareas aparecerán automáticamente aquí al ser agendadas.
@@ -300,7 +528,7 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
                   style={{ borderLeftWidth: '6px', borderLeftColor: color }}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Optional completion toggle button */}
+                    {/* Completion toggle button */}
                     {(evt.type === 'task' || evt.type === 'academic_activity') && (
                       <button
                         onClick={() => handleToggleEventStatus(evt)}
@@ -453,7 +681,7 @@ export const ExecutiveDailyAgenda: React.FC<Props> = ({
         </div>
       )}
 
-      {/* RESCHEDULE MODAL */}
+      {/* 6. RESCHEDULE MODAL */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-[#0A192F] text-white border-2 border-[#C5A059] max-w-md w-full p-6 shadow-2xl space-y-4 rounded-xl">
