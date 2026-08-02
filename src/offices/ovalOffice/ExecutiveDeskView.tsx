@@ -2,6 +2,7 @@ import React from 'react';
 import { MasterState } from '../../types/store';
 import { OvalOfficeCalculations } from './OvalOfficeCalculations';
 import { FinancialCalculations } from '../financial/FinancialCalculations';
+import { MedicalCalculations } from '../medical/MedicalCalculations';
 import { 
   GraduationCap, 
   Landmark, 
@@ -66,7 +67,9 @@ export const ExecutiveDeskView: React.FC<Props> = ({
   const totalBalance = liquidNW.COP || 0;
 
   // 3. Medical Metrics & Calculation
-  const appointments = state.offices.medica?.appointments || [];
+  const medicalData = state.offices.medica;
+  const medicalMetrics = medicalData ? MedicalCalculations.getLatestHealthMetrics(medicalData, selectedDate) : null;
+  const appointments = medicalData?.appointments || [];
   const upcomingAppointments = appointments
     .filter(a => a.date >= selectedDate)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -306,26 +309,36 @@ export const ExecutiveDeskView: React.FC<Props> = ({
             </div>
 
             {/* Medical Section */}
-            <div className="p-2.5 bg-[#132337] border border-rose-500/20 rounded space-y-1">
+            <div 
+              onClick={() => onNavigateToOffice('medica')}
+              className="p-2.5 bg-[#132337] hover:bg-[#1a2d47] border border-rose-500/20 rounded space-y-1.5 cursor-pointer transition-colors"
+            >
               <div className="flex items-center justify-between font-semibold text-rose-400">
                 <span className="flex items-center gap-1.5">❤️ Salud</span>
+                <span className="text-[10px] text-rose-300 font-mono flex items-center gap-0.5">
+                  Ver Oficina <ChevronRight className="w-3 h-3" />
+                </span>
               </div>
 
-              {!nextAppt ? (
-                <div className="pt-1 flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 italic">Sin citas médicas registradas.</span>
-                  <button
-                    onClick={() => onNavigateToOffice('medica')}
-                    className="px-2 py-0.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-400/30 rounded text-[10px] font-semibold transition-colors flex items-center gap-1"
-                  >
-                    Ir a Oficina <ChevronRight className="w-3 h-3" />
-                  </button>
+              {medicalMetrics && (
+                <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono text-[11px]">
+                  <div className="bg-rose-950/40 p-1.5 rounded border border-rose-500/20">
+                    <span className="text-slate-400 text-[10px] block">😴 Sueño</span>
+                    <span className="font-bold text-white">
+                      {medicalMetrics.sleepFormatted || (medicalMetrics.sleep ? `${medicalMetrics.sleep} h` : 'Sin registro')}
+                    </span>
+                  </div>
+                  <div className="bg-cyan-950/40 p-1.5 rounded border border-cyan-500/20">
+                    <span className="text-slate-400 text-[10px] block">💧 Agua</span>
+                    <span className="font-bold text-cyan-200">
+                      {medicalMetrics.hydrationLiters.toFixed(1)} L ({medicalMetrics.hydrationPct}%)
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div 
-                  onClick={() => onNavigateToOffice('medica')}
-                  className="cursor-pointer text-slate-300 font-mono text-[11px] pt-0.5 hover:text-white transition-colors"
-                >
+              )}
+
+              {nextAppt && (
+                <div className="text-[10px] font-mono text-slate-300 pt-0.5">
                   Próxima cita: <span className="font-bold text-white">{nextAppt.date} ({nextAppt.title})</span>
                 </div>
               )}

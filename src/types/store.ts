@@ -400,6 +400,33 @@ export interface CustomWaterBottle {
   icon?: string;
 }
 
+export interface WaterIntakeLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  amountMl: number;
+  containerType?: string; // e.g. "Vaso", "Botella", "700 ml"
+}
+
+export interface SleepRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  bedTime: string; // HH:mm e.g. "22:45"
+  wakeTime: string; // HH:mm e.g. "06:30"
+  durationMinutes: number; // calculated automatically
+  quality?: number; // 1 - 5
+  notes?: string;
+}
+
+export interface NapRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  durationMinutes: number; // calculated automatically
+  notes?: string;
+}
+
 export interface HealthRecord {
   id: string;
   date: string;
@@ -496,7 +523,11 @@ export interface MedicalOfficeData {
   conditions: HealthCondition[];
   immunizations: ImmunizationRecord[];
   customBottles?: CustomWaterBottle[];
+  waterLogs?: WaterIntakeLog[];
+  sleepRecords?: SleepRecord[];
+  napRecords?: NapRecord[];
   dailyWaterTargetLiters?: number;
+  sleepTargetHours?: number;
 }
 
 // -------------------------------------------------------------

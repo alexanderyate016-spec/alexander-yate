@@ -8,8 +8,30 @@ import {
   ImmunizationRecord,
   CustomWaterBottle,
   MedicalExam,
-  HealthCondition
+  HealthCondition,
+  WaterIntakeLog,
+  SleepRecord,
+  NapRecord
 } from '../../types/store';
+
+// Helper to compute duration in minutes handling midnight crossing
+function computeDurationMinutes(startStr: string, endStr: string, isNight: boolean = false): number {
+  if (!startStr || !endStr) return 0;
+  const [h1, m1] = startStr.split(':').map(Number);
+  const [h2, m2] = endStr.split(':').map(Number);
+  const startMins = (h1 || 0) * 60 + (m1 || 0);
+  let endMins = (h2 || 0) * 60 + (m2 || 0);
+  if (isNight) {
+    if (endMins <= startMins) {
+      endMins += 24 * 60;
+    }
+  } else {
+    if (endMins < startMins) {
+      endMins += 24 * 60;
+    }
+  }
+  return Math.max(0, endMins - startMins);
+}
 
 export const MedicalStore = {
   getData(): MedicalOfficeData {
@@ -43,28 +65,143 @@ export const MedicalStore = {
     });
   },
 
-  // WATER INTAKE QUICK ADD
-  addWaterIntake(date: string, amountMl: number) {
+  // INDIVIDUAL WATER LOGS
+  addWaterLog(log: Omit<WaterIntakeLog, 'id'>) {
     storeInstance.updateState(draft => {
-      if (!draft.offices.medica.healthRecords) draft.offices.medica.healthRecords = [];
-      const existingIdx = draft.offices.medica.healthRecords.findIndex(r => r.date === date);
-      const addedLiters = amountMl / 1000;
-      const addedGlasses = Math.round(amountMl / 250);
+      if (!draft.offices.medica.waterLogs) draft.offices.medica.waterLogs = [];
+      const id = 'wlog_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      draft.offices.medica.waterLogs.push({ ...log, id });
+    });
+  },
+
+  updateWaterLog(id: string, updates: Partial<WaterIntakeLog>) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.waterLogs) return;
+      const idx = draft.offices.medica.waterLogs.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        draft.offices.medica.waterLogs[idx] = {
+          ...draft.offices.medica.waterLogs[idx],
+          ...updates
+        };
+      }
+    });
+  },
+
+  deleteWaterLog(id: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.waterLogs) return;
+      draft.offices.medica.waterLogs = draft.offices.medica.waterLogs.filter(w => w.id !== id);
+    });
+  },
+
+  // WATER INTAKE QUICK ADD (Creates an individual waterLog record!)
+  addWaterIntake(date: string, amountMl: number, containerType?: string, timeStr?: string) {
+    const now = new Date();
+    const time = timeStr || `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    let label = containerType;
+    if (!label) {
+      if (amountMl === 250) label = 'Vaso (250 ml)';
+      else if (amountMl === 500) label = 'Botella (500 ml)';
+      else if (amountMl === 600) label = 'Botella (600 ml)';
+      else if (amountMl === 1000) label = 'Botella (1000 ml)';
+      else label = `${amountMl} ml`;
+    }
+
+    this.addWaterLog({
+      date,
+      time,
+      amountMl,
+      containerType: label
+    });
+  },
+
+  // SLEEP RECORDS (Calculates duration automatically!)
+  saveSleepRecord(record: { id?: string; date: string; bedTime: string; wakeTime: string; quality?: number; notes?: string }) {
+    const durationMinutes = computeDurationMinutes(record.bedTime, record.wakeTime, true);
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.sleepRecords) draft.offices.medica.sleepRecords = [];
+      
+      const existingIdx = record.id 
+        ? draft.offices.medica.sleepRecords.findIndex(s => s.id === record.id)
+        : draft.offices.medica.sleepRecords.findIndex(s => s.date === record.date);
 
       if (existingIdx !== -1) {
-        const currentLiters = draft.offices.medica.healthRecords[existingIdx].hydrationLiters || 0;
-        const currentGlasses = draft.offices.medica.healthRecords[existingIdx].hydrationGlasses || 0;
-        draft.offices.medica.healthRecords[existingIdx].hydrationLiters = Number((currentLiters + addedLiters).toFixed(2));
-        draft.offices.medica.healthRecords[existingIdx].hydrationGlasses = currentGlasses + addedGlasses;
+        draft.offices.medica.sleepRecords[existingIdx] = {
+          ...draft.offices.medica.sleepRecords[existingIdx],
+          bedTime: record.bedTime,
+          wakeTime: record.wakeTime,
+          durationMinutes,
+          quality: record.quality !== undefined ? record.quality : draft.offices.medica.sleepRecords[existingIdx].quality,
+          notes: record.notes !== undefined ? record.notes : draft.offices.medica.sleepRecords[existingIdx].notes
+        };
       } else {
-        const id = 'hlth_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-        draft.offices.medica.healthRecords.push({
+        const id = record.id || 'sleep_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        draft.offices.medica.sleepRecords.push({
           id,
-          date,
-          hydrationLiters: Number(addedLiters.toFixed(2)),
-          hydrationGlasses: addedGlasses
+          date: record.date,
+          bedTime: record.bedTime,
+          wakeTime: record.wakeTime,
+          durationMinutes,
+          quality: record.quality || 4,
+          notes: record.notes || ''
         });
       }
+    });
+  },
+
+  deleteSleepRecord(id: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.sleepRecords) return;
+      draft.offices.medica.sleepRecords = draft.offices.medica.sleepRecords.filter(s => s.id !== id);
+    });
+  },
+
+  setSleepTarget(hours: number) {
+    storeInstance.updateState(draft => {
+      draft.offices.medica.sleepTargetHours = hours;
+    });
+  },
+
+  // NAP RECORDS (Siestas)
+  addNapRecord(nap: { date: string; startTime: string; endTime: string; notes?: string }) {
+    const durationMinutes = computeDurationMinutes(nap.startTime, nap.endTime, false);
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.napRecords) draft.offices.medica.napRecords = [];
+      const id = 'nap_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      draft.offices.medica.napRecords.push({
+        id,
+        date: nap.date,
+        startTime: nap.startTime,
+        endTime: nap.endTime,
+        durationMinutes,
+        notes: nap.notes || ''
+      });
+    });
+  },
+
+  updateNapRecord(id: string, updates: Partial<NapRecord>) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.napRecords) return;
+      const idx = draft.offices.medica.napRecords.findIndex(n => n.id === id);
+      if (idx !== -1) {
+        const current = draft.offices.medica.napRecords[idx];
+        const newStart = updates.startTime || current.startTime;
+        const newEnd = updates.endTime || current.endTime;
+        const durationMinutes = computeDurationMinutes(newStart, newEnd, false);
+
+        draft.offices.medica.napRecords[idx] = {
+          ...current,
+          ...updates,
+          durationMinutes
+        };
+      }
+    });
+  },
+
+  deleteNapRecord(id: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.napRecords) return;
+      draft.offices.medica.napRecords = draft.offices.medica.napRecords.filter(n => n.id !== id);
     });
   },
 
