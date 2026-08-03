@@ -236,5 +236,51 @@ export const AcademicStore = {
         }
       });
     });
+  },
+
+  // STUDY TIME RECORDING (INTEGRATION WITH VIDA DIARIA)
+  recordStudyTime(record: { subjectId: string; subjectTopic?: string; date: string; durationMinutes: number; timePlanId?: string; notes?: string }) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.academica.studyLogs) {
+        draft.offices.academica.studyLogs = [];
+      }
+      // Remove existing log for this timePlanId if present to avoid duplication
+      if (record.timePlanId) {
+        draft.offices.academica.studyLogs = draft.offices.academica.studyLogs.filter(l => l.timePlanId !== record.timePlanId);
+      }
+      const id = 'stlog_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      draft.offices.academica.studyLogs.push({
+        ...record,
+        id,
+        createdAt: new Date().toISOString()
+      });
+
+      // Update subject total study minutes
+      const sub = draft.offices.academica.subjects.find(s => s.id === record.subjectId);
+      if (sub) {
+        const total = draft.offices.academica.studyLogs
+          .filter(l => l.subjectId === record.subjectId)
+          .reduce((sum, l) => sum + l.durationMinutes, 0);
+        sub.totalStudyMinutes = total;
+      }
+    });
+  },
+
+  removeStudyTime(timePlanId: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.academica.studyLogs) return;
+      const log = draft.offices.academica.studyLogs.find(l => l.timePlanId === timePlanId);
+      if (log) {
+        const subId = log.subjectId;
+        draft.offices.academica.studyLogs = draft.offices.academica.studyLogs.filter(l => l.timePlanId !== timePlanId);
+        const sub = draft.offices.academica.subjects.find(s => s.id === subId);
+        if (sub) {
+          const total = draft.offices.academica.studyLogs
+            .filter(l => l.subjectId === subId)
+            .reduce((sum, l) => sum + l.durationMinutes, 0);
+          sub.totalStudyMinutes = total;
+        }
+      }
+    });
   }
 };

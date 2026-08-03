@@ -1,9 +1,15 @@
 import { AcademicOfficeData, UnifiedExecutiveEvent } from '../../types/store';
 import { getDayOfWeekNumber } from '../../utils/dates';
+import { checkColombianHoliday } from '../../utils/colombianHolidays';
 
 export const AcademicSync = {
   // Horario = Actividades recurrentes (Clases semanales)
   projectHorarioEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
+    // Check if targetDateStr is a national holiday
+    if (checkColombianHoliday(targetDateStr).isHoliday) {
+      return []; // No auto-scheduled classes on national holidays
+    }
+
     const events: UnifiedExecutiveEvent[] = [];
     const dayNum = getDayOfWeekNumber(targetDateStr);
 

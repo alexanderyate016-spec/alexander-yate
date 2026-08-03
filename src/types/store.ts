@@ -89,6 +89,7 @@ export interface AcademicSubject {
   scheduleSessions: AcademicSession[];
   cuts: AcademicCut[];
   academicActivities?: AcademicActivity[];
+  totalStudyMinutes?: number;
 }
 
 export interface AcademicSemester {
@@ -99,10 +100,22 @@ export interface AcademicSemester {
   isActive: boolean;
 }
 
+export interface StudyLogRecord {
+  id: string;
+  subjectId: string;
+  subjectTopic?: string;
+  date: string;
+  durationMinutes: number;
+  timePlanId?: string;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface AcademicOfficeData {
   semesters: AcademicSemester[];
   subjects: AcademicSubject[];
   academicActivities?: AcademicActivity[];
+  studyLogs?: StudyLogRecord[];
 }
 
 // -------------------------------------------------------------
@@ -114,6 +127,8 @@ export interface HabitItem {
   description?: string;
   color: string;
   frequency: 'daily' | 'weekdays' | 'custom';
+  scheduledTime?: string; // e.g. "07:00"
+  durationMinutes?: number; // e.g. 10 or 15
   logs: Record<string, boolean>; // key: YYYY-MM-DD, value: true
 }
 
@@ -154,7 +169,7 @@ export interface DailyObjective {
 export interface TimePlan {
   id: string;
   title: string;
-  category: 'commute' | 'lunch' | 'breakfast' | 'dinner' | 'study' | 'rest' | 'gym' | 'shopping' | 'free_time' | 'personal';
+  category: 'commute' | 'lunch' | 'breakfast' | 'dinner' | 'study' | 'read' | 'rest' | 'gym' | 'shopping' | 'cleaning' | 'prayer' | 'family' | 'work' | 'free_time' | 'personal' | 'custom';
   date: string; // YYYY-MM-DD
   startTime: string; // "12:30"
   durationMinutes: number; // e.g. 45
