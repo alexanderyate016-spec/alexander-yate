@@ -259,6 +259,15 @@ export type TransactionNature =
   | 'investment_sell'
   | 'reconciliation_adj';
 
+export interface FinancialTransactionSplit {
+  id: string;
+  budgetId?: string; // ID del presupuesto (ej. fund_necesarios)
+  budgetCategoryId?: string; // ID de la categoría (ej. cat_gasolina)
+  categoryName?: string;
+  amount: number;
+  description?: string;
+}
+
 export interface FinancialTransaction {
   id: string;
   date: string;
@@ -274,6 +283,9 @@ export interface FinancialTransaction {
   reconciliationReason?: string; // Motivo del ajuste de conciliación
   reconciliationUser?: string; // Usuario que aplicó la conciliación
   categoryId?: string;
+  budgetId?: string; // Presupuesto asignado (opcional)
+  budgetCategoryId?: string; // Categoría dentro del presupuesto (opcional)
+  splits?: FinancialTransactionSplit[]; // Para opción "Dividir gasto"
   description: string;
   amount: number;
   currency: CurrencyCode;

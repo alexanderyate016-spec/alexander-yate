@@ -332,5 +332,116 @@ export const FinancialCalculations = {
       associatedBudgets,
       accountTxs
     };
+  },
+
+  // DYNAMIC BUDGET CALCULATIONS (PRESUPUESTOS Y CATEGORÍAS)
+  calculateBudgetUsedAmount(fundId: string, transactions: FinancialTransaction[], monthPrefix?: string): { amount: number; count: number } {
+    if (!transactions || transactions.length === 0) return { amount: 0, count: 0 };
+
+    let total = 0;
+    let count = 0;
+
+    transactions.forEach(t => {
+      if (t.nature !== 'external_expense' && t.nature !== 'investment_buy') return;
+      if (monthPrefix && !t.date.startsWith(monthPrefix)) return;
+
+      if (t.splits && t.splits.length > 0) {
+        t.splits.forEach(s => {
+          if (s.budgetId === fundId) {
+            total += s.amount;
+            count++;
+          }
+        });
+      } else if (t.budgetId === fundId) {
+        total += t.amount;
+        count++;
+      }
+    });
+
+    return { amount: total, count };
+  },
+
+  calculateCategoryUsedAmount(
+    fundId: string,
+    categoryId: string,
+    categoryName: string,
+    transactions: FinancialTransaction[],
+    monthPrefix?: string
+  ): { amount: number; count: number } {
+    if (!transactions || transactions.length === 0) return { amount: 0, count: 0 };
+
+    let total = 0;
+    let count = 0;
+    const catNameLower = categoryName.toLowerCase();
+
+    transactions.forEach(t => {
+      if (t.nature !== 'external_expense' && t.nature !== 'investment_buy') return;
+      if (monthPrefix && !t.date.startsWith(monthPrefix)) return;
+
+      if (t.splits && t.splits.length > 0) {
+        t.splits.forEach(s => {
+          if (s.budgetId === fundId) {
+            if (s.budgetCategoryId === categoryId || (s.categoryName && s.categoryName.toLowerCase() === catNameLower)) {
+              total += s.amount;
+              count++;
+            }
+          }
+        });
+      } else if (t.budgetId === fundId) {
+        if (
+          t.budgetCategoryId === categoryId ||
+          t.categoryId === categoryId ||
+          t.description.toLowerCase().includes(catNameLower)
+        ) {
+          total += t.amount;
+          count++;
+        }
+      }
+    });
+
+    return { amount: total, count };
+  },
+
+  getCategoryAlertStatus(percent: number) {
+    if (percent > 100) {
+      return {
+        level: 'over' as const,
+        emoji: '🚨',
+        message: 'Has sobrepasado el presupuesto asignado.',
+        badgeColor: 'rose' as const,
+        alertClass: 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+      };
+    } else if (percent === 100) {
+      return {
+        level: 'exhausted' as const,
+        emoji: '⚠',
+        message: 'Presupuesto agotado.',
+        badgeColor: 'amber' as const,
+        alertClass: 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+      };
+    } else if (percent >= 95) {
+      return {
+        level: 'critical' as const,
+        emoji: '🔴',
+        message: 'Has consumido casi todo el presupuesto.',
+        badgeColor: 'rose' as const,
+        alertClass: 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+      };
+    } else if (percent >= 80) {
+      return {
+        level: 'warning' as const,
+        emoji: '🟡',
+        message: 'Estás cerca del límite de esta categoría.',
+        badgeColor: 'amber' as const,
+        alertClass: 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+      };
+    }
+    return {
+      level: 'ok' as const,
+      emoji: '🟢',
+      message: 'Presupuesto dentro del límite.',
+      badgeColor: 'emerald' as const,
+      alertClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+    };
   }
 };

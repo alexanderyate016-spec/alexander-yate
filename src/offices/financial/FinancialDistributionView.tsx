@@ -134,28 +134,45 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     );
   }, [data.transactions, currency, todayStr]);
 
-  // Compute spent amount for a specific category or subcategory name/id
-  const calculateSpentForCategoryOrSub = (catName: string, subName?: string) => {
+  // Compute spent amount for a specific category or subcategory
+  const calculateSpentForCategoryOrSub = (fundId: string, catId: string, catName: string, subName?: string) => {
     const cNameLower = catName.toLowerCase();
     const sNameLower = subName ? subName.toLowerCase() : null;
 
     return currentMonthExpenses.reduce((sum, t) => {
-      const descLower = (t.description || '').toLowerCase();
-      const tagsStr = (t.tags || []).join(' ').toLowerCase();
+      // Splits check
+      if (t.splits && t.splits.length > 0) {
+        const splitSum = t.splits.reduce((sAcc, s) => {
+          if (s.budgetId !== fundId) return sAcc;
+          let match = false;
+          if (sNameLower) {
+            if ((s.description || '').toLowerCase().includes(sNameLower) || (s.categoryName || '').toLowerCase().includes(sNameLower)) match = true;
+          } else {
+            if (s.budgetCategoryId === catId || (s.categoryName || '').toLowerCase() === cNameLower || !s.budgetCategoryId) match = true;
+          }
+          return match ? sAcc + s.amount : sAcc;
+        }, 0);
+        return sum + splitSum;
+      }
 
+      // Single assignment check
       let isMatch = false;
-
       if (sNameLower) {
-        if (descLower.includes(sNameLower) || tagsStr.includes(sNameLower)) {
+        if (
+          (t.budgetId === fundId || !t.budgetId) &&
+          ((t.description || '').toLowerCase().includes(sNameLower) || (t.tags || []).some(tg => tg.toLowerCase().includes(sNameLower)))
+        ) {
           isMatch = true;
         }
       } else {
-        if (
-          descLower.includes(cNameLower) ||
-          tagsStr.includes(cNameLower) ||
-          (t.categoryId && data.categories.find(c => c.id === t.categoryId)?.name.toLowerCase() === cNameLower)
-        ) {
-          isMatch = true;
+        if (t.budgetId) {
+          if (t.budgetId === fundId && (t.budgetCategoryId === catId || t.categoryId === catId || (t.description || '').toLowerCase().includes(cNameLower))) {
+            isMatch = true;
+          }
+        } else {
+          if (t.categoryId === catId || (t.description || '').toLowerCase().includes(cNameLower)) {
+            isMatch = true;
+          }
         }
       }
 
@@ -493,7 +510,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
             // Compute total spent across categories in this fund
             let fundSpent = 0;
             categories.forEach(cat => {
-              const catSpent = calculateSpentForCategoryOrSub(cat.name);
+              const catSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name);
               fundSpent += catSpent;
             });
 
@@ -644,9 +661,10 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                             // Category budget = Fund Target Budget * (cat.percentage / 100)
                             const catBudget = fundTargetBudget * ((cat.percentage || 0) / 100);
                             const effectivePctOfTotal = (fund.percentage * (cat.percentage || 0)) / 100;
-                            const catSpent = calculateSpentForCategoryOrSub(cat.name);
+                            const catSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name);
                             const catRemaining = catBudget - catSpent;
                             const catConsumedPct = catBudget > 0 ? (catSpent / catBudget) * 100 : 0;
+                            const alertStatus = FinancialCalculations.getCategoryAlertStatus(catConsumedPct);
 
                             const subcategories = cat.subcategories || [];
                             const subPctSum = subcategories.reduce((s, sub) => s + (sub.percentage || 0), 0);
@@ -657,6 +675,19 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                 key={cat.id}
                                 className="p-4 bg-[#132337]/70 border border-white/10 rounded-xl space-y-3 transition-all hover:border-emerald-500/30"
                               >
+                                {/* ALERT BANNER IF APPLICABLE */}
+                                {alertStatus.level !== 'ok' && (
+                                  <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between font-medium ${alertStatus.alertClass}`}>
+                                    <span className="flex items-center gap-2 font-serif font-bold">
+                                      <span className="text-base">{alertStatus.emoji}</span>
+                                      {alertStatus.message}
+                                    </span>
+                                    <span className="text-[11px] font-mono font-bold opacity-90">
+                                      {Math.round(catConsumedPct)}% Consumido
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* CATEGORY HEADER ROW */}
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                   <div className="flex items-center gap-2">
@@ -759,7 +790,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                         // Subcategory budget = Category budget * (sub.percentage / 100)
                                         const subBudget = catBudget * ((sub.percentage || 0) / 100);
                                         const effSubPct = (effectivePctOfTotal * (sub.percentage || 0)) / 100;
-                                        const subSpent = calculateSpentForCategoryOrSub(cat.name, sub.name);
+                                        const subSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name, sub.name);
                                         const subRemaining = subBudget - subSpent;
                                         const subConsumed = subBudget > 0 ? (subSpent / subBudget) * 100 : 0;
 

@@ -291,6 +291,49 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     return (data.accounts || []).some(a => a.type === 'high_yield');
   }, [data.accounts]);
 
+  // Budget & Category Options Memo
+  const budgetOptions = useMemo(() => {
+    const funds = data.distributionPlan?.funds || [];
+    if (funds.length === 0) {
+      return [
+        { id: 'fund_necesarios', name: 'Presupuesto de Gastos Necesarios', rawName: 'Gastos Necesarios', emoji: '🏠', categories: [] },
+        { id: 'fund_personales', name: 'Presupuesto de Gastos Personales', rawName: 'Gastos Personales', emoji: '🎟️', categories: [] },
+        { id: 'fund_ahorro', name: 'Presupuesto de Ahorro e Inversión', rawName: 'Ahorro e Inversión', emoji: '🏦', categories: [] }
+      ];
+    }
+    return funds.map(f => ({
+      id: f.id,
+      name: f.name.startsWith('Presupuesto') ? f.name : `Presupuesto de ${f.name}`,
+      rawName: f.name,
+      emoji: f.emoji || '💼',
+      categories: f.categories || []
+    }));
+  }, [data.distributionPlan]);
+
+  const getCategoryOptionsForBudget = (budgetIdStr: string) => {
+    if (!budgetIdStr) return [];
+    const fund = (data.distributionPlan?.funds || []).find(f => f.id === budgetIdStr);
+    if (!fund || !fund.categories || fund.categories.length === 0) return [];
+
+    const baseIncome = (data.distributionPlan?.incomeSource?.amount) || 0;
+    const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
+
+    return fund.categories.map(cat => {
+      const catBudget = fundTargetBudget * ((cat.percentage || 0) / 100);
+      const catUsed = FinancialCalculations.calculateCategoryUsedAmount(fund.id, cat.id, cat.name, data.transactions, todayStr.substring(0, 7)).amount;
+      const catRemaining = catBudget - catUsed;
+      return {
+        id: cat.id,
+        name: cat.name,
+        emoji: cat.emoji || '📁',
+        budget: catBudget,
+        used: catUsed,
+        remaining: catRemaining,
+        label: `${cat.emoji || '📁'} ${cat.name} (Disponible: ${formatCurrency(catRemaining, txCurr)})`
+      };
+    });
+  };
+
   // Modals & Sub-states
   const [isCreatingBudget, setIsCreatingBudget] = useState(false);
   const [isCreatingGoal, setIsCreatingGoal] = useState(false);
@@ -314,6 +357,10 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [txSourceAcc, setTxSourceAcc] = useState('');
   const [txDestAcc, setTxDestAcc] = useState('');
   const [txCategory, setTxCategory] = useState('');
+  const [txBudgetId, setTxBudgetId] = useState('');
+  const [txBudgetCategoryId, setTxBudgetCategoryId] = useState('');
+  const [isSplitExpense, setIsSplitExpense] = useState(false);
+  const [txSplits, setTxSplits] = useState<Array<{ id: string; budgetId: string; budgetCategoryId: string; categoryName: string; amount: number; description: string }>>([]);
   const [txSourceName, setTxSourceName] = useState('');
   const [txBeneficiaryName, setTxBeneficiaryName] = useState('');
   const [txAssetName, setTxAssetName] = useState('');
@@ -321,6 +368,19 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [txUnitPrice, setTxUnitPrice] = useState<number | ''>('');
   const [txReconciliationReason, setTxReconciliationReason] = useState('');
   const [txReconciliationUser, setTxReconciliationUser] = useState('');
+
+  // Transaction Editing State
+  const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editAmount, setEditAmount] = useState<number | ''>('');
+  const [editSourceAcc, setEditSourceAcc] = useState('');
+  const [editDestAcc, setEditDestAcc] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editBudgetId, setEditBudgetId] = useState('');
+  const [editBudgetCategoryId, setEditBudgetCategoryId] = useState('');
+  const [editIsSplitExpense, setEditIsSplitExpense] = useState(false);
+  const [editSplits, setEditSplits] = useState<Array<{ id: string; budgetId: string; budgetCategoryId: string; categoryName: string; amount: number; description: string }>>([]);
 
   // New Obligation State
   const [obTitle, setObTitle] = useState('');
@@ -524,7 +584,9 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
     // Calculate final amount depending on nature
     let finalAmount = Number(txAmount) || 0;
-    if ((txNature === 'investment_buy' || txNature === 'investment_sell') && txAssetQuantity && txUnitPrice) {
+    if (isSplitExpense && txSplits.length > 0) {
+      finalAmount = txSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    } else if ((txNature === 'investment_buy' || txNature === 'investment_sell') && txAssetQuantity && txUnitPrice) {
       finalAmount = Number(txAssetQuantity) * Number(txUnitPrice);
     }
 
@@ -547,11 +609,18 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       reconciliationReason: txReconciliationReason.trim() || undefined,
       reconciliationUser: txReconciliationUser.trim() || undefined,
       categoryId: txCategory || undefined,
+      budgetId: isSplitExpense ? undefined : (txBudgetId || undefined),
+      budgetCategoryId: isSplitExpense ? undefined : (txBudgetCategoryId || undefined),
+      splits: isSplitExpense ? txSplits.filter(s => Number(s.amount) > 0) : undefined,
       tags: []
     });
 
     setTxDesc('');
     setTxAmount('');
+    setTxBudgetId('');
+    setTxBudgetCategoryId('');
+    setIsSplitExpense(false);
+    setTxSplits([]);
     setTxSourceName('');
     setTxBeneficiaryName('');
     setTxAssetName('');
@@ -560,6 +629,47 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     setTxReconciliationReason('');
     setTxReconciliationUser('');
     triggerToast(`Movimiento "${txDesc}" registrado correctamente 💳`);
+  };
+
+  const handleOpenEditTransaction = (tx: FinancialTransaction) => {
+    setEditingTx(tx);
+    setEditDate(tx.date || todayStr);
+    setEditDesc(tx.description || '');
+    setEditAmount(tx.amount || '');
+    setEditSourceAcc(tx.sourceAccountId || '');
+    setEditDestAcc(tx.destinationAccountId || '');
+    setEditCategory(tx.categoryId || '');
+    setEditBudgetId(tx.budgetId || '');
+    setEditBudgetCategoryId(tx.budgetCategoryId || '');
+    setEditIsSplitExpense(Boolean(tx.splits && tx.splits.length > 0));
+    setEditSplits(tx.splits ? tx.splits.map(s => ({ ...s })) : []);
+  };
+
+  const handleSaveEditTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTx || !editDesc.trim()) return;
+
+    let finalAmount = Number(editAmount) || 0;
+    if (editIsSplitExpense && editSplits.length > 0) {
+      finalAmount = editSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    }
+
+    if (finalAmount <= 0) return;
+
+    FinancialStore.updateTransaction(editingTx.id, {
+      date: editDate,
+      description: editDesc.trim(),
+      amount: finalAmount,
+      sourceAccountId: editSourceAcc || undefined,
+      destinationAccountId: editDestAcc || undefined,
+      categoryId: editCategory || undefined,
+      budgetId: editIsSplitExpense ? undefined : (editBudgetId || undefined),
+      budgetCategoryId: editIsSplitExpense ? undefined : (editBudgetCategoryId || undefined),
+      splits: editIsSplitExpense ? editSplits.filter(s => Number(s.amount) > 0) : undefined
+    });
+
+    setEditingTx(null);
+    triggerToast(`Movimiento actualizado y presupuestos recalculados 🔄`, 'success');
   };
 
   const handleCreateObligation = (e: React.FormEvent) => {
@@ -2205,39 +2315,193 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 )}
 
                 {txNature === 'external_expense' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl">
-                    <div>
-                      <ExecutiveSelect
-                        label="Cuenta Origen (Desembolso) *"
-                        value={txSourceAcc}
-                        onChange={e => setTxSourceAcc(e.target.value)}
-                        accentColor="emerald"
-                        options={[
-                          { value: '', label: '-- Seleccionar Cuenta Origen --' },
-                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
-                        ]}
-                      />
+                  <div className="space-y-3 p-4 bg-rose-950/20 border border-rose-500/30 rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <ExecutiveSelect
+                          label="Cuenta Origen (Desembolso) *"
+                          value={txSourceAcc}
+                          onChange={e => setTxSourceAcc(e.target.value)}
+                          accentColor="emerald"
+                          options={[
+                            { value: '', label: '-- Seleccionar Cuenta Origen --' },
+                            ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <ExecutiveInput
+                          label="Destino / Beneficiario *"
+                          placeholder="Ej: Arrendador, Supermercado, Universidad"
+                          value={txBeneficiaryName}
+                          onChange={e => setTxBeneficiaryName(e.target.value)}
+                          accentColor="emerald"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <ExecutiveInput
+                          label="Monto del Gasto *"
+                          type="number"
+                          placeholder="0.00"
+                          value={isSplitExpense ? txSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0) : txAmount}
+                          onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                          accentColor="emerald"
+                          required={!isSplitExpense}
+                          disabled={isSplitExpense}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <ExecutiveInput
-                        label="Destino / Beneficiario *"
-                        placeholder="Ej: Arrendador, Supermercado, Universidad"
-                        value={txBeneficiaryName}
-                        onChange={e => setTxBeneficiaryName(e.target.value)}
-                        accentColor="emerald"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <ExecutiveInput
-                        label="Monto del Gasto *"
-                        type="number"
-                        placeholder="0.00"
-                        value={txAmount}
-                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        accentColor="emerald"
-                        required
-                      />
+
+                    {/* BUDGET ASSIGNMENT SECTION */}
+                    <div className="pt-3 border-t border-rose-500/20 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-xs font-serif font-bold text-slate-200 flex items-center gap-1.5">
+                          <PieChart className="w-4 h-4 text-emerald-400" />
+                          Descontar del Presupuesto (Opcional)
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextState = !isSplitExpense;
+                            setIsSplitExpense(nextState);
+                            if (nextState && txSplits.length === 0) {
+                              setTxSplits([
+                                { id: 'split_1', budgetId: txBudgetId || '', budgetCategoryId: txBudgetCategoryId || '', categoryName: '', amount: Number(txAmount) || 0, description: '' }
+                              ]);
+                            }
+                          }}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
+                            isSplitExpense
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                              : 'bg-slate-800/80 text-slate-300 border-white/10 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <span>✂️</span> {isSplitExpense ? 'Cancelar División' : 'Dividir gasto en varios presupuestos'}
+                        </button>
+                      </div>
+
+                      {!isSplitExpense ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <ExecutiveSelect
+                              label="Presupuesto a Descontar"
+                              value={txBudgetId}
+                              onChange={e => {
+                                setTxBudgetId(e.target.value);
+                                setTxBudgetCategoryId('');
+                              }}
+                              accentColor="emerald"
+                              options={[
+                                { value: '', label: 'Ninguno (No descuenta ningún presupuesto)' },
+                                ...budgetOptions.map(b => ({ value: b.id, label: `${b.emoji} ${b.name}` }))
+                              ]}
+                            />
+                          </div>
+
+                          <div>
+                            <ExecutiveSelect
+                              label="Subcategoría Asociada"
+                              value={txBudgetCategoryId}
+                              onChange={e => setTxBudgetCategoryId(e.target.value)}
+                              accentColor="emerald"
+                              disabled={!txBudgetId}
+                              options={[
+                                { value: '', label: txBudgetId ? '-- Seleccionar Subcategoría --' : 'Primero selecciona un presupuesto' },
+                                ...getCategoryOptionsForBudget(txBudgetId).map(c => ({ value: c.id, label: c.label }))
+                              ]}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        /* SPLIT EXPENSE BUILDER */
+                        <div className="p-3 bg-slate-900/90 rounded-xl border border-amber-500/30 space-y-3">
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span className="text-amber-300 font-bold flex items-center gap-1">
+                              <span>✂️</span> Desglose de Gastos por Presupuesto
+                            </span>
+                            <span className="text-slate-300">
+                              Monto Total Calculado: <strong className="text-emerald-400 font-bold">{formatCurrency(txSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0), txCurr)}</strong>
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {txSplits.map((split, idx) => {
+                              const cats = getCategoryOptionsForBudget(split.budgetId);
+                              return (
+                                <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-950/70 rounded-lg border border-white/10 text-xs">
+                                  <div className="sm:col-span-4">
+                                    <select
+                                      value={split.budgetId}
+                                      onChange={e => {
+                                        const val = e.target.value;
+                                        setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
+                                      }}
+                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
+                                    >
+                                      <option value="">-- Presupuesto --</option>
+                                      {budgetOptions.map(b => (
+                                        <option key={b.id} value={b.id}>{b.emoji} {b.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="sm:col-span-4">
+                                    <select
+                                      value={split.budgetCategoryId}
+                                      onChange={e => {
+                                        const catId = e.target.value;
+                                        const catObj = cats.find(c => c.id === catId);
+                                        setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
+                                      }}
+                                      disabled={!split.budgetId}
+                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                                    >
+                                      <option value="">-- Categoría --</option>
+                                      {cats.map(c => (
+                                        <option key={c.id} value={c.id}>{c.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="sm:col-span-3">
+                                    <input
+                                      type="number"
+                                      placeholder="Monto $"
+                                      value={split.amount || ''}
+                                      onChange={e => {
+                                        const val = Number(e.target.value) || 0;
+                                        setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
+                                      }}
+                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                                    />
+                                  </div>
+
+                                  <div className="sm:col-span-1 flex justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setTxSplits(prev => prev.filter((_, i) => i !== idx))}
+                                      className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                                      title="Eliminar división"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setTxSplits(prev => [...prev, { id: 'split_' + Date.now(), budgetId: '', budgetCategoryId: '', categoryName: '', amount: 0, description: '' }])}
+                            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Agregar otra sub-división
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2516,15 +2780,73 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           {sourceAcc && <span>Desde: <strong className="text-slate-200">{sourceAcc.name}</strong></span>}
                           {destAcc && <span>Hacia: <strong className="text-slate-200">{destAcc.name}</strong></span>}
                         </div>
+
+                        {/* BUDGET OR SPLIT TAG */}
+                        {tx.splits && tx.splits.length > 0 ? (
+                          <div className="mt-1 flex flex-wrap gap-1.5 items-center">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-bold flex items-center gap-1">
+                              <span>✂️</span> Gasto Dividido ({tx.splits.length}):
+                            </span>
+                            {tx.splits.map((s, idx) => {
+                              const fund = (data.distributionPlan?.funds || []).find(f => f.id === s.budgetId);
+                              const catName = s.categoryName || 'General';
+                              return (
+                                <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-900 border border-white/10 text-[10px] font-mono text-slate-300 flex items-center gap-1">
+                                  <span>{fund ? fund.emoji || '💼' : ''}</span>
+                                  <span>{catName}:</span>
+                                  <strong className="text-emerald-300">{formatCurrency(s.amount, tx.currency)}</strong>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : tx.budgetId ? (
+                          <div className="mt-1 flex items-center gap-2">
+                            {(() => {
+                              const fund = (data.distributionPlan?.funds || []).find(f => f.id === tx.budgetId);
+                              const cat = fund?.categories?.find(c => c.id === tx.budgetCategoryId);
+                              if (!fund) return null;
+
+                              const baseIncome = (data.distributionPlan?.incomeSource?.amount) || 0;
+                              const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
+                              const catBudget = cat ? fundTargetBudget * ((cat.percentage || 0) / 100) : fundTargetBudget;
+                              const catUsed = cat
+                                ? FinancialCalculations.calculateCategoryUsedAmount(fund.id, cat.id, cat.name, data.transactions, todayStr.substring(0, 7)).amount
+                                : FinancialCalculations.calculateBudgetUsedAmount(fund.id, data.transactions, todayStr.substring(0, 7)).amount;
+                              const remaining = catBudget - catUsed;
+
+                              return (
+                                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono font-medium flex items-center gap-1.5 flex-wrap">
+                                  <span>{cat?.emoji || fund.emoji || '🏠'}</span>
+                                  <span>
+                                    {cat?.name ? `${cat.name} | ` : ''}Presupuesto: <strong>{fund.name}</strong>
+                                  </span>
+                                  <span className="text-slate-500">|</span>
+                                  <span className={remaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}>
+                                    Disponible restante: <strong>{formatCurrency(remaining, tx.currency)}</strong>
+                                  </span>
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex items-center gap-2.5 shrink-0">
                       <span className={`text-base font-serif font-bold ${
                         isIncome ? 'text-emerald-400' : tx.nature === 'internal_transfer' ? 'text-blue-300' : tx.nature === 'reconciliation_adj' ? 'text-amber-400' : 'text-slate-200'
                       }`}>
                         {isIncome ? '+' : tx.nature === 'internal_transfer' ? '↔ ' : ''}{formatCurrency(tx.amount, tx.currency)}
                       </span>
+
+                      <button
+                        onClick={() => handleOpenEditTransaction(tx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        title="Editar movimiento"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+
                       <button
                         onClick={() => {
                           FinancialStore.deleteTransaction(tx.id);
@@ -3230,6 +3552,235 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             </div>
           </div>
         </div>
+      </ExecutiveModal>
+
+      {/* MODAL EDITAR MOVIMIENTO */}
+      <ExecutiveModal
+        isOpen={Boolean(editingTx)}
+        onClose={() => setEditingTx(null)}
+        title="Editar Movimiento Financiero"
+        accentColor="emerald"
+      >
+        {editingTx && (
+          <ExecutiveForm onSubmit={handleSaveEditTransaction}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ExecutiveInput
+                  label="Fecha"
+                  type="date"
+                  value={editDate}
+                  onChange={e => setEditDate(e.target.value)}
+                  accentColor="emerald"
+                  required
+                />
+                <ExecutiveInput
+                  label="Monto Total"
+                  type="number"
+                  placeholder="0.00"
+                  value={editIsSplitExpense ? editSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0) : editAmount}
+                  onChange={e => setEditAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                  accentColor="emerald"
+                  required={!editIsSplitExpense}
+                  disabled={editIsSplitExpense}
+                />
+              </div>
+
+              <ExecutiveInput
+                label="Descripción del Movimiento"
+                value={editDesc}
+                onChange={e => setEditDesc(e.target.value)}
+                accentColor="emerald"
+                required
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ExecutiveSelect
+                  label="Cuenta Origen"
+                  value={editSourceAcc}
+                  onChange={e => setEditSourceAcc(e.target.value)}
+                  accentColor="emerald"
+                  options={[
+                    { value: '', label: '-- Ninguna --' },
+                    ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                  ]}
+                />
+                <ExecutiveSelect
+                  label="Cuenta Destino"
+                  value={editDestAcc}
+                  onChange={e => setEditDestAcc(e.target.value)}
+                  accentColor="emerald"
+                  options={[
+                    { value: '', label: '-- Ninguna --' },
+                    ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                  ]}
+                />
+              </div>
+
+              {/* BUDGET RE-ASSIGNMENT */}
+              <div className="pt-3 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-serif font-bold text-slate-200 flex items-center gap-1.5">
+                    <PieChart className="w-4 h-4 text-emerald-400" />
+                    Asignación Presupuestaria
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextState = !editIsSplitExpense;
+                      setEditIsSplitExpense(nextState);
+                      if (nextState && editSplits.length === 0) {
+                        setEditSplits([
+                          { id: 'split_1', budgetId: editBudgetId || '', budgetCategoryId: editBudgetCategoryId || '', categoryName: '', amount: Number(editAmount) || 0, description: '' }
+                        ]);
+                      }
+                    }}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
+                      editIsSplitExpense
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                        : 'bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span>✂️</span> {editIsSplitExpense ? 'Cancelar División' : 'Dividir Gasto'}
+                  </button>
+                </div>
+
+                {!editIsSplitExpense ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <ExecutiveSelect
+                      label="Descontar del Presupuesto"
+                      value={editBudgetId}
+                      onChange={e => {
+                        setEditBudgetId(e.target.value);
+                        setEditBudgetCategoryId('');
+                      }}
+                      accentColor="emerald"
+                      options={[
+                        { value: '', label: 'Ninguno (Gasto libre)' },
+                        ...budgetOptions.map(b => ({ value: b.id, label: `${b.emoji} ${b.name}` }))
+                      ]}
+                    />
+
+                    <ExecutiveSelect
+                      label="Subcategoría Presupuestaria"
+                      value={editBudgetCategoryId}
+                      onChange={e => setEditBudgetCategoryId(e.target.value)}
+                      accentColor="emerald"
+                      disabled={!editBudgetId}
+                      options={[
+                        { value: '', label: editBudgetId ? '-- Seleccionar Subcategoría --' : 'Selecciona un presupuesto' },
+                        ...getCategoryOptionsForBudget(editBudgetId).map(c => ({ value: c.id, label: c.label }))
+                      ]}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-900/90 rounded-xl border border-amber-500/30 space-y-3">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-amber-300 font-bold flex items-center gap-1">
+                        <span>✂️</span> Divisiones de Gasto
+                      </span>
+                      <span className="text-slate-300">
+                        Total: <strong className="text-emerald-400 font-bold">{formatCurrency(editSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0), editingTx.currency)}</strong>
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {editSplits.map((split, idx) => {
+                        const cats = getCategoryOptionsForBudget(split.budgetId);
+                        return (
+                          <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-950/70 rounded-lg border border-white/10 text-xs">
+                            <div className="sm:col-span-4">
+                              <select
+                                value={split.budgetId}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
+                                }}
+                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500"
+                              >
+                                <option value="">-- Presupuesto --</option>
+                                {budgetOptions.map(b => (
+                                  <option key={b.id} value={b.id}>{b.emoji} {b.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-4">
+                              <select
+                                value={split.budgetCategoryId}
+                                onChange={e => {
+                                  const catId = e.target.value;
+                                  const catObj = cats.find(c => c.id === catId);
+                                  setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
+                                }}
+                                disabled={!split.budgetId}
+                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                              >
+                                <option value="">-- Categoría --</option>
+                                {cats.map(c => (
+                                  <option key={c.id} value={c.id}>{c.label}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <input
+                                type="number"
+                                placeholder="Monto $"
+                                value={split.amount || ''}
+                                onChange={e => {
+                                  const val = Number(e.target.value) || 0;
+                                  setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
+                                }}
+                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white font-mono focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-1 flex justify-center">
+                              <button
+                                type="button"
+                                onClick={() => setEditSplits(prev => prev.filter((_, i) => i !== idx))}
+                                className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditSplits(prev => [...prev, { id: 'split_' + Date.now(), budgetId: '', budgetCategoryId: '', categoryName: '', amount: 0, description: '' }])}
+                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Agregar otra división
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <ExecutiveButton
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setEditingTx(null)}
+                >
+                  Cancelar
+                </ExecutiveButton>
+                <ExecutiveButton
+                  type="submit"
+                  variant="primary"
+                  accentColor="emerald"
+                  icon={<Check className="w-4 h-4" />}
+                >
+                  Guardar Cambios
+                </ExecutiveButton>
+              </div>
+            </div>
+          </ExecutiveForm>
+        )}
       </ExecutiveModal>
     </div>
   );

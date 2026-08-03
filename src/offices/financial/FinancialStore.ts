@@ -232,6 +232,18 @@ export const FinancialStore = {
     });
   },
 
+  updateTransaction(id: string, updates: Partial<FinancialTransaction>) {
+    storeInstance.updateState(draft => {
+      const idx = draft.offices.financiera.transactions.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        draft.offices.financiera.transactions[idx] = {
+          ...draft.offices.financiera.transactions[idx],
+          ...updates
+        };
+      }
+    });
+  },
+
   // OBLIGATIONS
   addObligation(ob: Omit<FinancialObligation, 'id' | 'isPaid'>) {
     storeInstance.updateState(draft => {
