@@ -170,17 +170,33 @@ export const SecurityStore = {
     }
   },
 
-  lockApp() {
+  lockApp(reason: 'manual' | 'auto_inactivity' | 'logout' = 'manual') {
     storeInstance.updateState(draft => {
       draft.security.isLocked = true;
       if (!draft.security.accessLogs) draft.security.accessLogs = [];
+      
+      let desc = 'Bloqueo del sistema activado manualmente.';
+      let logType: 'locked' | 'auto_locked' | 'logout_locked' = 'locked';
+      
+      if (reason === 'auto_inactivity') {
+        desc = 'Sistema bloqueado automáticamente por inactividad del usuario.';
+        logType = 'auto_locked';
+      } else if (reason === 'logout') {
+        desc = 'Cierre de sesión y bloqueo presidencial activado. Todos los cambios han sido guardados.';
+        logType = 'logout_locked';
+      }
+
       draft.security.accessLogs.unshift({
         id: 'log_' + Date.now(),
         date: new Date().toISOString(),
-        type: 'locked',
-        description: 'Bloqueo del sistema activado manualmente.'
+        type: logType,
+        description: desc
       });
     });
+  },
+
+  logoutAndLock() {
+    this.lockApp('logout');
   }
 };
 

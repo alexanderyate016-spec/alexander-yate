@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { storeInstance } from './store/CasaBlancaStore';
 import { MasterState } from './types/store';
 import { SecurityCenterView } from './offices/security/SecurityCenterView';
+import { SecurityStore } from './offices/security/SecurityStore';
 import { CrisisCenterView } from './offices/security/CrisisCenterView';
 import { AcademicView } from './offices/academic/AcademicView';
 import { DailyLifeView } from './offices/dailyLife/DailyLifeView';
@@ -22,6 +23,7 @@ import {
   Download,
   Upload,
   Lock,
+  LogOut,
   RefreshCw,
   Menu,
   X,
@@ -32,7 +34,6 @@ export function App() {
   const [state, setState] = useState<MasterState>(storeInstance.getState());
   const [activeOffice, setActiveOffice] = useState<string>('ovalOffice');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [isEmergencyLockActive, setIsEmergencyLockActive] = useState<boolean>(false);
 
   // Subscribe to store updates
   useEffect(() => {
@@ -42,12 +43,44 @@ export function App() {
     return unsubscribe;
   }, []);
 
-  // Security Lock Enforcement
-  if (!state.security.isSetupComplete || state.security.isLocked || isEmergencyLockActive) {
+  // Automatic Inactivity Auto-Lock Timer
+  useEffect(() => {
+    if (!state.security.isSetupComplete || state.security.isLocked) return;
+
+    const autoLockEnabled = state.security.settings?.autoLock !== false;
+    if (!autoLockEnabled) return;
+
+    const lockTimeMinutes = state.security.settings?.lockTimeMinutes || 15;
+    const timeoutMs = lockTimeMinutes * 60 * 1000;
+
+    let timer: NodeJS.Timeout;
+
+    const resetInactivityTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        SecurityStore.lockApp('auto_inactivity');
+      }, timeoutMs);
+    };
+
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    activityEvents.forEach(evt => window.addEventListener(evt, resetInactivityTimer));
+
+    resetInactivityTimer();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      activityEvents.forEach(evt => window.removeEventListener(evt, resetInactivityTimer));
+    };
+  }, [state.security.isSetupComplete, state.security.isLocked, state.security.settings?.autoLock, state.security.settings?.lockTimeMinutes]);
+
+  // Security Lock Enforcement (MUST validate BEFORE loading protected workspace)
+  if (!state.security.isSetupComplete || state.security.isLocked) {
     return (
       <SecurityCenterView
         securityData={state.security}
-        onUnlockSuccess={() => setIsEmergencyLockActive(false)}
+        onUnlockSuccess={() => {
+          // SecurityStore already mutated draft.security.isLocked = false in store
+        }}
       />
     );
   }
@@ -147,11 +180,19 @@ export function App() {
                 </label>
 
                 <button
-                  onClick={() => setIsEmergencyLockActive(true)}
+                  onClick={() => SecurityStore.lockApp('manual')}
                   title="Bloquear sistema de inmediato"
-                  className="px-3 py-1 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A192F] font-bold transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
+                  className="px-3 py-1 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-200 font-bold transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
                 >
                   <Lock className="w-3 h-3" /> Bloquear
+                </button>
+
+                <button
+                  onClick={() => SecurityStore.logoutAndLock()}
+                  title="Cerrar sesión y bloquear sistema"
+                  className="px-3 py-1 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A192F] font-bold transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
+                >
+                  <LogOut className="w-3 h-3" /> Cerrar Sesión
                 </button>
               </div>
             </div>
@@ -220,17 +261,29 @@ export function App() {
                 </button>
               );
             })}
-            <div className="pt-2 border-t border-white/10 flex gap-2">
+            <div className="pt-2 border-t border-white/10 flex flex-wrap gap-2">
               <button
                 onClick={handleExportData}
                 className="flex-1 bg-white/10 text-xs text-white py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px]"
               >
-                <Download className="w-3.5 h-3.5 text-[#C5A059]" /> Exportar JSON
+                <Download className="w-3.5 h-3.5 text-[#C5A059]" /> Exportar
               </button>
               <label className="flex-1 bg-white/10 text-xs text-white py-2 flex justify-center items-center gap-1 cursor-pointer uppercase tracking-wider text-[10px]">
-                <Upload className="w-3.5 h-3.5 text-[#C5A059]" /> Importar JSON
+                <Upload className="w-3.5 h-3.5 text-[#C5A059]" /> Importar
                 <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
               </label>
+              <button
+                onClick={() => SecurityStore.lockApp('manual')}
+                className="w-full bg-amber-600/40 text-xs text-amber-200 py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px] font-bold"
+              >
+                <Lock className="w-3.5 h-3.5" /> Bloquear
+              </button>
+              <button
+                onClick={() => SecurityStore.logoutAndLock()}
+                className="w-full bg-[#C5A059] text-xs text-[#0A192F] py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px] font-bold"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Cerrar Sesión
+              </button>
             </div>
           </div>
         )}
@@ -242,7 +295,7 @@ export function App() {
           <OvalOfficeView
             state={state}
             onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
-            onActivateEmergencyLock={() => setIsEmergencyLockActive(true)}
+            onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
           />
         )}
         {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}

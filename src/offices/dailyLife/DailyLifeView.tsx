@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DailyLifeOfficeData, HabitItem, DailyTask, DailyObjective, TimePlan, RoutineItem, DailyHistoryRecord } from '../../types/store';
 import { DailyLifeStore } from './DailyLifeStore';
 import { DailyLifeCalculations, FreeTimeGap } from './DailyLifeCalculations';
+import { HorarioPersonal } from './components/HorarioPersonal';
 import { getTodayDateString } from '../../utils/dates';
 import {
   GlassPanel,
@@ -97,7 +98,7 @@ const StreakBadge: React.FC<{ streak: number; isCheckedToday: boolean }> = ({ st
 };
 
 export const DailyLifeView: React.FC<Props> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'habits' | 'timePlan' | 'tasks' | 'objectives' | 'routines'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'horarioPersonal' | 'dashboard' | 'history' | 'habits' | 'timePlan' | 'tasks' | 'objectives' | 'routines'>('horarioPersonal');
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const todayStr = getTodayDateString();
@@ -588,6 +589,18 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       {/* 3. TABS DE NAVEGACIÓN PRINCIPAL */}
       <div className="flex border-b border-white/10 space-x-2 overflow-x-auto pb-1">
         <button
+          onClick={() => setActiveTab('horarioPersonal')}
+          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
+            activeTab === 'horarioPersonal'
+              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Clock className="w-4 h-4 text-amber-400" />
+          Horario Personal
+        </button>
+
+        <button
           onClick={() => setActiveTab('dashboard')}
           className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
             activeTab === 'dashboard'
@@ -672,7 +685,10 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
         </button>
       </div>
 
-      {/* TAB 0: DASHBOARD & CRONOLOGÍA DEL DÍA */}
+      {/* TAB 0: HORARIO PERSONAL */}
+      {activeTab === 'horarioPersonal' && <HorarioPersonal />}
+
+      {/* TAB 1: DASHBOARD & CRONOLOGÍA DEL DÍA */}
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
           {/* DETECCIÓN DE ESPACIOS DE TIEMPO LIBRE */}

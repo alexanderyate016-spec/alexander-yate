@@ -142,6 +142,7 @@ export const MedicalCalculations = {
       todayNaps,
       hydrationLiters: todayHydrationLiters,
       targetWater,
+      targetSleepHours,
       hydrationPct,
       remainingWaterMl,
       todayWaterLogs

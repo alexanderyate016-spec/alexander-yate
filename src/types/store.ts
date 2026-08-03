@@ -161,6 +161,11 @@ export interface TimePlan {
   endTime: string; // calculated
   color: string;
   description?: string;
+  subjectId?: string;
+  subjectTopic?: string;
+  completed?: boolean;
+  priority?: 'low' | 'medium' | 'high';
+  notes?: string;
 }
 
 export interface DailyHistoryDetailItem {
@@ -593,7 +598,7 @@ export interface PersonalDevOfficeData {
 export interface SecurityLog {
   id: string;
   date: string;
-  type: 'login_success' | 'failed_attempt' | 'password_changed' | 'locked' | 'exported' | 'imported';
+  type: 'login_success' | 'failed_attempt' | 'password_changed' | 'locked' | 'auto_locked' | 'logout_locked' | 'exported' | 'imported';
   description: string;
 }
 
