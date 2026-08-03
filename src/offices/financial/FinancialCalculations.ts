@@ -1,4 +1,4 @@
-import { FinancialAccount, FinancialTransaction, FinancialOfficeData, CurrencyCode } from '../../types/store';
+import { FinancialAccount, FinancialTransaction, FinancialObligation, FinancialOfficeData, CurrencyCode } from '../../types/store';
 
 export const FinancialCalculations = {
   calculateAccountBalance(account: FinancialAccount, transactions: FinancialTransaction[]): number {
@@ -229,5 +229,108 @@ export const FinancialCalculations = {
     });
 
     return alerts;
+  },
+
+  calculateYieldsSummary(transactions: FinancialTransaction[], todayStr: string, currency: CurrencyCode = 'COP') {
+    const yieldTxs = (transactions || []).filter(t => t.nature === 'financial_yield' && t.currency === currency);
+    const monthPrefix = todayStr.substring(0, 7);
+    const yearPrefix = todayStr.substring(0, 4);
+
+    let today = 0;
+    let month = 0;
+    let year = 0;
+
+    yieldTxs.forEach(t => {
+      if (t.date === todayStr) today += t.amount;
+      if (t.date.startsWith(monthPrefix)) month += t.amount;
+      if (t.date.startsWith(yearPrefix)) year += t.amount;
+    });
+
+    return { today, month, year };
+  },
+
+  calculateAccountStats(account: FinancialAccount, transactions: FinancialTransaction[], obligations: FinancialObligation[], budgets: any[], todayStr: string) {
+    const accountTxs = (transactions || []).filter(
+      t => t.sourceAccountId === account.id || t.destinationAccountId === account.id
+    );
+
+    // Sort chronologically
+    const sortedTxs = [...accountTxs].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+    let currentBalance = account.initialBalance || 0;
+    let totalIncomes = 0;
+    let totalExpenses = 0;
+    let transfersReceived = 0;
+    let transfersSent = 0;
+    let totalYields = 0;
+
+    const monthPrefix = todayStr.substring(0, 7);
+    let monthMovementsCount = 0;
+
+    // Reconstruct balance history
+    const balanceHistory: Array<{ date: string; balance: number; delta: number; description: string }> = [
+      { date: account.createdAt || '2026-01-01', balance: account.initialBalance || 0, delta: account.initialBalance || 0, description: 'Saldo Inicial' }
+    ];
+
+    sortedTxs.forEach(tx => {
+      let delta = 0;
+      if ((tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell') && tx.destinationAccountId === account.id) {
+        delta = tx.amount;
+        if (tx.nature === 'external_income') totalIncomes += tx.amount;
+        if (tx.nature === 'financial_yield') totalYields += tx.amount;
+      } else if ((tx.nature === 'external_expense' || tx.nature === 'investment_buy') && tx.sourceAccountId === account.id) {
+        delta = -tx.amount;
+        if (tx.nature === 'external_expense' || tx.nature === 'investment_buy') totalExpenses += tx.amount;
+      } else if (tx.nature === 'internal_transfer') {
+        if (tx.destinationAccountId === account.id) {
+          delta = tx.amount;
+          transfersReceived += tx.amount;
+        } else if (tx.sourceAccountId === account.id) {
+          delta = -tx.amount;
+          transfersSent += tx.amount;
+        }
+      } else if (tx.nature === 'reconciliation_adj') {
+        if (tx.destinationAccountId === account.id) delta = tx.amount;
+        if (tx.sourceAccountId === account.id) delta = -tx.amount;
+      }
+
+      currentBalance += delta;
+      balanceHistory.push({
+        date: tx.date,
+        balance: currentBalance,
+        delta,
+        description: tx.description
+      });
+
+      if (tx.date.startsWith(monthPrefix)) {
+        monthMovementsCount++;
+      }
+    });
+
+    const lastMovement = sortedTxs.length > 0 ? sortedTxs[sortedTxs.length - 1] : null;
+
+    // Associated Obligations
+    const associatedObligations = (obligations || []).filter(
+      o => o.currency === account.currency && !o.isPaid
+    );
+
+    // Associated Budgets
+    const associatedBudgets = (budgets || []).filter(b => b.currency === account.currency);
+
+    return {
+      currentBalance,
+      initialBalance: account.initialBalance || 0,
+      totalIncomes,
+      totalExpenses,
+      transfersReceived,
+      transfersSent,
+      totalYields,
+      monthMovementsCount,
+      lastMovement,
+      balanceHistory,
+      associatedObligations,
+      associatedBudgets,
+      accountTxs
+    };
   }
 };

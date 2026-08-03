@@ -221,7 +221,11 @@ export interface FinancialAccount {
   type: 'cash' | 'checking' | 'savings' | 'high_yield' | 'digital_wallet' | 'investment' | 'other';
   currency: CurrencyCode;
   initialBalance: number;
-  annualInterestRate?: number; // for high yield accounts
+  annualInterestRate?: number; // for high yield accounts (TEA %)
+  archived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastYieldProcessedDate?: string;
 }
 
 export interface FinancialCategory {
@@ -258,7 +262,7 @@ export interface FinancialTransaction {
   description: string;
   amount: number;
   currency: CurrencyCode;
-  tags: string[];
+  tags?: string[];
 }
 
 export interface FinancialObligation {

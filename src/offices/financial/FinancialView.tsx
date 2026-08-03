@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   FinancialOfficeData,
@@ -57,7 +57,16 @@ import {
   Clock,
   ShieldAlert,
   Repeat,
-  RefreshCw
+  RefreshCw,
+  Archive,
+  RotateCcw,
+  LineChart,
+  FileText,
+  Send,
+  ArrowLeftRight,
+  Settings,
+  Info,
+  Briefcase
 } from 'lucide-react';
 
 interface Props {
@@ -140,6 +149,75 @@ const VisualGaugeBar: React.FC<{ label: string; percent: number; color: 'emerald
   );
 };
 
+// SVG Balance Evolution Chart for Account Panel
+const BalanceEvolutionChart: React.FC<{ history: Array<{ date: string; balance: number; delta: number; description: string }>; currency: CurrencyCode }> = ({
+  history,
+  currency
+}) => {
+  if (!history || history.length === 0) {
+    return <p className="text-xs text-slate-400 italic p-4 text-center">Sin datos suficientes para construir el gráfico de evolución.</p>;
+  }
+
+  const points = history.slice(-25);
+  const minBal = Math.min(...points.map(p => p.balance));
+  const maxBal = Math.max(...points.map(p => p.balance));
+  const range = maxBal - minBal === 0 ? 1 : maxBal - minBal;
+
+  const width = 600;
+  const height = 180;
+  const padding = 35;
+
+  const coords = points.map((p, i) => {
+    const x = padding + (i / Math.max(points.length - 1, 1)) * (width - 2 * padding);
+    const y = height - padding - ((p.balance - minBal) / range) * (height - 2 * padding);
+    return { x, y, point: p };
+  });
+
+  const pathD = coords.reduce((acc, c, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`, '');
+  const areaD = `${pathD} L ${coords[coords.length - 1].x} ${height - padding} L ${coords[0].x} ${height - padding} Z`;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center text-xs font-mono text-slate-400">
+        <span>Min: {formatCurrency(minBal, currency)}</span>
+        <span className="text-emerald-400 font-bold">Máx: {formatCurrency(maxBal, currency)}</span>
+      </div>
+
+      <div className="w-full overflow-x-auto bg-[#081220]/90 p-3 rounded-2xl border border-white/10 shadow-inner">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-w-[500px]">
+          <defs>
+            <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+          <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="rgba(255,255,255,0.12)" />
+
+          {/* Area */}
+          <path d={areaD} fill="url(#balanceGrad)" />
+
+          {/* Line */}
+          <path d={pathD} fill="none" stroke="#34D399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+          {/* Data Points */}
+          {coords.map((c, i) => (
+            <g key={i} className="group cursor-pointer">
+              <circle cx={c.x} cy={c.y} r="4.5" fill="#10B981" stroke="#060D17" strokeWidth="2" />
+              <circle cx={c.x} cy={c.y} r="8" fill="none" stroke="#34D399" strokeWidth="1.5" className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              <title>{`${c.point.date}: ${formatCurrency(c.point.balance, currency)} (${c.point.description})`}</title>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <p className="text-[10px] text-slate-400 text-center italic">Pasa el cursor sobre los puntos para ver fecha, concepto y saldo acumulado.</p>
+    </div>
+  );
+};
+
 export const FinancialView: React.FC<Props> = ({ data }) => {
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'accounts' | 'budgets' | 'expenses' | 'income' | 'savings' | 'obligations' | 'investments' | 'transactions'
@@ -158,6 +236,60 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 3200);
   };
+
+  // AUTOMATIC DAILY YIELDS PROCESSOR ON MOUNT
+  useEffect(() => {
+    FinancialStore.processDailyYields(todayStr);
+  }, [todayStr]);
+
+  // Account Operations & Panel State
+  const [accountViewFilter, setAccountViewFilter] = useState<'active' | 'archived'>('active');
+  const [selectedAccountForPanel, setSelectedAccountForPanel] = useState<FinancialAccount | null>(null);
+  const [accountPanelTab, setAccountPanelTab] = useState<'stats' | 'chart' | 'obligations' | 'movements'>('stats');
+  const [quickActionType, setQuickActionType] = useState<'transfer' | 'income' | 'expense' | 'yield' | 'edit' | null>(null);
+
+  // Manual Yield Form State
+  const [manualYieldAmount, setManualYieldAmount] = useState<number | ''>('');
+  const [manualYieldDesc, setManualYieldDesc] = useState('');
+
+  // Edit Account Form State
+  const [editAccName, setEditAccName] = useState('');
+  const [editAccInst, setEditAccInst] = useState('');
+  const [editAccType, setEditAccType] = useState<'cash' | 'checking' | 'savings' | 'high_yield' | 'digital_wallet' | 'investment' | 'other'>('savings');
+  const [editAccCurrency, setEditAccCurrency] = useState<CurrencyCode>('COP');
+  const [editAccInitial, setEditAccInitial] = useState<number | ''>('');
+  const [editAccInterest, setEditAccInterest] = useState<number | ''>('');
+
+  // Investment Assets Modal State
+  const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false);
+  const [selectedInvestmentAcc, setSelectedInvestmentAcc] = useState<FinancialAccount | null>(null);
+  const [investmentAssetTab, setInvestmentAssetTab] = useState<'stocks' | 'etfs' | 'bonds' | 'crypto' | 'funds'>('stocks');
+
+  // Sync edit state when account selected
+  useEffect(() => {
+    if (selectedAccountForPanel) {
+      setEditAccName(selectedAccountForPanel.name);
+      setEditAccInst(selectedAccountForPanel.institution || '');
+      setEditAccType(selectedAccountForPanel.type);
+      setEditAccCurrency(selectedAccountForPanel.currency);
+      setEditAccInitial(selectedAccountForPanel.initialBalance || 0);
+      setEditAccInterest(selectedAccountForPanel.annualInterestRate || '');
+    }
+  }, [selectedAccountForPanel]);
+
+  // Active / Archived Accounts Memo
+  const activeAccounts = useMemo(() => (data.accounts || []).filter(a => !a.archived), [data.accounts]);
+  const archivedAccounts = useMemo(() => (data.accounts || []).filter(a => a.archived), [data.accounts]);
+  const displayedAccounts = accountViewFilter === 'active' ? activeAccounts : archivedAccounts;
+
+  // Yields Summary Memo
+  const yieldsSummary = useMemo(() => {
+    return FinancialCalculations.calculateYieldsSummary(data.transactions || [], todayStr, 'COP');
+  }, [data.transactions, todayStr]);
+
+  const hasHighYieldAccounts = useMemo(() => {
+    return (data.accounts || []).some(a => a.type === 'high_yield');
+  }, [data.accounts]);
 
   // Modals & Sub-states
   const [isCreatingBudget, setIsCreatingBudget] = useState(false);
@@ -682,6 +814,41 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       {/* TAB 0: DASHBOARD FINANCIERO INTERACTIVO */}
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
+          {/* PANEL EJECUTIVO DE RENDIMIENTO DE ALTO RENDIMIENTO */}
+          {hasHighYieldAccounts && (
+            <GlassPanel accentColor="emerald" padding="md" className="border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-[#0A192F]/90 to-emerald-950/40">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif font-bold text-white text-base">Panel Ejecutivo de Rendimientos</h3>
+                      <ExecutiveBadge variant="solid" accentColor="emerald">Cálculo Diario Automático</ExecutiveBadge>
+                    </div>
+                    <p className="text-xs text-slate-300">Intereses abonados automáticamente como movimientos en cuentas de alto rendimiento.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 bg-slate-900/90 p-3 rounded-2xl border border-white/10 w-full md:w-auto font-mono text-center shadow-lg">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Hoy</span>
+                    <span className="text-sm font-bold text-emerald-400">+{formatCurrency(yieldsSummary.today, 'COP')}</span>
+                  </div>
+                  <div className="border-x border-white/10 px-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Este Mes</span>
+                    <span className="text-sm font-bold text-emerald-300">+{formatCurrency(yieldsSummary.month, 'COP')}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Este Año</span>
+                    <span className="text-sm font-bold text-teal-300">+{formatCurrency(yieldsSummary.year, 'COP')}</span>
+                  </div>
+                </div>
+              </div>
+            </GlassPanel>
+          )}
+
           {/* SMART ALERTS PANEL */}
           {smartAlerts.length > 0 && (
             <GlassPanel accentColor="emerald" padding="md" className="border-emerald-500/30 bg-emerald-950/20">
@@ -955,30 +1122,70 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             </ExecutiveForm>
           </GlassPanel>
 
+          {/* FILTER & ACTIVE / ARCHIVED ACCOUNT TOGGLE BAR */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-3 rounded-2xl border border-white/10">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAccountViewFilter('active')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  accountViewFilter === 'active'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Cuentas Activas ({activeAccounts.length})
+              </button>
+
+              <button
+                onClick={() => setAccountViewFilter('archived')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  accountViewFilter === 'archived'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Archive className="w-3.5 h-3.5" />
+                Cuentas Archivadas ({archivedAccounts.length})
+              </button>
+            </div>
+
+            <span className="text-[11px] text-slate-400 italic">
+              * Ningún saldo se modifica manualmente; todo cambio se origina por movimientos.
+            </span>
+          </div>
+
           {/* LISTA DE CUENTAS */}
-          {data.accounts.length === 0 ? (
+          {displayedAccounts.length === 0 ? (
             <ExecutiveEmptyState
               icon={<Landmark className="w-8 h-8 text-emerald-400" />}
-              title="Sin Cuentas Registradas"
-              description="No hay cuentas de tesorería registradas. Registra tu primera cuenta bancaria, efectivo o billetera digital arriba."
+              title={accountViewFilter === 'active' ? "Sin Cuentas Activas" : "Sin Cuentas Archivadas"}
+              description={
+                accountViewFilter === 'active'
+                  ? "No hay cuentas activas registradas. Registra tu primera cuenta bancaria arriba."
+                  : "No hay cuentas archivadas en el historial."
+              }
               accentColor="emerald"
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.accounts.map(acc => {
+              {displayedAccounts.map(acc => {
                 const calculatedBalance = FinancialCalculations.calculateAccountBalance(acc, data.transactions || []);
                 const dailyYieldEst = FinancialCalculations.calculateDailyYieldEstimated(acc, data.transactions || []);
 
                 return (
                   <ExecutiveCard
                     key={acc.id}
-                    accentColor="emerald"
+                    accentColor={acc.archived ? 'amber' : 'emerald'}
                     accentBorderLeft
                     header={
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-serif font-bold text-white text-base">{acc.name}</h4>
-                          <p className="text-xs text-slate-400">{acc.institution} • {acc.type}</p>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-serif font-bold text-white text-base">{acc.name}</h4>
+                            {acc.archived && <ExecutiveBadge variant="subtle" accentColor="amber">Archivada</ExecutiveBadge>}
+                          </div>
+                          <p className="text-xs text-slate-400">{acc.institution || 'Entidad no esp.'} • {acc.type.replace('_', ' ')}</p>
                         </div>
                         <ExecutiveBadge variant="subtle" accentColor="emerald">
                           {acc.currency}
@@ -986,25 +1193,47 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       </div>
                     }
                     footer={
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-mono text-[10px]">ID: {acc.id.slice(0, 8)}</span>
-                        <ExecutiveButton
-                          variant="ghost"
-                          size="sm"
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                        <button
                           onClick={() => {
-                            FinancialStore.deleteAccount(acc.id);
-                            triggerToast('Cuenta eliminada', 'info');
+                            setSelectedAccountForPanel(acc);
+                            setQuickActionType(null);
+                            setAccountPanelTab('stats');
                           }}
-                          className="text-rose-400 hover:text-rose-300"
+                          className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
                         >
-                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar
-                        </ExecutiveButton>
+                          <BarChart3 className="w-3.5 h-3.5" /> Abrir Panel
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          {acc.archived ? (
+                            <button
+                              onClick={() => {
+                                FinancialStore.unarchiveAccount(acc.id);
+                                triggerToast(`Cuenta "${acc.name}" restaurada`, 'success');
+                              }}
+                              className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                FinancialStore.archiveAccount(acc.id);
+                                triggerToast(`Cuenta "${acc.name}" archivada`, 'info');
+                              }}
+                              className="text-slate-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                            >
+                              <Archive className="w-3.5 h-3.5" /> Archivar
+                            </button>
+                          )}
+                        </div>
                       </div>
                     }
                   >
                     <div className="space-y-3 py-1">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Balance Calculado</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Saldo Calculado</span>
                         <div className="text-2xl font-serif font-bold text-emerald-400 mt-0.5">
                           {formatCurrency(calculatedBalance, acc.currency)}
                         </div>
@@ -1012,12 +1241,92 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
                       {acc.type === 'high_yield' && acc.annualInterestRate && (
                         <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 space-y-0.5">
-                          <div className="font-bold">TEA: {acc.annualInterestRate}%</div>
+                          <div className="font-bold flex justify-between">
+                            <span>TEA: {acc.annualInterestRate}%</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">Automático</span>
+                          </div>
                           <div className="text-[11px] text-emerald-300">
                             Rendimiento diario est.: <strong>{formatCurrency(dailyYieldEst, acc.currency)}/día</strong>
                           </div>
                         </div>
                       )}
+
+                      {/* QUICK OPERATIONS BAR ON CARD */}
+                      <div className="pt-2 border-t border-white/10 space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Operaciones Rápidas:</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            onClick={() => {
+                              setSelectedAccountForPanel(acc);
+                              setQuickActionType('transfer');
+                              setTxSourceAcc(acc.id);
+                              setTxNature('internal_transfer');
+                            }}
+                            className="px-2 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-bold hover:bg-blue-500/30 transition-all flex items-center justify-center gap-1"
+                          >
+                            <ArrowLeftRight className="w-3 h-3" /> Transferir
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedAccountForPanel(acc);
+                              setQuickActionType('income');
+                              setTxDestAcc(acc.id);
+                              setTxNature('external_income');
+                            }}
+                            className="px-2 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-1"
+                          >
+                            <ArrowUpRight className="w-3 h-3" /> Ingreso
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedAccountForPanel(acc);
+                              setQuickActionType('expense');
+                              setTxSourceAcc(acc.id);
+                              setTxNature('external_expense');
+                            }}
+                            className="px-2 py-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold hover:bg-rose-500/30 transition-all flex items-center justify-center gap-1"
+                          >
+                            <ArrowDownRight className="w-3 h-3" /> Gasto
+                          </button>
+
+                          {acc.type === 'high_yield' ? (
+                            <button
+                              onClick={() => {
+                                setSelectedAccountForPanel(acc);
+                                setQuickActionType('yield');
+                              }}
+                              className="px-2 py-1.5 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[11px] font-bold hover:bg-teal-500/30 transition-all flex items-center justify-center gap-1"
+                            >
+                              <TrendingUp className="w-3 h-3" /> Rendimiento
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedAccountForPanel(acc);
+                                setQuickActionType('edit');
+                              }}
+                              className="px-2 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-[11px] font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-1"
+                            >
+                              <Edit2 className="w-3 h-3" /> Editar
+                            </button>
+                          )}
+                        </div>
+
+                        {acc.type === 'investment' && (
+                          <button
+                            onClick={() => {
+                              setSelectedInvestmentAcc(acc);
+                              setIsInvestmentModalOpen(true);
+                            }}
+                            className="w-full py-2 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 font-serif font-bold text-xs hover:bg-purple-500/30 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Briefcase className="w-3.5 h-3.5 text-purple-300" />
+                            Administrar activos
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </ExecutiveCard>
                 );
@@ -2258,6 +2567,668 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 </strong>
               </div>
             ))}
+        </div>
+      </ExecutiveModal>
+
+      {/* MODAL PANEL DE CUENTA BANCARIA / BILLETERA */}
+      <ExecutiveModal
+        isOpen={Boolean(selectedAccountForPanel)}
+        onClose={() => {
+          setSelectedAccountForPanel(null);
+          setQuickActionType(null);
+        }}
+        title={selectedAccountForPanel ? `Panel de Cuenta: ${selectedAccountForPanel.name}` : ''}
+        accentColor={selectedAccountForPanel?.archived ? 'amber' : 'emerald'}
+      >
+        {selectedAccountForPanel && (() => {
+          const acc = selectedAccountForPanel;
+          const stats = FinancialCalculations.calculateAccountStats(acc, data.transactions || [], data.obligations || [], data.budgets || [], todayStr);
+          const dailyYieldEst = FinancialCalculations.calculateDailyYieldEstimated(acc, data.transactions || []);
+
+          return (
+            <div className="space-y-5">
+              {/* HEADER INFO CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Saldo Calculado</span>
+                  <div className="text-2xl font-serif font-bold text-emerald-400">
+                    {formatCurrency(stats.currentBalance, acc.currency)}
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">Inicial: {formatCurrency(stats.initialBalance, acc.currency)}</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Entidad & Tipo</span>
+                    <strong className="text-sm font-bold text-white block">{acc.institution || 'Entidad no esp.'}</strong>
+                    <span className="text-xs text-slate-300 capitalize">{acc.type.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <ExecutiveBadge variant="subtle" accentColor="emerald">{acc.currency}</ExecutiveBadge>
+                    {acc.archived ? (
+                      <ExecutiveBadge variant="subtle" accentColor="amber">Archivada</ExecutiveBadge>
+                    ) : (
+                      <ExecutiveBadge variant="subtle" accentColor="emerald">Activa</ExecutiveBadge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 flex flex-col justify-between text-xs space-y-1">
+                  {acc.type === 'high_yield' && acc.annualInterestRate ? (
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 block">Rendimiento Alto Valor</span>
+                      <div className="text-base font-serif font-bold text-emerald-300">{acc.annualInterestRate}% TEA</div>
+                      <span className="text-[11px] text-slate-300 block">Est: +{formatCurrency(dailyYieldEst, acc.currency)}/día</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Movimientos del Mes</span>
+                      <div className="text-lg font-serif font-bold text-white">{stats.monthMovementsCount} registros</div>
+                      <span className="text-[11px] text-slate-400 block">Total en historial: {stats.accountTxs.length}</span>
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-400 pt-1 border-t border-white/10 flex justify-between font-mono">
+                    <span>Creada: {acc.createdAt || 'N/A'}</span>
+                    <span>Mod: {acc.updatedAt || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* QUICK ACTION BUTTONS BAR */}
+              <div className="flex flex-wrap gap-2 p-2 rounded-2xl bg-slate-950/80 border border-white/10 items-center justify-between">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => { setQuickActionType('transfer'); setTxSourceAcc(acc.id); setTxNature('internal_transfer'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      quickActionType === 'transfer' ? 'bg-blue-500 text-white shadow-lg' : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                    }`}
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5" /> Transferir
+                  </button>
+
+                  <button
+                    onClick={() => { setQuickActionType('income'); setTxDestAcc(acc.id); setTxNature('external_income'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      quickActionType === 'income' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                    }`}
+                  >
+                    <ArrowUpRight className="w-3.5 h-3.5" /> Ingreso
+                  </button>
+
+                  <button
+                    onClick={() => { setQuickActionType('expense'); setTxSourceAcc(acc.id); setTxNature('external_expense'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      quickActionType === 'expense' ? 'bg-rose-500 text-white shadow-lg' : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    <ArrowDownRight className="w-3.5 h-3.5" /> Gasto
+                  </button>
+
+                  <button
+                    onClick={() => { setQuickActionType('yield'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      quickActionType === 'yield' ? 'bg-teal-500 text-white shadow-lg' : 'bg-teal-500/20 text-teal-300 hover:bg-teal-500/30'
+                    }`}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" /> Rendimiento Manual
+                  </button>
+
+                  <button
+                    onClick={() => { setQuickActionType('edit'); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      quickActionType === 'edit' ? 'bg-slate-700 text-white shadow-lg' : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                    }`}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" /> Editar
+                  </button>
+                </div>
+
+                <div>
+                  {acc.archived ? (
+                    <button
+                      onClick={() => {
+                        FinancialStore.unarchiveAccount(acc.id);
+                        setSelectedAccountForPanel({ ...acc, archived: false });
+                        triggerToast(`Cuenta "${acc.name}" restaurada`, 'success');
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Restaurar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        FinancialStore.archiveAccount(acc.id);
+                        setSelectedAccountForPanel({ ...acc, archived: true });
+                        triggerToast(`Cuenta "${acc.name}" archivada`, 'info');
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1.5"
+                    >
+                      <Archive className="w-3.5 h-3.5" /> Archivar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* QUICK ACTION FORM (IF ANY SELECTED) */}
+              {quickActionType && (
+                <div className="p-4 bg-slate-900/90 border border-white/20 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                    <h4 className="font-serif font-bold text-white text-sm flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                      {quickActionType === 'transfer' && 'Transferir Dinero a Otra Cuenta'}
+                      {quickActionType === 'income' && 'Registrar Ingreso en Esta Cuenta'}
+                      {quickActionType === 'expense' && 'Registrar Gasto desde Esta Cuenta'}
+                      {quickActionType === 'yield' && 'Registrar Rendimiento Financiero Manual'}
+                      {quickActionType === 'edit' && 'Editar Configuración de la Cuenta'}
+                    </h4>
+                    <button onClick={() => setQuickActionType(null)} className="text-slate-400 hover:text-white">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* FORM CONTENT BASED ON ACTION */}
+                  {quickActionType === 'transfer' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <ExecutiveSelect
+                        label="Cuenta Destino *"
+                        value={txDestAcc}
+                        onChange={e => setTxDestAcc(e.target.value)}
+                        accentColor="emerald"
+                        options={[
+                          { value: '', label: '-- Seleccionar Cuenta --' },
+                          ...(data.accounts || []).filter(a => a.id !== acc.id).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                        ]}
+                      />
+                      <ExecutiveInput
+                        label="Monto *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Concepto *"
+                        placeholder="Ej: Traslado a ahorros"
+                        value={txDesc}
+                        onChange={e => setTxDesc(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
+                        <ExecutiveButton
+                          onClick={() => {
+                            if (!txDestAcc || !txAmount || !txDesc) {
+                              triggerToast('Completa los campos obligatorios', 'warning');
+                              return;
+                            }
+                            FinancialStore.addTransaction({
+                              date: todayStr,
+                              time: timeStr,
+                              nature: 'internal_transfer',
+                              sourceAccountId: acc.id,
+                              destinationAccountId: txDestAcc,
+                              description: txDesc,
+                              amount: Number(txAmount),
+                              currency: acc.currency
+                            });
+                            triggerToast('Transferencia realizada con éxito', 'success');
+                            setQuickActionType(null);
+                            setTxAmount('');
+                            setTxDesc('');
+                          }}
+                          variant="primary"
+                          accentColor="emerald"
+                        >
+                          Confirmar Transferencia
+                        </ExecutiveButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {quickActionType === 'income' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <ExecutiveInput
+                        label="Origen / Pagador"
+                        placeholder="Ej: Cliente / Nómina"
+                        value={txSourceName}
+                        onChange={e => setTxSourceName(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Monto *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Concepto *"
+                        placeholder="Ej: Honorarios / Salario"
+                        value={txDesc}
+                        onChange={e => setTxDesc(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
+                        <ExecutiveButton
+                          onClick={() => {
+                            if (!txAmount || !txDesc) {
+                              triggerToast('Completa los campos obligatorios', 'warning');
+                              return;
+                            }
+                            FinancialStore.addTransaction({
+                              date: todayStr,
+                              time: timeStr,
+                              nature: 'external_income',
+                              destinationAccountId: acc.id,
+                              sourceName: txSourceName || 'Externo',
+                              description: txDesc,
+                              amount: Number(txAmount),
+                              currency: acc.currency
+                            });
+                            triggerToast('Ingreso registrado con éxito', 'success');
+                            setQuickActionType(null);
+                            setTxAmount('');
+                            setTxDesc('');
+                            setTxSourceName('');
+                          }}
+                          variant="primary"
+                          accentColor="emerald"
+                        >
+                          Registrar Ingreso
+                        </ExecutiveButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {quickActionType === 'expense' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <ExecutiveInput
+                        label="Beneficiario / Establecimiento"
+                        placeholder="Ej: Supermercado / Arriendo"
+                        value={txBeneficiaryName}
+                        onChange={e => setTxBeneficiaryName(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Monto *"
+                        type="number"
+                        placeholder="0.00"
+                        value={txAmount}
+                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Concepto *"
+                        placeholder="Ej: Compra de insumos"
+                        value={txDesc}
+                        onChange={e => setTxDesc(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
+                        <ExecutiveButton
+                          onClick={() => {
+                            if (!txAmount || !txDesc) {
+                              triggerToast('Completa los campos obligatorios', 'warning');
+                              return;
+                            }
+                            FinancialStore.addTransaction({
+                              date: todayStr,
+                              time: timeStr,
+                              nature: 'external_expense',
+                              sourceAccountId: acc.id,
+                              beneficiaryName: txBeneficiaryName || 'Beneficiario',
+                              description: txDesc,
+                              amount: Number(txAmount),
+                              currency: acc.currency
+                            });
+                            triggerToast('Gasto registrado con éxito', 'success');
+                            setQuickActionType(null);
+                            setTxAmount('');
+                            setTxDesc('');
+                            setTxBeneficiaryName('');
+                          }}
+                          variant="primary"
+                          accentColor="rose"
+                        >
+                          Registrar Gasto
+                        </ExecutiveButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {quickActionType === 'yield' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                      <ExecutiveInput
+                        label="Monto del Rendimiento *"
+                        type="number"
+                        placeholder="0.00"
+                        value={manualYieldAmount}
+                        onChange={e => setManualYieldAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Concepto *"
+                        placeholder="Ej: Rendimiento mensual abonado"
+                        value={manualYieldDesc}
+                        onChange={e => setManualYieldDesc(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
+                        <ExecutiveButton
+                          onClick={() => {
+                            if (!manualYieldAmount) {
+                              triggerToast('Ingresa un monto válido', 'warning');
+                              return;
+                            }
+                            FinancialStore.addManualYield(acc.id, Number(manualYieldAmount), manualYieldDesc || 'Rendimiento manual', todayStr);
+                            triggerToast('Rendimiento manual abonado correctamente', 'success');
+                            setQuickActionType(null);
+                            setManualYieldAmount('');
+                            setManualYieldDesc('');
+                          }}
+                          variant="primary"
+                          accentColor="emerald"
+                        >
+                          Abonar Rendimiento
+                        </ExecutiveButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {quickActionType === 'edit' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <ExecutiveInput
+                        label="Nombre de la Cuenta *"
+                        value={editAccName}
+                        onChange={e => setEditAccName(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveInput
+                        label="Entidad / Banco"
+                        value={editAccInst}
+                        onChange={e => setEditAccInst(e.target.value)}
+                        accentColor="emerald"
+                      />
+                      <ExecutiveSelect
+                        label="Tipo de Cuenta"
+                        value={editAccType}
+                        onChange={e => setEditAccType(e.target.value as any)}
+                        accentColor="emerald"
+                        options={[
+                          { value: 'savings', label: 'Ahorros' },
+                          { value: 'checking', label: 'Corriente' },
+                          { value: 'cash', label: 'Efectivo' },
+                          { value: 'high_yield', label: 'Alto Rendimiento' },
+                          { value: 'digital_wallet', label: 'Billetera Digital' },
+                          { value: 'investment', label: 'Inversión' }
+                        ]}
+                      />
+                      {editAccType === 'high_yield' && (
+                        <ExecutiveInput
+                          label="Tasa E.A. %"
+                          type="number"
+                          step="0.1"
+                          value={editAccInterest}
+                          onChange={e => setEditAccInterest(e.target.value === '' ? '' : Number(e.target.value))}
+                          accentColor="emerald"
+                        />
+                      )}
+                      <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
+                        <ExecutiveButton
+                          onClick={() => {
+                            if (!editAccName) return;
+                            FinancialStore.updateAccount(acc.id, {
+                              name: editAccName,
+                              institution: editAccInst,
+                              type: editAccType,
+                              annualInterestRate: editAccType === 'high_yield' ? Number(editAccInterest) || undefined : undefined
+                            });
+                            triggerToast('Configuración de cuenta actualizada', 'success');
+                            setQuickActionType(null);
+                            setSelectedAccountForPanel({ ...acc, name: editAccName, institution: editAccInst, type: editAccType, annualInterestRate: editAccType === 'high_yield' ? Number(editAccInterest) || undefined : undefined });
+                          }}
+                          variant="primary"
+                          accentColor="emerald"
+                        >
+                          Guardar Cambios
+                        </ExecutiveButton>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TABS SELECTOR IN MODAL */}
+              <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1">
+                <button
+                  onClick={() => { setAccountPanelTab('stats'); setQuickActionType(null); }}
+                  className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
+                    accountPanelTab === 'stats' && !quickActionType
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                      : 'border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5" /> Estadísticas & Métricas
+                </button>
+
+                <button
+                  onClick={() => { setAccountPanelTab('chart'); setQuickActionType(null); }}
+                  className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
+                    accountPanelTab === 'chart' && !quickActionType
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                      : 'border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LineChart className="w-3.5 h-3.5" /> Evolución del Saldo
+                </button>
+
+                <button
+                  onClick={() => { setAccountPanelTab('obligations'); setQuickActionType(null); }}
+                  className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
+                    accountPanelTab === 'obligations' && !quickActionType
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                      : 'border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" /> Obligaciones & Presupuesto
+                </button>
+
+                <button
+                  onClick={() => { setAccountPanelTab('movements'); setQuickActionType(null); }}
+                  className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
+                    accountPanelTab === 'movements' && !quickActionType
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                      : 'border-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5" /> Historial de Movimientos ({stats.accountTxs.length})
+                </button>
+              </div>
+
+              {/* TAB CONTENT AREAS */}
+              {!quickActionType && accountPanelTab === 'stats' && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Saldo Actual</span>
+                    <strong className="text-base font-serif font-bold text-emerald-400 block mt-0.5">
+                      {formatCurrency(stats.currentBalance, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Saldo Inicial</span>
+                    <strong className="text-base font-serif font-bold text-slate-200 block mt-0.5">
+                      {formatCurrency(stats.initialBalance, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Ingresos Acumulados</span>
+                    <strong className="text-base font-serif font-bold text-emerald-400 block mt-0.5">
+                      +{formatCurrency(stats.totalIncomes, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Gastos Acumulados</span>
+                    <strong className="text-base font-serif font-bold text-rose-400 block mt-0.5">
+                      -{formatCurrency(stats.totalExpenses, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Transf. Recibidas</span>
+                    <strong className="text-base font-serif font-bold text-blue-300 block mt-0.5">
+                      +{formatCurrency(stats.transfersReceived, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Transf. Enviadas</span>
+                    <strong className="text-base font-serif font-bold text-amber-300 block mt-0.5">
+                      -{formatCurrency(stats.transfersSent, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Rendimientos Totales</span>
+                    <strong className="text-base font-serif font-bold text-teal-300 block mt-0.5">
+                      +{formatCurrency(stats.totalYields, acc.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Último Movimiento</span>
+                    <strong className="text-xs font-serif font-bold text-white block mt-0.5 truncate">
+                      {stats.lastMovement ? `${stats.lastMovement.date}: ${stats.lastMovement.description}` : 'Sin movimientos'}
+                    </strong>
+                  </div>
+                </div>
+              )}
+
+              {!quickActionType && accountPanelTab === 'chart' && (
+                <BalanceEvolutionChart history={stats.balanceHistory} currency={acc.currency} />
+              )}
+
+              {!quickActionType && accountPanelTab === 'obligations' && (
+                <div className="space-y-3">
+                  <h4 className="font-serif font-bold text-white text-xs uppercase tracking-wider text-slate-400">
+                    Obligaciones Pendientes en {acc.currency}:
+                  </h4>
+                  {stats.associatedObligations.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic p-3 bg-slate-900/50 rounded-xl text-center">
+                      No hay obligaciones pendientes registradas en esta moneda.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {stats.associatedObligations.map(ob => (
+                        <div key={ob.id} className="p-3 bg-slate-900/80 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                          <div>
+                            <strong className="text-white block">{ob.title}</strong>
+                            <span className="text-slate-400 text-[11px]">Vence: {ob.dueDate} • {ob.category}</span>
+                          </div>
+                          <strong className="text-rose-400 font-serif font-bold">{formatCurrency(ob.amount, ob.currency)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!quickActionType && accountPanelTab === 'movements' && (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {stats.accountTxs.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic p-4 text-center">No existen movimientos registrados para esta cuenta.</p>
+                  ) : (
+                    stats.accountTxs.map(tx => {
+                      const isIncome = tx.destinationAccountId === acc.id;
+                      return (
+                        <div key={tx.id} className="p-3 bg-slate-900/80 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <strong className="text-white font-serif">{tx.description}</strong>
+                              <ExecutiveBadge variant="subtle" accentColor={isIncome ? 'emerald' : 'rose'}>
+                                {tx.nature.replace('_', ' ')}
+                              </ExecutiveBadge>
+                            </div>
+                            <span className="text-slate-400 font-mono text-[10px]">{tx.date} • {tx.time}</span>
+                          </div>
+                          <strong className={`font-serif font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {isIncome ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
+                          </strong>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </ExecutiveModal>
+
+      {/* MODAL ADMINISTRAR ACTIVOS (FUTURAS INVERSIONES) */}
+      <ExecutiveModal
+        isOpen={isInvestmentModalOpen}
+        onClose={() => setIsInvestmentModalOpen(false)}
+        title={selectedInvestmentAcc ? `Administrar Activos: ${selectedInvestmentAcc.name}` : 'Administrar Activos de Inversión'}
+        accentColor="purple"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex items-center justify-between">
+            <div>
+              <h4 className="font-serif font-bold text-white text-base">Portafolio de Activos Financieros</h4>
+              <p className="text-xs text-slate-300">Gestión ejecutiva de Acciones, ETFs, Bonos, Criptomonedas y Fondos de Inversión.</p>
+            </div>
+            <ExecutiveBadge variant="solid" accentColor="purple">Módulo de Activos</ExecutiveBadge>
+          </div>
+
+          <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1">
+            {(['stocks', 'etfs', 'bonds', 'crypto', 'funds'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setInvestmentAssetTab(tab)}
+                className={`px-3 py-1.5 rounded-t-xl text-xs font-bold uppercase transition-all border-b-2 ${
+                  investmentAssetTab === tab
+                    ? 'border-purple-400 bg-purple-500/20 text-purple-300'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                {tab === 'stocks' && 'Acciones'}
+                {tab === 'etfs' && 'ETFs'}
+                {tab === 'bonds' && 'Bonos'}
+                {tab === 'crypto' && 'Criptomonedas'}
+                {tab === 'funds' && 'Fondos'}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-6 text-center space-y-3 bg-slate-900/60 rounded-2xl border border-white/10">
+            <Briefcase className="w-10 h-10 text-purple-400 mx-auto" />
+            <h5 className="font-serif font-bold text-white text-sm">Administración de {investmentAssetTab.toUpperCase()}</h5>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Todas las compras y ventas de estos activos se registran estrictamente como movimientos financieros de inversión para garantizar la trazabilidad patrimonial sin alterar saldos manualmente.
+            </p>
+
+            <div className="pt-2">
+              <ExecutiveButton
+                onClick={() => {
+                  setIsInvestmentModalOpen(false);
+                  setActiveTab('transactions');
+                  setTxNature('investment_buy');
+                  triggerToast('Formulario de compra de activo preparado', 'info');
+                }}
+                variant="primary"
+                accentColor="purple"
+                icon={<Plus className="w-4 h-4" />}
+              >
+                Registrar Compra de Activo en Movimientos
+              </ExecutiveButton>
+            </div>
+          </div>
         </div>
       </ExecutiveModal>
     </div>

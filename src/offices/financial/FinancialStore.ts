@@ -21,7 +21,14 @@ export const FinancialStore = {
   addAccount(account: Omit<FinancialAccount, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-      draft.offices.financiera.accounts.push({ ...account, id });
+      const nowStr = new Date().toISOString().split('T')[0];
+      draft.offices.financiera.accounts.push({
+        ...account,
+        id,
+        createdAt: account.createdAt || nowStr,
+        updatedAt: nowStr,
+        archived: false
+      });
     });
   },
 
@@ -29,14 +36,146 @@ export const FinancialStore = {
     storeInstance.updateState(draft => {
       const idx = draft.offices.financiera.accounts.findIndex(a => a.id === id);
       if (idx !== -1) {
-        draft.offices.financiera.accounts[idx] = { ...draft.offices.financiera.accounts[idx], ...updates };
+        const nowStr = new Date().toISOString().split('T')[0];
+        draft.offices.financiera.accounts[idx] = {
+          ...draft.offices.financiera.accounts[idx],
+          ...updates,
+          updatedAt: nowStr
+        };
+      }
+    });
+  },
+
+  archiveAccount(id: string) {
+    storeInstance.updateState(draft => {
+      const acc = draft.offices.financiera.accounts.find(a => a.id === id);
+      if (acc) {
+        acc.archived = true;
+        acc.updatedAt = new Date().toISOString().split('T')[0];
+      }
+    });
+  },
+
+  unarchiveAccount(id: string) {
+    storeInstance.updateState(draft => {
+      const acc = draft.offices.financiera.accounts.find(a => a.id === id);
+      if (acc) {
+        acc.archived = false;
+        acc.updatedAt = new Date().toISOString().split('T')[0];
       }
     });
   },
 
   deleteAccount(id: string) {
     storeInstance.updateState(draft => {
-      draft.offices.financiera.accounts = draft.offices.financiera.accounts.filter(a => a.id !== id);
+      // Rule: Do not delete if account has transactions, archive instead
+      const hasTransactions = (draft.offices.financiera.transactions || []).some(
+        t => t.sourceAccountId === id || t.destinationAccountId === id
+      );
+
+      if (hasTransactions) {
+        const acc = draft.offices.financiera.accounts.find(a => a.id === id);
+        if (acc) {
+          acc.archived = true;
+          acc.updatedAt = new Date().toISOString().split('T')[0];
+        }
+      } else {
+        draft.offices.financiera.accounts = draft.offices.financiera.accounts.filter(a => a.id !== id);
+      }
+    });
+  },
+
+  // AUTOMATIC DAILY YIELDS CALCULATION
+  processDailyYields(todayStr: string) {
+    storeInstance.updateState(draft => {
+      const highYieldAccounts = (draft.offices.financiera.accounts || []).filter(
+        a => a.type === 'high_yield' && a.annualInterestRate && a.annualInterestRate > 0 && !a.archived
+      );
+
+      if (highYieldAccounts.length === 0) return;
+
+      // Check dates for the last 7 days up to today
+      const datesToCheck: string[] = [];
+      const today = new Date(todayStr);
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        datesToCheck.push(d.toISOString().split('T')[0]);
+      }
+
+      highYieldAccounts.forEach(acc => {
+        datesToCheck.forEach(dateStr => {
+          const exists = draft.offices.financiera.transactions.some(
+            t => t.nature === 'financial_yield' && t.destinationAccountId === acc.id && t.date === dateStr
+          );
+
+          if (!exists) {
+            // Calculate balance on or before dateStr
+            let balance = acc.initialBalance || 0;
+            draft.offices.financiera.transactions.forEach(tx => {
+              if (tx.date <= dateStr) {
+                if ((tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell') && tx.destinationAccountId === acc.id) {
+                  balance += tx.amount;
+                }
+                if ((tx.nature === 'external_expense' || tx.nature === 'investment_buy') && tx.sourceAccountId === acc.id) {
+                  balance -= tx.amount;
+                }
+                if (tx.nature === 'internal_transfer') {
+                  if (tx.sourceAccountId === acc.id) balance -= tx.amount;
+                  if (tx.destinationAccountId === acc.id) balance += tx.amount;
+                }
+                if (tx.nature === 'reconciliation_adj') {
+                  if (tx.destinationAccountId === acc.id) balance += tx.amount;
+                  if (tx.sourceAccountId === acc.id) balance -= tx.amount;
+                }
+              }
+            });
+
+            if (balance > 0) {
+              const teaDecimal = (acc.annualInterestRate || 0) / 100;
+              const dailyRate = Math.pow(1 + teaDecimal, 1 / 365) - 1;
+              const rawYield = balance * dailyRate;
+              const yieldAmount = acc.currency === 'COP' ? Math.round(rawYield) : Math.round(rawYield * 100) / 100;
+
+              if (yieldAmount > 0) {
+                draft.offices.financiera.transactions.push({
+                  id: 'tx_yield_' + acc.id + '_' + dateStr + '_' + Math.random().toString(36).substring(2, 6),
+                  date: dateStr,
+                  time: '00:01',
+                  nature: 'financial_yield',
+                  destinationAccountId: acc.id,
+                  sourceName: 'Sistema',
+                  description: `Rendimiento diario (${acc.annualInterestRate}% EA)`,
+                  amount: yieldAmount,
+                  currency: acc.currency,
+                  tags: ['rendimiento', 'auto', 'alto_rendimiento']
+                });
+              }
+            }
+          }
+        });
+      });
+    });
+  },
+
+  addManualYield(accountId: string, amount: number, description?: string, dateStr?: string) {
+    storeInstance.updateState(draft => {
+      const acc = draft.offices.financiera.accounts.find(a => a.id === accountId);
+      if (!acc) return;
+
+      const txId = 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      draft.offices.financiera.transactions.push({
+        id: txId,
+        date: dateStr || new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        nature: 'financial_yield',
+        destinationAccountId: accountId,
+        sourceName: 'Manual',
+        description: description || 'Rendimiento manual abonado',
+        amount: Math.abs(amount),
+        currency: acc.currency,
+        tags: ['rendimiento', 'manual']
+      });
     });
   },
 
