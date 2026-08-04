@@ -693,9 +693,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
     let parsedGrade: number | undefined = undefined;
     if (editActGrade.trim() !== '') {
-      parsedGrade = Number(editActGrade);
+      parsedGrade = Number(editActGrade.replace(',', '.'));
       if (isNaN(parsedGrade) || parsedGrade < 0 || parsedGrade > 5.0) {
-        showToast('La calificación debe estar entre 0.0 y 5.0', 'warning');
+        showToast('La calificación debe estar entre 0,00 y 5,00', 'warning');
         return;
       }
     }
@@ -742,7 +742,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       return;
     }
 
-    const val = Number(gradeStr);
+    const val = Number(gradeStr.replace(',', '.'));
     if (!isNaN(val) && val >= 0 && val <= 5.0) {
       AcademicStore.updateActivity(subjectId, cutId, activityId, {
         grade: val,
@@ -1088,7 +1088,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           </div>
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-baseline gap-1">
-              {formatGrade(gpa)} <span className="text-xs font-sans text-slate-400">/ 5.0</span>
+              {formatGrade(gpa)} <span className="text-xs font-sans text-slate-400">/ 5,00</span>
             </div>
           </div>
           <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
@@ -1479,7 +1479,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           <div>
                             <div className="text-[10px] uppercase tracking-wider text-[#C5A059] font-bold">Nota Acumulada</div>
                             <div className="text-xl font-serif font-bold text-white">
-                              {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs font-sans text-slate-400 font-normal">/ 5.00</span>
+                              {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs font-sans text-slate-400 font-normal">/ 5,00</span>
                             </div>
                           </div>
                           <div className="border-l border-white/10 pl-4">
@@ -1597,7 +1597,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                             <div className="p-4 bg-[#132337]/70 rounded-xl space-y-2 border border-white/10">
                               <div className="font-bold text-[#C5A059] uppercase tracking-wider text-[11px]">Progreso y Rendimiento Real</div>
-                              <div><span className="text-slate-400">Nota Acumulada Actual:</span> <strong className="text-white font-mono text-sm">{formatGrade(subjectProgress.notaAcumuladaMateria)} / 5.00</strong></div>
+                              <div><span className="text-slate-400">Nota Acumulada Actual:</span> <strong className="text-white font-mono text-sm">{formatGrade(subjectProgress.notaAcumuladaMateria)} / 5,00</strong></div>
                               <div><span className="text-slate-400">Promedio Evaluado:</span> <strong className="text-white">{hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : 'Sin calificaciones'}</strong></div>
                               <div><span className="text-slate-400">Cobertura Evaluada:</span> <strong className="text-emerald-400">{subjectProgress.porcentajeEvaluadoMateria}% de la materia</strong></div>
                               <div><span className="text-slate-400">Estado de la Materia:</span> <strong className="text-white">{statusInfo.status}</strong></div>
@@ -1754,7 +1754,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       <div>
                                         <div className="text-[10px] text-slate-400 uppercase font-semibold">Nota Acumulada Corte</div>
                                         <div className="font-bold text-white text-sm mt-0.5 font-mono">
-                                          {formatGrade(cutProgress.accumulatedCutGrade)} <span className="text-[10px] text-slate-400 font-normal">/ 5.00</span>
+                                          {formatGrade(cutProgress.accumulatedCutGrade)} <span className="text-[10px] text-slate-400 font-normal">/ 5,00</span>
                                         </div>
                                       </div>
                                       <div>
@@ -1791,12 +1791,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                               <span className="text-slate-400 text-xs">Nota:</span>
                                               <input
                                                 type="number"
-                                                step="0.1"
+                                                step="0.01"
                                                 min="0"
                                                 max="5"
                                                 value={act.grade !== undefined && act.grade !== null ? act.grade : ''}
                                                 onChange={e => handleQuickGradeChange(subject.id, cut.id, act.id, e.target.value)}
-                                                placeholder="0.0"
+                                                placeholder="0,00"
                                                 className="w-16 p-1 bg-[#132337] border border-blue-500/30 rounded text-center font-bold text-white font-mono"
                                               />
                                               <button
@@ -2099,13 +2099,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                     <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
                                       <div className="text-slate-400 text-[10px] font-semibold uppercase">Nota Acumulada Actual</div>
                                       <div className="text-xl font-serif font-bold text-white mt-0.5">
-                                        {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs text-slate-400 font-sans font-normal">/ 5.00</span>
+                                        {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs text-slate-400 font-sans font-normal">/ 5,00</span>
                                       </div>
                                     </div>
                                     <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
                                       <div className="text-slate-400 text-[10px] font-semibold uppercase">Promedio Evaluado</div>
                                       <div className="text-xl font-serif font-bold text-white mt-0.5">
-                                        {hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : '0.00'}
+                                        {hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : '0,00'}
                                       </div>
                                     </div>
                                     <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
@@ -2115,7 +2115,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       </div>
                                     </div>
                                     <div className={`p-3 rounded-xl border ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
-                                      <div className="text-slate-300 font-semibold text-[10px] uppercase">Nota Requerida (mín. 3.0)</div>
+                                      <div className="text-slate-300 font-semibold text-[10px] uppercase">Nota Requerida (mín. 3,00)</div>
                                       <div className="text-xl font-serif font-bold mt-0.5">
                                         {reqInfo.remainingWeight <= 0 ? 'Materia Finalizada' : `${formatGrade(reqInfo.requiredGrade)} en ${reqInfo.remainingWeight}%`}
                                       </div>
@@ -2147,7 +2147,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                               <td className="p-2.5 font-bold font-sans text-white">{cp.cutName}</td>
                                               <td className="p-2.5">{cp.cutWeightPercent}%</td>
                                               <td className="p-2.5 text-emerald-400">{cp.evaluatedWeightPercent}% ({cp.gradedActivitiesCount}/{cp.totalActivitiesCount} eval.)</td>
-                                              <td className="p-2.5 font-bold text-white">{formatGrade(cp.accumulatedCutGrade)} / 5.00</td>
+                                              <td className="p-2.5 font-bold text-white">{formatGrade(cp.accumulatedCutGrade)} / 5,00</td>
                                               <td className="p-2.5 text-[#C5A059] font-bold">+{formatGrade(cp.aporteSubject)} / {formatGrade(cp.maxAporteSubject)} pts</td>
                                               <td className="p-2.5">
                                                 <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded border ${
@@ -2733,7 +2733,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400">Nota Acumulada Actual:</span>
-                    <span className="font-bold font-mono text-white text-sm">{formatGrade(subProgress.notaAcumuladaMateria)} / 5.00</span>
+                    <span className="font-bold font-mono text-white text-sm">{formatGrade(subProgress.notaAcumuladaMateria)} / 5,00</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
@@ -2758,7 +2758,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       <span>Materia finalizada. Nota acumulada final: {formatGrade(subProgress.notaAcumuladaMateria)}</span>
                     ) : (
                       <div>
-                        <div>Nota promedio requerida para aprobar (3.0):</div>
+                        <div>Nota promedio requerida para aprobar (3,00):</div>
                         <div className="text-xl font-serif font-bold mt-1">
                           {formatGrade(reqInfo.requiredGrade)} <span className="text-xs font-sans font-normal text-slate-300">en el {reqInfo.remainingWeight}% restante</span>
                         </div>
@@ -3410,13 +3410,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Calificación (0.0 - 5.0)</label>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Calificación (0,00 - 5,00)</label>
                     <input
                       type="number"
-                      step="0.1"
+                      step="0.01"
                       min="0"
                       max="5"
-                      placeholder="Sin nota"
+                      placeholder="0,00"
                       value={editActGrade}
                       onChange={e => setEditActGrade(e.target.value)}
                       className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono font-bold"

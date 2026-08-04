@@ -25,7 +25,11 @@ export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-export function formatGrade(grade?: number): string {
-  if (grade === undefined || grade === null) return 'N/A';
-  return grade.toFixed(1);
+export function formatGrade(grade?: number | string, fallback: string = 'N/A'): string {
+  if (grade === undefined || grade === null || grade === '' || (typeof grade === 'number' && isNaN(grade))) {
+    return fallback;
+  }
+  const num = typeof grade === 'number' ? grade : parseFloat(String(grade).replace(',', '.'));
+  if (isNaN(num)) return fallback;
+  return num.toFixed(2).replace('.', ',');
 }

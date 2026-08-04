@@ -1,5 +1,6 @@
 import { AcademicSubject, AcademicSemester, AcademicCut, AcademicEvaluationActivity } from '../../types/store';
 import { getDayOfWeekNumber } from '../../utils/dates';
+import { formatGrade } from '../../utils/formatters';
 
 export interface EvaluationItem {
   subjectId: string;
@@ -189,11 +190,10 @@ export const AcademicCalculations = {
     });
 
     evaluatedWeightPercent = Math.round(evaluatedWeightPercent * 10) / 10;
-    accumulatedCutGrade = Math.round(accumulatedCutGrade * 100) / 100;
     
     const pendingWeightPercent = Math.max(0, Math.round((100 - evaluatedWeightPercent) * 10) / 10);
-    const aporteSubject = Math.round((accumulatedCutGrade * (cutWeight / 100)) * 100) / 100;
-    const maxAporteSubject = Math.round((5.0 * (cutWeight / 100)) * 100) / 100;
+    const aporteSubject = accumulatedCutGrade * (cutWeight / 100);
+    const maxAporteSubject = 5.0 * (cutWeight / 100);
     
     const activitiesDistribution = this.getActivitiesDistribution(activities);
     
@@ -270,11 +270,10 @@ export const AcademicCalculations = {
       }
     });
 
-    notaAcumuladaMateria = Math.round(notaAcumuladaMateria * 100) / 100;
     porcentajeEvaluadoMateria = Math.round(porcentajeEvaluadoMateria * 10) / 10;
     
     const promedioAcumuladoEvaluado = porcentajeEvaluadoMateria > 0
-      ? Math.round((notaAcumuladaMateria / (porcentajeEvaluadoMateria / 100)) * 100) / 100
+      ? (notaAcumuladaMateria / (porcentajeEvaluadoMateria / 100))
       : 0;
 
     let status: 'Aprobada' | 'En Riesgo' | 'En Cursado' = 'En Cursado';
@@ -357,7 +356,7 @@ export const AcademicCalculations = {
       }
     });
 
-    return counted > 0 ? Math.round((totalSum / counted) * 100) / 100 : 0;
+    return counted > 0 ? totalSum / counted : 0;
   },
 
   calculateGlobalGPA(academicData: { semesters?: AcademicSemester[]; subjects: AcademicSubject[] }): number | null {
@@ -374,7 +373,7 @@ export const AcademicCalculations = {
       }
     });
 
-    return counted > 0 ? Math.round((totalSum / counted) * 100) / 100 : null;
+    return counted > 0 ? totalSum / counted : null;
   },
 
   calculateRequiredGradeToPass(subject: AcademicSubject, targetGrade: number = 3.0): { requiredGrade: number; remainingWeight: number; achievable: boolean } {
@@ -392,7 +391,7 @@ export const AcademicCalculations = {
 
     const requiredGrade = (pointsNeeded * 100) / remainingWeight;
     return {
-      requiredGrade: Math.max(0, Math.round(requiredGrade * 100) / 100),
+      requiredGrade: Math.max(0, requiredGrade),
       remainingWeight,
       achievable: requiredGrade <= 5.0
     };
@@ -504,13 +503,15 @@ export const AcademicCalculations = {
 
       if (remainingWeight > 0) {
         if (achievable && requiredGrade > 0) {
-          const reqStr = requiredGrade.toFixed(2);
-          return `Necesitas promedio ${reqStr} en las evaluaciones restantes de "${sub.name}" para alcanzar ${targetGrade.toFixed(1)}.`;
+          const reqStr = formatGrade(requiredGrade);
+          const targetStr = formatGrade(targetGrade);
+          return `Necesitas promedio ${reqStr} en las evaluaciones restantes de "${sub.name}" para alcanzar ${targetStr}.`;
         } else if (!achievable) {
           const passReq = this.calculateRequiredGradeToPass(sub, 3.0);
           if (passReq.achievable) {
-            const reqStr = passReq.requiredGrade.toFixed(2);
-            return `En "${sub.name}" necesitas promedio ${reqStr} en lo restante para aprobar con 3.0.`;
+            const reqStr = formatGrade(passReq.requiredGrade);
+            const passStr = formatGrade(3.0);
+            return `En "${sub.name}" necesitas promedio ${reqStr} en lo restante para aprobar con ${passStr}.`;
           }
         }
       }
@@ -518,7 +519,7 @@ export const AcademicCalculations = {
 
     const avgGPA = this.calculateSemesterGPA(subjects[0]?.semesterId || '', subjects);
     if (avgGPA > 0) {
-      return `Tu promedio acumulado actual del semestre es ${avgGPA.toFixed(2)}. ¡Buen trabajo!`;
+      return `Tu promedio acumulado actual del semestre es ${formatGrade(avgGPA)}. ¡Buen trabajo!`;
     }
 
     return "Ingresa las notas de tus actividades para calcular los promedios y metas de aprobación.";
