@@ -27,13 +27,18 @@ import {
   RefreshCw,
   Menu,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
+import { useTimeService } from './hooks/useTimeService';
 
 export function App() {
   const [state, setState] = useState<MasterState>(storeInstance.getState());
   const [activeOffice, setActiveOffice] = useState<string>('ovalOffice');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  const userName = state.security.userProfile?.fullName || state.security.profile?.name || 'Alex';
+  const timeService = useTimeService(userName);
 
   // Subscribe to store updates
   useEffect(() => {
@@ -133,7 +138,7 @@ export function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F7F2] text-[#1A1A1A] flex flex-col font-sans">
+    <div className={`min-h-screen ${timeService.periodInfo.atmosphere.appBgClass} transition-colors duration-1000 flex flex-col font-sans`}>
       {/* 1. BARRA SUPERIOR EXECUTIVE SHELL */}
       <header className="bg-[#0A192F] text-white border-b border-[#D1C7B7] sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -151,6 +156,25 @@ export function App() {
                   Casa Blanca Personal <span className="opacity-40 font-light">|</span> <span className="text-[#C5A059]">Despacho Ejecutivo</span>
                 </h1>
               </div>
+            </div>
+
+            {/* PERMANENT LIVE CLOCK & MOMENT ICON */}
+            <div className="flex items-center gap-2.5 px-3 py-1 rounded-lg bg-[#162A45]/80 border border-[#C5A059]/40 text-xs font-mono">
+              <span className="text-base leading-none filter drop-shadow">{timeService.icon}</span>
+              <div className="flex flex-col text-left leading-tight">
+                <span className="text-amber-300 font-bold tracking-wider text-xs flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-amber-400 animate-pulse" />
+                  {timeService.clockStr}
+                </span>
+                <span className="text-[10px] font-sans text-slate-300 font-medium hidden sm:inline">
+                  {timeService.fullDateStr}
+                </span>
+              </div>
+              {timeService.periodInfo.colombianHoliday.isHoliday && (
+                <span className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[9px] font-sans font-bold bg-rose-600 text-white">
+                  🇨🇴 Festivo
+                </span>
+              )}
             </div>
 
             {/* Header Right Status & Actions */}

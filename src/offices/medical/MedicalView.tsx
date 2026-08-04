@@ -3,6 +3,7 @@ import { MedicalOfficeData } from '../../types/store';
 import { MedicalStore } from './MedicalStore';
 import { MedicalCalculations } from './MedicalCalculations';
 import { getTodayDateString } from '../../utils/dates';
+import { useTimeService } from '../../hooks/useTimeService';
 import {
   GlassPanel,
   ExecutiveCard,
@@ -55,6 +56,8 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
   >('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const todayStr = getTodayDateString();
+  const timeService = useTimeService();
+  const isAfter21 = timeService.now.getHours() >= 21 || timeService.now.getHours() < 5;
 
   const metrics = MedicalCalculations.getLatestHealthMetrics(data, todayStr);
   const wellnessIndex = MedicalCalculations.getDailyWellnessIndex(data, todayStr);
@@ -78,6 +81,19 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Buscar en historial clínico, vacunas, medicamentos..."
       />
+
+      {/* 1.5 RECORDATORIO NOCTURNO (>21:00) */}
+      {isAfter21 && (
+        <GlassPanel accentColor="purple" padding="sm" className="bg-gradient-to-r from-purple-950/70 via-indigo-900/50 to-slate-900 border-purple-500/40">
+          <div className="flex items-center gap-3 text-xs text-purple-200">
+            <Moon className="w-5 h-5 text-amber-300 animate-pulse shrink-0" />
+            <div>
+              <span className="font-bold text-amber-300 block text-[11px] uppercase tracking-wider">Atmósfera Nocturna</span>
+              <span>Recuerda registrar tu hora de acostarte cuando vayas a dormir.</span>
+            </div>
+          </div>
+        </GlassPanel>
+      )}
 
       {/* 2. SMART HEALTH ALERTS BANNER */}
       {alerts.length > 0 && (

@@ -5,7 +5,8 @@ import { SocialCalculations } from './SocialCalculations';
 import { PersonProfileModal } from './PersonProfileModal';
 import { RelationshipMapView } from './RelationshipMapView';
 import { SocialCalendarView } from './SocialCalendarView';
-import { getTodayDateString, getGreetingByTime } from '../../utils/dates';
+import { getTodayDateString } from '../../utils/dates';
+import { useTimeService } from '../../hooks/useTimeService';
 import {
   GlassPanel,
   ExecutiveButton,
@@ -69,14 +70,18 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
   const [comStart, setComStart] = useState('16:00');
   const [comPersonId, setComPersonId] = useState('');
 
-  const greeting = getGreetingByTime(profileName);
+  const timeService = useTimeService(profileName);
+  const greeting = timeService.greeting;
   const people = data.people || [];
   const interactions = data.interactions || [];
   const commitments = data.commitments || [];
 
   const uncontacted = SocialCalculations.getUncontactedPeopleAlerts(data, 30);
   const upcomingDates = SocialCalculations.getUpcomingDatesList(data, todayStr);
-  const smartAlerts = SocialCalculations.getSmartAlerts(data, todayStr);
+  const smartAlerts = SocialCalculations.getSmartAlerts(data, todayStr, {
+    period: timeService.periodInfo.period,
+    shortGreeting: timeService.periodInfo.shortGreeting
+  });
 
   const handleCreatePerson = (e: React.FormEvent) => {
     e.preventDefault();

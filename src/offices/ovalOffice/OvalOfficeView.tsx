@@ -10,7 +10,9 @@ import { SuggestionsPanel } from './SuggestionsPanel';
 import { ConflictPanel } from './ConflictPanel';
 import { AssignTimeModal } from './AssignTimeModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
-import { getTodayDateString, formatFriendlyDate, getGreetingByTime } from '../../utils/dates';
+import { CasaBlancaWindow } from './CasaBlancaWindow';
+import { useTimeService } from '../../hooks/useTimeService';
+import { getTodayDateString, formatFriendlyDate } from '../../utils/dates';
 import { Bell, Calendar, Lock, AlertTriangle, Crown, Sparkles, RefreshCw } from 'lucide-react';
 import { SecurityStore, CrisisStore } from '../security/SecurityStore';
 
@@ -40,9 +42,10 @@ export const OvalOfficeView: React.FC<Props> = ({
 
   const agendaRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic calculations
-  const userName = state.security.userProfile?.fullName || state.security.profile?.name || 'Presidente';
-  const greeting = getGreetingByTime(userName);
+  // Time Service Integration
+  const userName = state.security.userProfile?.fullName || state.security.profile?.name || 'Alex';
+  const timeService = useTimeService(userName);
+  const greeting = timeService.greeting;
 
   const eventsToday = OvalOfficeCalculations.getUnifiedEventsForDate(state, selectedDate);
   const eventsWeek = OvalOfficeCalculations.getHorarioEventsForWeek(state, selectedDate);
@@ -91,6 +94,9 @@ export const OvalOfficeView: React.FC<Props> = ({
   return (
     <div className="space-y-6 pb-12 font-sans text-[#1A1A1A]">
       
+      {/* 0. VENTANAL DE LA CASA BLANCA (LIVING INTERFACE) */}
+      <CasaBlancaWindow state={state} timeService={timeService} />
+
       {/* 1. TOP PRESIDENTIAL BAR */}
       <div className="bg-[#0A192F] text-white border-b-2 border-[#C5A059] p-4 sm:p-6 shadow-md rounded-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

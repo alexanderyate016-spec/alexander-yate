@@ -151,16 +151,21 @@ export const SocialCalculations = {
     return list;
   },
 
-  getSmartAlerts(data: SocialOfficeData, todayStr: string): string[] {
+  getSmartAlerts(data: SocialOfficeData, todayStr: string, timePeriod?: { period: string; shortGreeting: string }): string[] {
     const alerts: string[] = [];
     const todayMMDD = todayStr.substring(5);
 
-    // 1. Birthdays today & tomorrow
+    // 1. Birthdays today & tomorrow with contextual day period greeting
     (data.people || []).forEach(p => {
       if (p.birthday) {
         const { daysLeft, isToday } = this.getDaysUntilNextOccurrence(p.birthday, todayStr);
         if (isToday) {
-          alerts.push(`🎂 Hoy es el cumpleaños de ${p.name}. ¡Recuerda felicitarle!`);
+          if (timePeriod?.period === 'night') {
+            alerts.push(`🌙 Buenas noches. Hoy aún puedes felicitar a ${p.name} por su cumpleaños.`);
+          } else {
+            const grt = timePeriod?.shortGreeting || 'Buenos días';
+            alerts.push(`🎂 ${grt}. Hoy es el cumpleaños de ${p.name}. ¡Recuerda felicitarle!`);
+          }
         } else if (daysLeft === 1) {
           alerts.push(`🎂 Mañana es el cumpleaños de ${p.name}.`);
         } else if (daysLeft <= 7 && p.isFavorite) {

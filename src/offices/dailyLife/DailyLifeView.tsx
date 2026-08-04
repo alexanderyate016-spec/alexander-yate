@@ -5,6 +5,7 @@ import { DailyLifeStore } from './DailyLifeStore';
 import { DailyLifeCalculations, FreeTimeGap } from './DailyLifeCalculations';
 import { HorarioPersonal } from './components/HorarioPersonal';
 import { getTodayDateString } from '../../utils/dates';
+import { useTimeService } from '../../hooks/useTimeService';
 import {
   GlassPanel,
   ExecutiveButton,
@@ -102,6 +103,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const todayStr = getTodayDateString();
+  const timeService = useTimeService();
+  const isAfter22 = timeService.now.getHours() >= 22 || timeService.now.getHours() < 5;
 
   // Automatic reset check on mount
   useEffect(() => {
@@ -536,6 +539,23 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Buscar hábitos, tareas u objetivos..."
       />
+
+      {/* 1.5 AVISO NOCTURNO DE CIERRE DE JORNADA (>22:00) */}
+      {isAfter22 && (
+        <GlassPanel accentColor="amber" padding="sm" className="bg-gradient-to-r from-amber-950/70 via-slate-900 to-slate-950 border-amber-500/40">
+          <div className="flex items-center gap-3 text-xs text-amber-100">
+            <Coffee className="w-5 h-5 text-amber-400 animate-pulse shrink-0" />
+            <div>
+              <span className="font-bold text-amber-300 block text-[11px] uppercase tracking-wider">Atmósfera Nocturna</span>
+              {daySummary.overallPercent >= 100 ? (
+                <span>Has completado todas tus metas del día. ¡Excelente trabajo!</span>
+              ) : (
+                <span>Es un buen momento para cerrar la jornada. Recuerda registrar tus hábitos o descanso.</span>
+              )}
+            </div>
+          </div>
+        </GlassPanel>
+      )}
 
       {/* 2. BARRA RESUMEN EN TIEMPO REAL ("ESTADO DEL DÍA") */}
       <GlassPanel accentColor="amber" padding="md" className="relative overflow-hidden">

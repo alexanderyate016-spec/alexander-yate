@@ -315,7 +315,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     const fund = (data.distributionPlan?.funds || []).find(f => f.id === budgetIdStr);
     if (!fund || !fund.categories || fund.categories.length === 0) return [];
 
-    const baseIncome = (data.distributionPlan?.incomeSource?.amount) || 0;
+    const baseIncome = (data.distributionPlan?.monthlyBaseIncome) || 0;
     const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
 
     return fund.categories.map(cat => {
@@ -380,7 +380,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [editBudgetId, setEditBudgetId] = useState('');
   const [editBudgetCategoryId, setEditBudgetCategoryId] = useState('');
   const [editIsSplitExpense, setEditIsSplitExpense] = useState(false);
-  const [editSplits, setEditSplits] = useState<Array<{ id: string; budgetId: string; budgetCategoryId: string; categoryName: string; amount: number; description: string }>>([]);
+  const [editSplits, setEditSplits] = useState<Array<{ id: string; budgetId?: string; budgetCategoryId?: string; categoryName?: string; amount: number; description?: string }>>([]);
 
   // New Obligation State
   const [obTitle, setObTitle] = useState('');
@@ -2806,7 +2806,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               const cat = fund?.categories?.find(c => c.id === tx.budgetCategoryId);
                               if (!fund) return null;
 
-                              const baseIncome = (data.distributionPlan?.incomeSource?.amount) || 0;
+                              const baseIncome = (data.distributionPlan?.monthlyBaseIncome) || 0;
                               const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
                               const catBudget = cat ? fundTargetBudget * ((cat.percentage || 0) / 100) : fundTargetBudget;
                               const catUsed = cat
