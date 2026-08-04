@@ -1434,10 +1434,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             <div className="grid grid-cols-1 gap-5">
               {filteredSubjects.map(subject => {
                 const isExpanded = expandedSubjectId === subject.id;
+                const subjectProgress = AcademicCalculations.calculateSubjectProgress(subject);
                 const { average, hasGrades } = AcademicCalculations.calculateSubjectAverage(subject);
                 const statusInfo = AcademicCalculations.getSubjectStatus(subject);
-                const upcomingForSub = (subject.cuts || []).flatMap(c => c.activities).filter(a => a.status === 'pending');
-                const nextEval = upcomingForSub[0] || null;
 
                 return (
                   <div 
@@ -1462,20 +1461,32 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           }`}>
                             {statusInfo.status}
                           </span>
+                          <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                            {subjectProgress.porcentajeEvaluadoMateria}% Evaluado
+                          </span>
                         </div>
                         <div className="text-xs text-slate-300 flex items-center gap-4 flex-wrap">
                           <span>👤 Prof. {subject.professor}</span>
                           {subject.classroom && <span>🏫 Aula: {subject.classroom}</span>}
-                          <span>📅 {subject.scheduleSessions?.length || 0} sesión(es) por semana</span>
+                          <span>📅 {subject.scheduleSessions?.length || 0} sesión(es)/semana</span>
+                          <span>📊 {subjectProgress.totalCuts} corte(s) ({subjectProgress.finishedCuts} finalizado(s))</span>
                         </div>
                       </div>
 
                       {/* Right stats and buttons */}
                       <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-white/10">
-                        <div className="text-right">
-                          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Promedio</div>
-                          <div className={`text-xl font-serif font-bold ${hasGrades ? (average >= 3.0 ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-400'}`}>
-                            {hasGrades ? formatGrade(average) : 'Sin notas'}
+                        <div className="text-right flex items-center gap-4">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-[#C5A059] font-bold">Nota Acumulada</div>
+                            <div className="text-xl font-serif font-bold text-white">
+                              {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs font-sans text-slate-400 font-normal">/ 5.00</span>
+                            </div>
+                          </div>
+                          <div className="border-l border-white/10 pl-4">
+                            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prom. Evaluado</div>
+                            <div className={`text-sm font-serif font-bold ${hasGrades ? (average >= 3.0 ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-400'}`}>
+                              {hasGrades ? formatGrade(average) : 'Sin notas'}
+                            </div>
                           </div>
                         </div>
 
@@ -1577,6 +1588,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               <div><span className="text-slate-400">Nombre de la asignatura:</span> <strong className="text-white">{subject.name}</strong></div>
                               <div><span className="text-slate-400">Profesor asignado:</span> <strong className="text-white">{subject.professor}</strong></div>
                               <div><span className="text-slate-400">Aula predeterminada:</span> <strong className="text-white">{subject.classroom || 'Sin aula'}</strong></div>
+                              <div><span className="text-slate-400">Cortes configurados:</span> <strong className="text-white">{subjectProgress.totalCuts} ({subjectProgress.finishedCuts} finalizado(s), {subjectProgress.inProgressCuts} en progreso)</strong></div>
                               <div className="flex items-center gap-2 pt-1">
                                 <span className="text-slate-400">Color institucional:</span>
                                 <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: subject.color }} />
@@ -1584,10 +1596,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             </div>
 
                             <div className="p-4 bg-[#132337]/70 rounded-xl space-y-2 border border-white/10">
-                              <div className="font-bold text-[#C5A059] uppercase tracking-wider text-[11px]">Resumen de Rendimiento</div>
-                              <div><span className="text-slate-400">Promedio actual:</span> <strong className="text-white">{hasGrades ? formatGrade(average) : 'Sin calificaciones'}</strong></div>
-                              <div><span className="text-slate-400">Estado de la materia:</span> <strong className="text-white">{statusInfo.status}</strong></div>
-                              <div><span className="text-slate-400">Próxima evaluación:</span> <strong className="text-white">{nextEval ? `${nextEval.name} (${nextEval.date})` : 'Ninguna agendada'}</strong></div>
+                              <div className="font-bold text-[#C5A059] uppercase tracking-wider text-[11px]">Progreso y Rendimiento Real</div>
+                              <div><span className="text-slate-400">Nota Acumulada Actual:</span> <strong className="text-white font-mono text-sm">{formatGrade(subjectProgress.notaAcumuladaMateria)} / 5.00</strong></div>
+                              <div><span className="text-slate-400">Promedio Evaluado:</span> <strong className="text-white">{hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : 'Sin calificaciones'}</strong></div>
+                              <div><span className="text-slate-400">Cobertura Evaluada:</span> <strong className="text-emerald-400">{subjectProgress.porcentajeEvaluadoMateria}% de la materia</strong></div>
+                              <div><span className="text-slate-400">Estado de la Materia:</span> <strong className="text-white">{statusInfo.status}</strong></div>
+                              <div><span className="text-slate-400">Próxima Evaluación:</span> <strong className="text-white">{subjectProgress.nextEvaluation ? `${subjectProgress.nextEvaluation.activityName} (${subjectProgress.nextEvaluation.cutName} - ${subjectProgress.nextEvaluation.date})` : 'Ninguna agendada'}</strong></div>
                             </div>
                           </div>
                         )}
@@ -1697,6 +1711,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             ) : (
                               subject.cuts.map(cut => {
                                 const formState = getInlineActivityState(cut.id);
+                                const cutProgress = AcademicCalculations.calculateCutProgress(cut);
 
                                 return (
                                   <div key={cut.id} className="p-4 bg-[#132337]/60 rounded-xl border border-white/10 space-y-3">
@@ -1705,6 +1720,15 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                         <span className="font-bold text-[#C5A059] text-sm">{cut.cutName}</span>
                                         <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
                                           Valor: {cut.cutWeightPercent}% de la materia
+                                        </span>
+                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                                          cutProgress.status === 'finalizado'
+                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                            : cutProgress.status === 'en_progreso'
+                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                            : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                                        }`}>
+                                          {cutProgress.statusLabel}
                                         </span>
                                       </div>
                                       <div className="flex items-center gap-2">
@@ -1722,6 +1746,28 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
                                         </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Corte Real-time Metrics Card Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-[#0d131a]/90 rounded-xl border border-white/5 text-xs">
+                                      <div>
+                                        <div className="text-[10px] text-slate-400 uppercase font-semibold">Nota Acumulada Corte</div>
+                                        <div className="font-bold text-white text-sm mt-0.5 font-mono">
+                                          {formatGrade(cutProgress.accumulatedCutGrade)} <span className="text-[10px] text-slate-400 font-normal">/ 5.00</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-[10px] text-[#C5A059] uppercase font-bold">Aporte Actual a Materia</div>
+                                        <div className="font-bold text-[#C5A059] text-sm mt-0.5 font-mono">
+                                          +{formatGrade(cutProgress.aporteSubject)} <span className="text-[10px] text-slate-400 font-normal">/ {formatGrade(cutProgress.maxAporteSubject)} pts</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-[10px] text-slate-400 uppercase font-semibold">Cobertura Evaluada</div>
+                                        <div className="font-bold text-emerald-400 text-xs mt-0.5 font-mono">
+                                          {cutProgress.evaluatedWeightPercent}% evaluado <span className="text-slate-400 font-normal">({cutProgress.pendingWeightPercent}% pendiente)</span>
+                                        </div>
                                       </div>
                                     </div>
 
@@ -2047,22 +2093,77 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             {(() => {
                               const reqInfo = AcademicCalculations.calculateRequiredGradeToPass(subject, 3.0);
                               return (
-                                <div className="p-4 bg-[#132337]/80 rounded-xl border border-white/10 space-y-3">
-                                  <div className="font-bold text-[#C5A059] text-sm">Cálculo de Aprobación para {subject.name}</div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div className="p-3 bg-[#0d131a] rounded-lg border border-white/5">
-                                      <div className="text-slate-400">Promedio Acumulado</div>
-                                      <div className="text-lg font-bold text-white mt-0.5">{hasGrades ? formatGrade(average) : '0.0'}</div>
-                                    </div>
-                                    <div className="p-3 bg-[#0d131a] rounded-lg border border-white/5">
-                                      <div className="text-slate-400">Peso Restante</div>
-                                      <div className="text-lg font-bold text-white mt-0.5">{reqInfo.remainingWeight}%</div>
-                                    </div>
-                                    <div className={`p-3 rounded-lg border ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
-                                      <div className="text-slate-300 font-semibold">Nota Requerida (mín. 3.0)</div>
-                                      <div className="text-lg font-bold mt-0.5">
-                                        {reqInfo.remainingWeight <= 0 ? 'Materia Finalizada' : formatGrade(reqInfo.requiredGrade)}
+                                <div className="space-y-4">
+                                  {/* Progressive Summary Cards */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
+                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Nota Acumulada Actual</div>
+                                      <div className="text-xl font-serif font-bold text-white mt-0.5">
+                                        {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs text-slate-400 font-sans font-normal">/ 5.00</span>
                                       </div>
+                                    </div>
+                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
+                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Promedio Evaluado</div>
+                                      <div className="text-xl font-serif font-bold text-white mt-0.5">
+                                        {hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : '0.00'}
+                                      </div>
+                                    </div>
+                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
+                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Cobertura Evaluada</div>
+                                      <div className="text-xl font-serif font-bold text-emerald-400 mt-0.5">
+                                        {subjectProgress.porcentajeEvaluadoMateria}%
+                                      </div>
+                                    </div>
+                                    <div className={`p-3 rounded-xl border ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
+                                      <div className="text-slate-300 font-semibold text-[10px] uppercase">Nota Requerida (mín. 3.0)</div>
+                                      <div className="text-xl font-serif font-bold mt-0.5">
+                                        {reqInfo.remainingWeight <= 0 ? 'Materia Finalizada' : `${formatGrade(reqInfo.requiredGrade)} en ${reqInfo.remainingWeight}%`}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Cortes Breakdown Table */}
+                                  <div className="p-4 bg-[#132337]/80 rounded-xl border border-white/10 space-y-3">
+                                    <div className="font-bold text-[#C5A059] text-xs uppercase tracking-wider flex justify-between items-center">
+                                      <span>Desglose Transparente por Cortes ({subjectProgress.cutsProgress.length})</span>
+                                      <span className="text-slate-400 text-[11px] font-mono font-normal">Calculado en tiempo real sin notas asumidas</span>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-left text-xs text-slate-200">
+                                        <thead className="bg-[#0d131a] text-slate-400 font-bold uppercase text-[10px] border-b border-white/10">
+                                          <tr>
+                                            <th className="p-2.5">Corte</th>
+                                            <th className="p-2.5">Peso Corte</th>
+                                            <th className="p-2.5">Evaluado</th>
+                                            <th className="p-2.5">Nota Corte</th>
+                                            <th className="p-2.5">Aporte Materia</th>
+                                            <th className="p-2.5">Estado</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5 font-mono">
+                                          {subjectProgress.cutsProgress.map((cp, idx) => (
+                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                              <td className="p-2.5 font-bold font-sans text-white">{cp.cutName}</td>
+                                              <td className="p-2.5">{cp.cutWeightPercent}%</td>
+                                              <td className="p-2.5 text-emerald-400">{cp.evaluatedWeightPercent}% ({cp.gradedActivitiesCount}/{cp.totalActivitiesCount} eval.)</td>
+                                              <td className="p-2.5 font-bold text-white">{formatGrade(cp.accumulatedCutGrade)} / 5.00</td>
+                                              <td className="p-2.5 text-[#C5A059] font-bold">+{formatGrade(cp.aporteSubject)} / {formatGrade(cp.maxAporteSubject)} pts</td>
+                                              <td className="p-2.5">
+                                                <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded border ${
+                                                  cp.status === 'finalizado'
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                    : cp.status === 'en_progreso'
+                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                                    : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                                                }`}>
+                                                  {cp.statusLabel}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
                                     </div>
                                   </div>
                                 </div>
@@ -2616,7 +2717,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {activeSubjects.map(sub => {
-              const { average, totalGradedWeight, hasGrades } = AcademicCalculations.calculateSubjectAverage(sub);
+              const subProgress = AcademicCalculations.calculateSubjectProgress(sub);
+              const { average, hasGrades } = AcademicCalculations.calculateSubjectAverage(sub);
               const reqInfo = AcademicCalculations.calculateRequiredGradeToPass(sub, 3.0);
               const statusInfo = AcademicCalculations.getSubjectStatus(sub);
 
@@ -2625,13 +2727,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   <div className="flex justify-between items-center border-b border-white/10 pb-2">
                     <span className="font-bold text-white text-sm" style={{ color: sub.color }}>{sub.name}</span>
                     <span className="text-xs px-2 py-0.5 rounded font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                      {totalGradedWeight}% Calificado
+                      {subProgress.porcentajeEvaluadoMateria}% Evaluado
                     </span>
                   </div>
 
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Promedio Acumulado:</span>
-                    <span className="font-bold text-white">{hasGrades ? formatGrade(average) : '0.0'}</span>
+                    <span className="text-slate-400">Nota Acumulada Actual:</span>
+                    <span className="font-bold font-mono text-white text-sm">{formatGrade(subProgress.notaAcumuladaMateria)} / 5.00</span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">Promedio Evaluado:</span>
+                    <span className="font-bold text-white">{hasGrades ? formatGrade(subProgress.promedioAcumuladoEvaluado) : 'Sin notas'}</span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">Avance de Cortes:</span>
+                    <span className="text-slate-300">{subProgress.finishedCuts}/{subProgress.totalCuts} cortes finalizados</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
@@ -2643,7 +2755,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
                     {reqInfo.remainingWeight <= 0 ? (
-                      <span>Materia finalizada. Promedio final: {formatGrade(average)}</span>
+                      <span>Materia finalizada. Nota acumulada final: {formatGrade(subProgress.notaAcumuladaMateria)}</span>
                     ) : (
                       <div>
                         <div>Nota promedio requerida para aprobar (3.0):</div>
