@@ -220,7 +220,18 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
         appointments: [],
         medicalExams: [],
         conditions: [],
-        immunizations: []
+        immunizations: [],
+        customBottles: [
+          { id: 'def_1', name: 'Vaso', capacityMl: 250 },
+          { id: 'def_2', name: 'Botella Gym', capacityMl: 500 },
+          { id: 'def_3', name: 'Botella 700ml', capacityMl: 700 },
+          { id: 'def_4', name: 'Termo 1L', capacityMl: 1000 }
+        ],
+        waterLogs: [],
+        sleepRecords: [],
+        napRecords: [],
+        dailyWaterTargetLiters: 2.5,
+        sleepTargetHours: 8.0
       },
       desarrolloPersonal: {
         direction: {

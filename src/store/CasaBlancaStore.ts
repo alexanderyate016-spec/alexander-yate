@@ -95,7 +95,13 @@ class CasaBlancaStore {
           appointments: parsed?.offices?.medica?.appointments || initial.offices.medica.appointments || [],
           medicalExams: parsed?.offices?.medica?.medicalExams || initial.offices.medica.medicalExams || [],
           conditions: parsed?.offices?.medica?.conditions || initial.offices.medica.conditions || [],
-          immunizations: parsed?.offices?.medica?.immunizations || initial.offices.medica.immunizations || []
+          immunizations: parsed?.offices?.medica?.immunizations || initial.offices.medica.immunizations || [],
+          customBottles: parsed?.offices?.medica?.customBottles || initial.offices.medica.customBottles || [],
+          waterLogs: parsed?.offices?.medica?.waterLogs || initial.offices.medica.waterLogs || [],
+          sleepRecords: parsed?.offices?.medica?.sleepRecords || initial.offices.medica.sleepRecords || [],
+          napRecords: parsed?.offices?.medica?.napRecords || initial.offices.medica.napRecords || [],
+          dailyWaterTargetLiters: parsed?.offices?.medica?.dailyWaterTargetLiters ?? initial.offices.medica.dailyWaterTargetLiters ?? 2.5,
+          sleepTargetHours: parsed?.offices?.medica?.sleepTargetHours ?? initial.offices.medica.sleepTargetHours ?? 8.0
         },
         desarrolloPersonal: {
           direction: {

@@ -41,9 +41,17 @@ export const MedicalStore = {
   // HEALTH LOGS
   addHealthRecord(record: Omit<HealthRecord, 'id'>) {
     storeInstance.updateState(draft => {
-      const id = 'hlth_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       if (!draft.offices.medica.healthRecords) draft.offices.medica.healthRecords = [];
-      draft.offices.medica.healthRecords.push({ ...record, id });
+      const existingIdx = draft.offices.medica.healthRecords.findIndex(r => r.date === record.date);
+      if (existingIdx !== -1) {
+        draft.offices.medica.healthRecords[existingIdx] = {
+          ...draft.offices.medica.healthRecords[existingIdx],
+          ...record
+        };
+      } else {
+        const id = 'hlth_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        draft.offices.medica.healthRecords.push({ ...record, id });
+      }
     });
   },
 

@@ -62,16 +62,10 @@ export const MedicalCalculations = {
     const avgWeight = weightValues.length > 0 ? Number((weightValues.reduce((a, b) => a + b, 0) / weightValues.length).toFixed(1)) : null;
 
     // Hydration Stats (Individual logs calculation)
-    const targetWater = data.dailyWaterTargetLiters || 2.0;
+    const targetWater = data.dailyWaterTargetLiters || 2.5;
     const todayWaterLogs = (data.waterLogs || []).filter(w => w.date === today);
-    
-    let todayHydrationLiters = 0;
-    if (todayWaterLogs.length > 0) {
-      const totalMl = todayWaterLogs.reduce((sum, w) => sum + (w.amountMl || 0), 0);
-      todayHydrationLiters = Number((totalMl / 1000).toFixed(2));
-    } else {
-      todayHydrationLiters = todayRecord?.hydrationLiters ?? (todayRecord?.hydrationGlasses ? todayRecord.hydrationGlasses * 0.25 : 0);
-    }
+    const totalMl = todayWaterLogs.reduce((sum, w) => sum + (w.amountMl || 0), 0);
+    const todayHydrationLiters = Number((totalMl / 1000).toFixed(2));
 
     const hydrationPct = Math.min(100, Math.round((todayHydrationLiters / targetWater) * 100));
     const remainingWaterMl = Math.max(0, Math.round((targetWater - todayHydrationLiters) * 1000));
@@ -130,6 +124,7 @@ export const MedicalCalculations = {
       maxWeight,
       avgWeight,
       sleep: todaySleep,
+      totalTodaySleepMins,
       sleepFormatted: formatMinutesToText(totalTodaySleepMins),
       nightSleepFormatted: formatMinutesToText(todayNightMins),
       napSleepFormatted: formatMinutesToText(todayNapMins),
