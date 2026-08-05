@@ -127,7 +127,7 @@ export const ChecklistDiario: React.FC<Props> = ({
                   <Square className="w-4 h-4 text-slate-400 shrink-0" />
                 )}
                 <div>
-                  <div className="font-medium text-xs">{task.title}</div>
+                  <div className="font-medium text-xs">{task.name || (task as any).title || 'Tarea'}</div>
                   {task.subtitle && <div className="text-[10px] text-slate-300">{task.subtitle}</div>}
                 </div>
               </div>

@@ -214,11 +214,11 @@ export const SistemaHoy: React.FC<Props> = ({
               </div>
             )}
 
-            {dueObligations.length > 0 ? (
+            {dueObligations.length > 0 && dueObligations[0] ? (
               <div className="p-2 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs space-y-1">
                 <div className="font-bold text-rose-200 flex justify-between">
                   <span>Próximo Pago: {dueObligations[0].title}</span>
-                  <span className="font-mono text-rose-300">${dueObligations[0].amount.toLocaleString('es-CO')}</span>
+                  <span className="font-mono text-rose-300">${dueObligations[0].amount?.toLocaleString('es-CO')}</span>
                 </div>
                 <div className="text-[10px] text-slate-300 font-mono">
                   Vence: {dueObligations[0].dueDate}

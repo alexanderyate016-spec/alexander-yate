@@ -86,7 +86,7 @@ export const CentroInteligenciaEjecutiva: React.FC<Props> = ({
           </div>
           {conflicts.map((conf, idx) => (
             <div key={idx} className="text-xs text-slate-200 bg-black/40 p-2 rounded-xl border border-rose-500/30 font-mono">
-              ⚠️ <span className="font-bold text-white">{conf.event1.title}</span> cruza con <span className="font-bold text-white">{conf.event2.title}</span> entre {conf.event1.startTime} y {conf.event1.endTime}.
+              ⚠️ <span className="font-bold text-white">{conf.eventA?.title || 'Evento'}</span> cruza con <span className="font-bold text-white">{conf.eventB?.title || 'Evento'}</span> entre {conf.eventA?.startTime || '00:00'} y {conf.eventA?.endTime || '00:00'}.
             </div>
           ))}
         </div>
