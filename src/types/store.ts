@@ -567,8 +567,53 @@ export interface MedicalOfficeData {
 }
 
 // -------------------------------------------------------------
-// OFICINA DE DESARROLLO PERSONAL (PRIVADA)
+// OFICINA DE DESARROLLO PERSONAL (PRIVADA) - DIARIO PERSONAL INTELIGENTE
 // -------------------------------------------------------------
+export type JournalMood = 'excelente' | 'bueno' | 'neutro' | 'dificil' | 'reflexivo';
+
+export interface JournalEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  wordOfTheDay?: string; // Palabra del día (ej. "Constancia", "Gratitud")
+  mood?: JournalMood; // Estado de ánimo
+  bestThingToday?: string; // ¿Qué fue lo mejor que ocurrió hoy?
+  learnedToday?: string; // ¿Qué aprendí hoy?
+  improveTomorrow?: string; // ¿Qué debo mejorar?
+  importantDecision?: string; // ¿Qué decisión importante tomé?
+  gratefulFor?: string; // ¿Qué agradezco hoy?
+  freeReflection?: string; // Reflexión libre
+  philosophicalAnswer?: string; // Respuesta a la pregunta filosófica del día
+
+  // Campos legacy para compatibilidad retroactiva:
+  learned?: string;
+  improve?: string;
+  mistakes?: string;
+  decisions?: string;
+  ideas?: string;
+  reflection?: string;
+}
+
+export type LifeLessonType = 'aprendizaje' | 'error' | 'acierto' | 'consejo' | 'idea';
+
+export interface LifeLesson {
+  id: string;
+  title: string;
+  type: LifeLessonType;
+  description: string;
+  date: string; // YYYY-MM-DD
+  tags: string[];
+}
+
+export interface MonthlyReview {
+  id: string; // "YYYY-MM"
+  yearMonth: string; // "YYYY-MM"
+  biggestLearning: string; // mayor aprendizaje del mes
+  biggestChallenge: string; // mayor reto
+  nextMonthGoal: string; // objetivo para el próximo mes
+  updatedAt: string;
+}
+
+// Interfaces legacy mantenidas para compatibilidad
 export interface PersonalPrinciple {
   id: string;
   title: string;
@@ -582,17 +627,6 @@ export interface CharacterGrowthArea {
   strengths: string;
   improvements: string;
   notes: string;
-}
-
-export interface JournalEntry {
-  id: string;
-  date: string;
-  learned: string;
-  improve: string;
-  mistakes: string;
-  decisions: string;
-  ideas: string;
-  reflection: string;
 }
 
 export interface HistoryMilestone {
@@ -612,15 +646,19 @@ export interface PhilosophicalReflection {
 }
 
 export interface PersonalDevOfficeData {
-  direction: {
+  journalEntries: JournalEntry[]; // 1 por día
+  lifeLessons: LifeLesson[];
+  monthlyReviews: Record<string, MonthlyReview>; // key: "YYYY-MM"
+
+  // Campos opcionales legacy mantenidos para prevención de fallos de parsing:
+  direction?: {
     purpose: string;
     vision: string;
     principles: PersonalPrinciple[];
   };
-  characterAreas: CharacterGrowthArea[];
-  journalEntries: JournalEntry[];
-  personalHistory: HistoryMilestone[];
-  philosophicalReflections: PhilosophicalReflection[];
+  characterAreas?: CharacterGrowthArea[];
+  personalHistory?: HistoryMilestone[];
+  philosophicalReflections?: PhilosophicalReflection[];
 }
 
 // -------------------------------------------------------------

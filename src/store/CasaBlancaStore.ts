@@ -104,15 +104,13 @@ class CasaBlancaStore {
           sleepTargetHours: parsed?.offices?.medica?.sleepTargetHours ?? initial.offices.medica.sleepTargetHours ?? 8.0
         },
         desarrolloPersonal: {
-          direction: {
-            purpose: parsed?.offices?.desarrolloPersonal?.direction?.purpose || '',
-            vision: parsed?.offices?.desarrolloPersonal?.direction?.vision || '',
-            principles: parsed?.offices?.desarrolloPersonal?.direction?.principles || []
-          },
-          characterAreas: parsed?.offices?.desarrolloPersonal?.characterAreas || initial.offices.desarrolloPersonal.characterAreas || [],
           journalEntries: parsed?.offices?.desarrolloPersonal?.journalEntries || initial.offices.desarrolloPersonal.journalEntries || [],
-          personalHistory: parsed?.offices?.desarrolloPersonal?.personalHistory || initial.offices.desarrolloPersonal.personalHistory || [],
-          philosophicalReflections: parsed?.offices?.desarrolloPersonal?.philosophicalReflections || initial.offices.desarrolloPersonal.philosophicalReflections || []
+          lifeLessons: parsed?.offices?.desarrolloPersonal?.lifeLessons || initial.offices.desarrolloPersonal.lifeLessons || [],
+          monthlyReviews: parsed?.offices?.desarrolloPersonal?.monthlyReviews || initial.offices.desarrolloPersonal.monthlyReviews || {},
+          direction: parsed?.offices?.desarrolloPersonal?.direction || initial.offices.desarrolloPersonal.direction,
+          characterAreas: parsed?.offices?.desarrolloPersonal?.characterAreas || [],
+          personalHistory: parsed?.offices?.desarrolloPersonal?.personalHistory || [],
+          philosophicalReflections: parsed?.offices?.desarrolloPersonal?.philosophicalReflections || []
         }
       },
       executive: { ...initial.executive, ...parsed?.executive }

@@ -234,13 +234,15 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
         sleepTargetHours: 8.0
       },
       desarrolloPersonal: {
+        journalEntries: [],
+        lifeLessons: [],
+        monthlyReviews: {},
         direction: {
           purpose: '',
           vision: '',
           principles: []
         },
         characterAreas: [],
-        journalEntries: [],
         personalHistory: [],
         philosophicalReflections: []
       }
