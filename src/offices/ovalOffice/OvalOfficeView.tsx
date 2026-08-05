@@ -1,19 +1,23 @@
 import React, { useState, useRef } from 'react';
 import { MasterState, UnifiedExecutiveEvent } from '../../types/store';
 import { OvalOfficeCalculations, AgendaItem } from './OvalOfficeCalculations';
-import { ExecutiveDeskView } from './ExecutiveDeskView';
 import { ScheduleGrid } from './ScheduleGrid';
 import { AgendaChecklist } from './AgendaChecklist';
 import { ExecutiveDailyAgenda } from './ExecutiveDailyAgenda';
 import { NotificationsModal } from './NotificationsModal';
-import { SuggestionsPanel } from './SuggestionsPanel';
-import { ConflictPanel } from './ConflictPanel';
 import { AssignTimeModal } from './AssignTimeModal';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
 import { CasaBlancaWindow } from './CasaBlancaWindow';
+import { RelojEjecutivo } from './RelojEjecutivo';
+import { SistemaHoy } from './SistemaHoy';
+import { WidgetsVivos } from './WidgetsVivos';
+import { CentroInteligenciaEjecutiva } from './CentroInteligenciaEjecutiva';
+import { ChecklistDiario } from './ChecklistDiario';
+import { QuickJournalModal } from './QuickJournalModal';
+import { QuickSleepModal } from './QuickSleepModal';
 import { useTimeService } from '../../hooks/useTimeService';
 import { getTodayDateString, formatFriendlyDate } from '../../utils/dates';
-import { Bell, Calendar, Lock, AlertTriangle, Crown, Sparkles, RefreshCw } from 'lucide-react';
+import { Bell, Calendar, Lock, AlertTriangle, Crown, Sparkles, RefreshCw, ShieldCheck } from 'lucide-react';
 import { SecurityStore, CrisisStore } from '../security/SecurityStore';
 
 interface Props {
@@ -35,10 +39,8 @@ export const OvalOfficeView: React.FC<Props> = ({
   const [isAssignTimeOpen, setIsAssignTimeOpen] = useState<boolean>(false);
   const [selectedAgendaItem, setSelectedAgendaItem] = useState<AgendaItem | null>(null);
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState<boolean>(false);
-  
-  // Dismissed suggestions / conflicts
-  const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<string[]>([]);
-  const [dismissedConflictKeys, setDismissedConflictKeys] = useState<string[]>([]);
+  const [isQuickJournalOpen, setIsQuickJournalOpen] = useState<boolean>(false);
+  const [isQuickSleepOpen, setIsQuickSleepOpen] = useState<boolean>(false);
 
   const agendaRef = useRef<HTMLDivElement>(null);
 
@@ -51,16 +53,6 @@ export const OvalOfficeView: React.FC<Props> = ({
   const eventsWeek = OvalOfficeCalculations.getHorarioEventsForWeek(state, selectedDate);
   const agendaItems = OvalOfficeCalculations.getAgendaItems(state, selectedDate);
   const notifications = OvalOfficeCalculations.getNotifications(state, selectedDate);
-  const rawSuggestions = OvalOfficeCalculations.getSuggestions(state, selectedDate);
-  const rawConflicts = OvalOfficeCalculations.detectScheduleConflicts(eventsToday);
-  const freeGaps = OvalOfficeCalculations.findFreeTimeGaps(eventsToday);
-
-  // Filter out dismissed items
-  const activeSuggestions = rawSuggestions.filter(s => !dismissedSuggestionIds.includes(s.id));
-  const activeConflicts = rawConflicts.filter(c => {
-    const key = `${c.eventA.id}_${c.eventB.id}`;
-    return !dismissedConflictKeys.includes(key);
-  });
 
   const handleFocusAgenda = () => {
     if (agendaRef.current) {
@@ -73,15 +65,6 @@ export const OvalOfficeView: React.FC<Props> = ({
     setIsAssignTimeOpen(true);
   };
 
-  const handleDismissSuggestion = (id: string) => {
-    setDismissedSuggestionIds(prev => [...prev, id]);
-  };
-
-  const handleDismissConflict = (idA: string, idB: string) => {
-    const key = `${idA}_${idB}`;
-    setDismissedConflictKeys(prev => [...prev, key]);
-  };
-
   const handleTriggerEmergencyLock = () => {
     SecurityStore.lockApp();
     if (onActivateEmergencyLock) onActivateEmergencyLock();
@@ -92,99 +75,103 @@ export const OvalOfficeView: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12 font-sans text-[#1A1A1A]">
+    <div className="space-y-6 pb-16 font-sans text-white">
       
-      {/* 0. VENTANAL DE LA CASA BLANCA (LIVING INTERFACE) */}
+      {/* 1. VENTANAL DE LA CASA BLANCA (ATMOSPHERIC SKY HORIZON & GREETING) */}
       <CasaBlancaWindow state={state} timeService={timeService} />
 
-      {/* 1. TOP PRESIDENTIAL BAR */}
-      <div className="bg-[#0A192F] text-white border-b-2 border-[#C5A059] p-4 sm:p-6 shadow-md rounded-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-[#C5A059]" />
-              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-white">
-                Despacho Oval • Centro de Coordinación Central
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-sans text-[#C5A059]">
-              <span className="font-bold">{greeting}</span>
-              <span className="text-white/40">•</span>
-              <span className="text-white/80">{formatFriendlyDate(selectedDate)}</span>
-            </div>
+      {/* 2. PRESIDENTIAL TOP BAR CONTROLS */}
+      <div className="bg-[#030712]/80 backdrop-blur-xl border border-white/15 p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300">
+            <Crown className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-lg sm:text-xl font-serif font-extrabold tracking-wide text-white">
+              Despacho Oval • Centro Ejecutivo de Decisiones
+            </h1>
+            <p className="text-xs text-slate-300 font-sans">
+              {greeting} — {formatFriendlyDate(selectedDate)}
+            </p>
+          </div>
+        </div>
+
+        {/* CONTROLS */}
+        <div className="flex flex-wrap items-center gap-2 text-xs w-full md:w-auto justify-end">
+          {/* Date Picker */}
+          <div className="flex items-center bg-black/40 border border-white/15 px-3 py-1.5 rounded-xl text-white">
+            <Calendar className="w-3.5 h-3.5 text-amber-300 mr-2" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="bg-transparent text-xs font-mono text-white focus:outline-none cursor-pointer"
+            />
           </div>
 
-          {/* TOP ACTIONS */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Date selector */}
-            <div className="flex items-center bg-[#162A45] border border-[#C5A059]/40 px-2.5 py-1.5 text-white">
-              <Calendar className="w-3.5 h-3.5 text-[#C5A059] mr-2" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                className="bg-transparent text-xs font-mono text-white focus:outline-none cursor-pointer"
-              />
-            </div>
+          {/* Notifications Trigger */}
+          <button
+            onClick={() => setIsNotificationsOpen(true)}
+            className="px-3 py-1.5 bg-black/40 hover:bg-white/10 border border-white/15 text-amber-300 font-bold rounded-xl transition-all flex items-center gap-2 relative active:scale-95"
+          >
+            <Bell className="w-4 h-4" />
+            <span className="hidden sm:inline">Notificaciones</span>
+            {notifications.length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-mono flex items-center justify-center font-bold">
+                {notifications.length}
+              </span>
+            )}
+          </button>
 
-            {/* Notifications Button */}
-            <button
-              onClick={() => setIsNotificationsOpen(true)}
-              className="px-3 py-1.5 bg-[#162A45] hover:bg-[#1E3A5F] border border-[#C5A059]/40 text-[#C5A059] font-bold uppercase tracking-wider flex items-center gap-2 transition-colors relative"
-            >
-              <Bell className="w-4 h-4" />
-              <span>Notificaciones</span>
-              {notifications.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-mono flex items-center justify-center font-bold">
-                  {notifications.length}
-                </span>
-              )}
-            </button>
+          {/* Crisis Center Button */}
+          <button
+            onClick={handleTriggerCrisisMode}
+            className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 font-bold rounded-xl flex items-center gap-1.5 transition-all active:scale-95"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> <span className="hidden sm:inline">Centro de Crisis</span>
+          </button>
 
-            {/* Crisis Center Button */}
-            <button
-              onClick={handleTriggerCrisisMode}
-              className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/60 text-rose-200 font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Centro de Crisis
-            </button>
-
-            {/* Emergency Lock */}
-            <button
-              onClick={handleTriggerEmergencyLock}
-              className="p-1.5 bg-[#162A45] hover:bg-amber-900/60 border border-amber-500/40 text-amber-200 transition-colors"
-              title="Bloqueo de Seguridad Inmediato"
-            >
-              <Lock className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Emergency Lock */}
+          <button
+            onClick={handleTriggerEmergencyLock}
+            className="p-2 bg-black/40 hover:bg-amber-950/80 border border-amber-500/40 text-amber-300 rounded-xl transition-all active:scale-95"
+            title="Bloqueo de Seguridad Inmediato"
+          >
+            <Lock className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* 2. INTELLIGENCE PANELS (SUGGESTIONS & CONFLICTS) */}
-      {activeSuggestions.length > 0 && (
-        <SuggestionsPanel
-          suggestions={activeSuggestions}
-          onDismissSuggestion={handleDismissSuggestion}
-        />
-      )}
+      {/* 3. RELOJ EJECUTIVO PROTAGONISTA & METEOROLOGÍA */}
+      <RelojEjecutivo
+        timeService={timeService}
+        holidayName={timeService.periodInfo.colombianHoliday.name}
+      />
 
-      {activeConflicts.length > 0 && (
-        <ConflictPanel
-          conflicts={activeConflicts}
-          onDismissConflict={handleDismissConflict}
-        />
-      )}
-
-      {/* 3. EXECUTIVE DESK CANVAS (MACBOOK, IPHONE, LEATHER BINDER) */}
-      <ExecutiveDeskView
+      {/* 4. SISTEMA HOY (CENTRALIZED IMMEDIATE ATTENTION HUB) */}
+      <SistemaHoy
         state={state}
         selectedDate={selectedDate}
         onNavigateToOffice={onNavigateToOffice}
-        onFocusAgenda={handleFocusAgenda}
+        onOpenQuickJournalModal={() => setIsQuickJournalOpen(true)}
       />
 
-      {/* 4. AGENDA EJECUTIVA DEL DÍA (NUEVO COMPONENTE DESTACADO PRINCIPAL DE LA OVAL OFFICE) */}
+      {/* 5. WIDGETS VIVOS INTERACTIVOS (BOTELLA DE AGUA VIVA, SUEÑO, PATRIMONIO, ACADÉMICO, BIENESTAR) */}
+      <WidgetsVivos
+        state={state}
+        selectedDate={selectedDate}
+        onNavigateToOffice={onNavigateToOffice}
+        onOpenQuickSleepModal={() => setIsQuickSleepOpen(true)}
+      />
+
+      {/* 6. CENTRO DE INTELIGENCIA EJECUTIVA (CRITICAL OBSERVATIONS & SYSTEM ALERTS) */}
+      <CentroInteligenciaEjecutiva
+        state={state}
+        selectedDate={selectedDate}
+        onNavigateToOffice={onNavigateToOffice}
+      />
+
+      {/* 7. AGENDA EJECUTIVA DEL DÍA */}
       <div ref={agendaRef}>
         <ExecutiveDailyAgenda
           state={state}
@@ -192,7 +179,7 @@ export const OvalOfficeView: React.FC<Props> = ({
           onSelectDate={setSelectedDate}
           onNavigateToOffice={onNavigateToOffice}
           onOpenQuickAdd={() => setIsQuickAddTaskOpen(true)}
-          onDismissConflict={handleDismissConflict}
+          onDismissConflict={() => {}}
           onOpenAssignTimeModal={(evt) => {
             const agItem: AgendaItem = {
               id: evt.id,
@@ -211,10 +198,10 @@ export const OvalOfficeView: React.FC<Props> = ({
         />
       </div>
 
-      {/* 5. MAIN SCHEDULE & AGENDA CHECKLIST (2-COLUMN LAYOUT) */}
+      {/* 9. SCHEDULE TIMELINE (WITH MOVING TIME INDICATOR LINE) & SMART CHECKLIST */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* HORARIO SEMANAL RECURRENTE (8 COLS) */}
+        {/* HORARIO EJECUTIVO TIMELINE (8 COLS) */}
         <div className="lg:col-span-8">
           <ScheduleGrid
             selectedDate={selectedDate}
@@ -228,13 +215,13 @@ export const OvalOfficeView: React.FC<Props> = ({
           />
         </div>
 
-        {/* CHECKLIST DE PENDIENTES (4 COLS) */}
+        {/* SMART ACTIONABLE CHECKLIST (4 COLS) */}
         <div className="lg:col-span-4 h-full">
-          <AgendaChecklist
-            items={agendaItems}
+          <ChecklistDiario
+            state={state}
             selectedDate={selectedDate}
-            onOpenAssignTimeModal={handleOpenAssignTime}
             onOpenQuickAddTaskModal={() => setIsQuickAddTaskOpen(true)}
+            onOpenQuickJournalModal={() => setIsQuickJournalOpen(true)}
             onNavigateToOffice={onNavigateToOffice}
           />
         </div>
@@ -260,6 +247,18 @@ export const OvalOfficeView: React.FC<Props> = ({
         isOpen={isQuickAddTaskOpen}
         onClose={() => setIsQuickAddTaskOpen(false)}
         selectedDate={selectedDate}
+      />
+
+      <QuickJournalModal
+        selectedDate={selectedDate}
+        isOpen={isQuickJournalOpen}
+        onClose={() => setIsQuickJournalOpen(false)}
+      />
+
+      <QuickSleepModal
+        selectedDate={selectedDate}
+        isOpen={isQuickSleepOpen}
+        onClose={() => setIsQuickSleepOpen(false)}
       />
 
     </div>

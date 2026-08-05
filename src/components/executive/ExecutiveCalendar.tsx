@@ -90,6 +90,15 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
 
   const dayEvents = eventsByDateMap.get(selectedDate) || [];
 
+  // Current Time Moving Indicator Line Calculation
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const nowTotalMinutes = (currentHour - START_HOUR) * 60 + currentMinute;
+  const showCurrentTimeLine = nowTotalMinutes >= 0 && nowTotalMinutes <= TOTAL_MINUTES;
+  const currentTimeTopPercent = Math.max(0, Math.min(100, (nowTotalMinutes / TOTAL_MINUTES) * 100));
+  const timeNowFormatted = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+
   return (
     <div className="bg-[#0B1528]/85 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl text-white">
       {/* HEADER CONTROLS */}
@@ -181,6 +190,20 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
             {/* Timeline Area (Absolute Continuous Block Layer) */}
             <div className="relative grid grid-cols-8 border-b border-white/10 bg-[#0B1528]/50 min-h-[560px]">
               
+              {/* CURRENT TIME MOVING INDICATOR LINE */}
+              {showCurrentTimeLine && (
+                <div
+                  className="absolute left-0 right-0 z-30 pointer-events-none flex items-center transition-all duration-1000"
+                  style={{ top: `${currentTimeTopPercent}%` }}
+                >
+                  <div className="bg-gradient-to-r from-rose-600 to-rose-500 text-white font-mono text-[9px] font-extrabold px-2 py-0.5 rounded-r shadow-lg border border-rose-300/60 transform -translate-y-1/2 shrink-0">
+                    AHORA ({timeNowFormatted})
+                  </div>
+                  <div className="flex-1 h-[2px] bg-gradient-to-r from-rose-500 via-amber-400 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.9)]" />
+                  <div className="w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-[0_0_12px_rgba(244,63,94,1)] transform -translate-y-1/2 animate-pulse shrink-0" />
+                </div>
+              )}
+
               {/* Left Hour Column Labels */}
               <div className="border-r border-white/10 divide-y divide-white/5 bg-[#132337]/30">
                 {hoursArray.slice(0, -1).map(h => (
