@@ -66,13 +66,16 @@ export const ExecutiveModal: React.FC<ExecutiveModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className={`w-full ${widthClasses[maxWidth]} bg-[#0B1528] border ${modalBorder[accentColor]} rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
+        className={`w-full ${widthClasses[maxWidth]} bg-[#0B1528]/95 border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-200`}
         onClick={e => e.stopPropagation()}
       >
+        {/* Liquid Glass Reflection */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
         {/* HEADER */}
-        <div className="p-5 border-b border-white/10 flex items-start justify-between gap-3 bg-[#132337]/50">
+        <div className="p-5 border-b border-white/10 flex items-start justify-between gap-3 bg-[#0F1B2E]/60">
           <div className="flex items-center gap-3">
             {icon && (
               <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${headerIconBg[accentColor]}`}>
@@ -80,26 +83,26 @@ export const ExecutiveModal: React.FC<ExecutiveModalProps> = ({
               </div>
             )}
             <div>
-              <h2 className="text-base sm:text-lg font-serif font-bold text-white">{title}</h2>
+              <h2 className="text-base sm:text-lg font-sans font-semibold text-white tracking-tight">{title}</h2>
               {subtitle && <p className="text-xs text-slate-300 mt-0.5">{subtitle}</p>}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[1.75]" />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="p-5 overflow-y-auto space-y-4 text-slate-200 text-xs">
+        <div className="p-6 overflow-y-auto space-y-4 text-slate-200 text-xs leading-relaxed">
           {children}
         </div>
 
         {/* FOOTER */}
         {footer && (
-          <div className="p-4 border-t border-white/10 bg-[#132337]/50 flex justify-end gap-2">
+          <div className="p-4 border-t border-white/10 bg-[#0F1B2E]/60 flex justify-end gap-2.5">
             {footer}
           </div>
         )}

@@ -34,15 +34,17 @@ export const ExecutiveEmptyState: React.FC<ExecutiveEmptyStateProps> = ({
 }) => {
   return (
     <div
-      className={`p-8 sm:p-12 text-center bg-[#132337]/40 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center space-y-3 ${className}`}
+      className={`p-8 sm:p-12 text-center bg-[#0F1B2E]/50 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col items-center justify-center space-y-3.5 relative overflow-hidden ${className}`}
     >
-      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shadow-inner ${iconColors[accentColor]}`}>
-        {icon || <Inbox className="w-7 h-7" />}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
+
+      <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shadow-lg ${iconColors[accentColor]}`}>
+        {icon || <Inbox className="w-7 h-7 stroke-[1.5]" />}
       </div>
       
       <div className="max-w-md space-y-1">
-        <h4 className="font-serif font-bold text-white text-base sm:text-lg">{title}</h4>
-        <p className="text-xs text-slate-300 leading-relaxed">{description}</p>
+        <h4 className="font-sans font-semibold text-white text-base sm:text-lg tracking-tight">{title}</h4>
+        <p className="text-xs text-slate-300 leading-relaxed font-normal">{description}</p>
       </div>
 
       {actionLabel && onAction && (

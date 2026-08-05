@@ -49,14 +49,16 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-[#0B1528]/85 backdrop-blur-xl border ${borderColors[accentColor]} rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-200 ${paddings[padding]} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`bg-[#0B1528]/80 backdrop-blur-2xl border ${borderColors[accentColor]} rounded-2xl shadow-xl hover:shadow-2xl relative overflow-hidden transition-all duration-300 ease-out ${paddings[padding]} ${
+        onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''
+      } ${className}`}
     >
       {/* Liquid Glass Highlight Reflection */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
       
       {/* Optional Glow Effect */}
       {glow && (
-        <div className={`absolute -top-20 -right-20 w-64 h-64 ${glowBg[accentColor]} rounded-full blur-3xl pointer-events-none`} />
+        <div className={`absolute -top-20 -right-20 w-64 h-64 ${glowBg[accentColor]} rounded-full blur-3xl pointer-events-none opacity-50`} />
       )}
 
       <div className="relative z-10">{children}</div>

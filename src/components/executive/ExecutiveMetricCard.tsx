@@ -16,23 +16,13 @@ export interface ExecutiveMetricCardProps {
 }
 
 const iconBg: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]/20 text-[#C5A059] border-[#C5A059]/40',
-  blue: 'bg-blue-600/20 text-blue-300 border-blue-500/40',
-  emerald: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40',
-  rose: 'bg-rose-600/20 text-rose-300 border-rose-500/40',
-  amber: 'bg-amber-600/20 text-amber-300 border-amber-500/40',
-  purple: 'bg-purple-600/20 text-purple-300 border-purple-500/40',
-  indigo: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40',
-};
-
-const topAccentBar: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]',
-  blue: 'bg-blue-500',
-  emerald: 'bg-emerald-500',
-  rose: 'bg-rose-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  indigo: 'bg-indigo-500',
+  gold: 'bg-[#C5A059]/15 text-[#C5A059] border-[#C5A059]/30',
+  blue: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
+  emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
+  rose: 'bg-rose-500/15 text-rose-300 border-rose-400/30',
+  amber: 'bg-amber-500/15 text-amber-300 border-amber-400/30',
+  purple: 'bg-purple-500/15 text-purple-300 border-purple-400/30',
+  indigo: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/30',
 };
 
 export const ExecutiveMetricCard: React.FC<ExecutiveMetricCardProps> = ({
@@ -48,16 +38,17 @@ export const ExecutiveMetricCard: React.FC<ExecutiveMetricCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl p-4 sm:p-5 shadow-lg relative overflow-hidden transition-all duration-200 hover:border-white/30 ${
+      className={`bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl relative overflow-hidden transition-all duration-300 ease-out hover:border-white/20 hover:shadow-2xl ${
         onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''
       } ${className}`}
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 ${topAccentBar[accentColor]}`} />
+      {/* Liquid Glass Top Reflection */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{title}</p>
-          <p className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">{value}</p>
+          <p className="text-[11px] font-medium tracking-wide text-slate-400">{title}</p>
+          <p className="text-xl sm:text-2xl font-sans font-semibold text-white tracking-tight">{value}</p>
         </div>
         {icon && (
           <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconBg[accentColor]}`}>
@@ -71,7 +62,7 @@ export const ExecutiveMetricCard: React.FC<ExecutiveMetricCardProps> = ({
           {subtitle && <span className="text-slate-400 font-sans">{subtitle}</span>}
           {trend && (
             <span
-              className={`font-mono font-bold ${
+              className={`font-mono font-medium ${
                 trend.positive !== false ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >

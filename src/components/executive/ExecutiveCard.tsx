@@ -12,24 +12,24 @@ export interface ExecutiveCardProps {
   footer?: React.ReactNode;
 }
 
-const leftBorders: Record<AccentColor, string> = {
-  gold: 'border-l-4 border-l-[#C5A059]',
-  blue: 'border-l-4 border-l-blue-500',
-  emerald: 'border-l-4 border-l-emerald-500',
-  rose: 'border-l-4 border-l-rose-500',
-  amber: 'border-l-4 border-l-amber-500',
-  purple: 'border-l-4 border-l-purple-500',
-  indigo: 'border-l-4 border-l-indigo-500',
+const borderHover: Record<AccentColor, string> = {
+  gold: 'hover:border-[#C5A059]/40 hover:shadow-[#C5A059]/5',
+  blue: 'hover:border-blue-400/40 hover:shadow-blue-500/5',
+  emerald: 'hover:border-emerald-400/40 hover:shadow-emerald-500/5',
+  rose: 'hover:border-rose-400/40 hover:shadow-rose-500/5',
+  amber: 'hover:border-amber-400/40 hover:shadow-amber-500/5',
+  purple: 'hover:border-purple-400/40 hover:shadow-purple-500/5',
+  indigo: 'hover:border-indigo-400/40 hover:shadow-indigo-500/5',
 };
 
-const borderHover: Record<AccentColor, string> = {
-  gold: 'hover:border-[#C5A059]/50',
-  blue: 'hover:border-blue-400/50',
-  emerald: 'hover:border-emerald-400/50',
-  rose: 'hover:border-rose-400/50',
-  amber: 'hover:border-amber-400/50',
-  purple: 'hover:border-purple-400/50',
-  indigo: 'hover:border-indigo-400/50',
+const topAccentBg: Record<AccentColor, string> = {
+  gold: 'bg-[#C5A059]',
+  blue: 'bg-blue-400',
+  emerald: 'bg-emerald-400',
+  rose: 'bg-rose-400',
+  amber: 'bg-amber-400',
+  purple: 'bg-purple-400',
+  indigo: 'bg-indigo-400',
 };
 
 export const ExecutiveCard: React.FC<ExecutiveCardProps> = ({
@@ -45,15 +45,21 @@ export const ExecutiveCard: React.FC<ExecutiveCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-[#132337]/70 backdrop-blur-md border border-white/10 rounded-xl p-4 sm:p-5 shadow-lg transition-all duration-200 ${
-        accentBorderLeft ? leftBorders[accentColor] : ''
-      } ${hoverable ? `${borderHover[accentColor]} hover:shadow-xl hover:-translate-y-0.5` : ''} ${
-        onClick ? 'cursor-pointer' : ''
-      } ${className}`}
+      className={`bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-all duration-300 ease-out ${
+        hoverable ? `${borderHover[accentColor]} hover:shadow-2xl hover:-translate-y-0.5` : ''
+      } ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
-      {header && <div className="border-b border-white/10 pb-3 mb-3">{header}</div>}
+      {/* Top Glass Highlight */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+      {/* Subtle Top Accent Pill Indicator if requested */}
+      {accentBorderLeft && (
+        <div className={`absolute top-0 left-6 w-12 h-0.5 ${topAccentBg[accentColor]} rounded-full pointer-events-none opacity-80`} />
+      )}
+
+      {header && <div className="border-b border-white/10 pb-3 mb-4">{header}</div>}
       <div className="text-slate-200">{children}</div>
-      {footer && <div className="border-t border-white/10 pt-3 mt-3">{footer}</div>}
+      {footer && <div className="border-t border-white/10 pt-3 mt-4">{footer}</div>}
     </div>
   );
 };

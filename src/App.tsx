@@ -11,6 +11,7 @@ import { SocialView } from './offices/social/SocialView';
 import { MedicalView } from './offices/medical/MedicalView';
 import { PersonalDevView } from './offices/personalDev/PersonalDevView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
+import { ToastContainer, showToast } from './components/executive';
 import {
   Crown,
   BookOpen,
@@ -19,15 +20,12 @@ import {
   Users,
   Stethoscope,
   Compass,
-  Shield,
   Download,
   Upload,
   Lock,
   LogOut,
-  RefreshCw,
   Menu,
   X,
-  AlertTriangle,
   Clock
 } from 'lucide-react';
 import { useTimeService } from './hooks/useTimeService';
@@ -105,6 +103,7 @@ export function App() {
     link.download = `Casa_Blanca_Personal_Backup_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    showToast('✓ Copia de seguridad exportada correctamente', 'success');
   };
 
   // Backup JSON Import
@@ -118,9 +117,9 @@ export function App() {
       if (content) {
         const success = storeInstance.importStateJSON(content);
         if (success) {
-          alert('Estado de Casa Blanca Personal restaurado exitosamente.');
+          showToast('✓ Estado de Casa Blanca Personal restaurado exitosamente', 'success');
         } else {
-          alert('Error: El archivo JSON proporcionado no es válido.');
+          showToast('Error: El archivo JSON proporcionado no es válido', 'error');
         }
       }
     };
@@ -138,9 +137,11 @@ export function App() {
   ];
 
   return (
-    <div className={`min-h-screen ${timeService.periodInfo.atmosphere.appBgClass} transition-colors duration-1000 flex flex-col font-sans`}>
+    <div className={`min-h-screen ${timeService.periodInfo.atmosphere.appBgClass} transition-colors duration-1000 flex flex-col font-sans relative`}>
+      <ToastContainer />
+
       {/* 1. BARRA SUPERIOR EXECUTIVE SHELL */}
-      <header className="bg-[#0A192F] text-white border-b border-[#D1C7B7] sticky top-0 z-50 shadow-sm">
+      <header className="bg-[#0A172A]/90 backdrop-blur-2xl text-white border-b border-white/10 sticky top-0 z-40 shadow-xl transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* Logo / Executive Emblem */}
@@ -148,75 +149,75 @@ export function App() {
               onClick={() => setActiveOffice('ovalOffice')}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="w-8 h-8 rounded-full border border-[#C5A059] bg-[#0A192F] flex items-center justify-center text-[10px] font-sans tracking-tighter text-[#C5A059] font-bold group-hover:scale-105 transition-transform">
+              <div className="w-8 h-8 rounded-xl border border-[#C5A059]/40 bg-[#0B1528] flex items-center justify-center text-[10px] font-sans tracking-tight text-[#C5A059] font-semibold group-hover:scale-105 transition-all shadow-md">
                 CBP
               </div>
               <div className="flex flex-col">
-                <h1 className="text-xs uppercase tracking-[0.25em] font-sans font-bold text-white flex items-center gap-2">
-                  Casa Blanca Personal <span className="opacity-40 font-light">|</span> <span className="text-[#C5A059]">Despacho Ejecutivo</span>
+                <h1 className="text-xs uppercase tracking-[0.2em] font-sans font-semibold text-white flex items-center gap-2">
+                  Casa Blanca Personal <span className="opacity-30 font-light">|</span> <span className="text-[#C5A059]">Despacho Ejecutivo</span>
                 </h1>
               </div>
             </div>
 
             {/* PERMANENT LIVE CLOCK & MOMENT ICON */}
-            <div className="flex items-center gap-2.5 px-3 py-1 rounded-lg bg-[#162A45]/80 border border-[#C5A059]/40 text-xs font-mono">
+            <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0F1B2E]/80 border border-white/10 text-xs font-mono backdrop-blur-md">
               <span className="text-base leading-none filter drop-shadow">{timeService.icon}</span>
               <div className="flex flex-col text-left leading-tight">
-                <span className="text-amber-300 font-bold tracking-wider text-xs flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-amber-400 animate-pulse" />
+                <span className="text-amber-300 font-semibold tracking-wider text-xs flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-amber-400 stroke-[1.75]" />
                   {timeService.clockStr}
                 </span>
-                <span className="text-[10px] font-sans text-slate-300 font-medium hidden sm:inline">
+                <span className="text-[10px] font-sans text-slate-300 font-normal hidden sm:inline">
                   {timeService.fullDateStr}
                 </span>
               </div>
               {timeService.periodInfo.colombianHoliday.isHoliday && (
-                <span className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[9px] font-sans font-bold bg-rose-600 text-white">
+                <span className="hidden lg:inline-block px-2 py-0.5 rounded-full text-[9px] font-sans font-medium bg-rose-600/80 border border-rose-500/30 text-white">
                   🇨🇴 Festivo
                 </span>
               )}
             </div>
 
             {/* Header Right Status & Actions */}
-            <div className="hidden md:flex items-center gap-6 text-[10px] font-sans tracking-widest uppercase">
+            <div className="hidden md:flex items-center gap-5 text-[10px] font-sans tracking-wider uppercase">
               <div className="flex flex-col items-end">
-                <span className="opacity-50">Estado de Seguridad</span>
-                <span className="text-emerald-400 font-bold tracking-normal flex items-center gap-1">
+                <span className="opacity-40 text-[9px]">Seguridad</span>
+                <span className="text-emerald-400 font-medium tracking-normal flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> PROTECCIÓN ACTIVA
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleExportData}
                   title="Exportar copia de seguridad en JSON"
-                  className="px-3 py-1 border border-white/20 hover:bg-white/10 text-white/90 transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 transition-all text-[10px] tracking-wider flex items-center gap-1.5 active:scale-95"
                 >
-                  <Download className="w-3 h-3 text-[#C5A059]" /> Exportar
+                  <Download className="w-3 h-3 text-[#C5A059] stroke-[1.75]" /> Exportar
                 </button>
 
                 <label
                   title="Restaurar estado desde copia JSON"
-                  className="px-3 py-1 border border-white/20 hover:bg-white/10 text-white/90 transition-colors uppercase text-[10px] tracking-wider cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white/90 transition-all text-[10px] tracking-wider cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
-                  <Upload className="w-3 h-3 text-[#C5A059]" /> Importar
+                  <Upload className="w-3 h-3 text-[#C5A059] stroke-[1.75]" /> Importar
                   <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
                 </label>
 
                 <button
                   onClick={() => SecurityStore.lockApp('manual')}
                   title="Bloquear sistema de inmediato"
-                  className="px-3 py-1 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-200 font-bold transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-200 font-medium transition-all text-[10px] tracking-wider flex items-center gap-1.5 active:scale-95"
                 >
-                  <Lock className="w-3 h-3" /> Bloquear
+                  <Lock className="w-3 h-3 stroke-[1.75]" /> Bloquear
                 </button>
 
                 <button
                   onClick={() => SecurityStore.logoutAndLock()}
                   title="Cerrar sesión y bloquear sistema"
-                  className="px-3 py-1 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A192F] font-bold transition-colors uppercase text-[10px] tracking-wider flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl bg-[#C5A059] hover:bg-[#b08d4b] text-slate-950 font-semibold transition-all text-[10px] tracking-wider flex items-center gap-1.5 active:scale-95 shadow-sm"
                 >
-                  <LogOut className="w-3 h-3" /> Cerrar Sesión
+                  <LogOut className="w-3 h-3 stroke-[2]" /> Salir
                 </button>
               </div>
             </div>
@@ -227,17 +228,17 @@ export function App() {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 text-white/80 hover:text-white"
               >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMobileMenuOpen ? <X className="w-5 h-5 stroke-[1.75]" /> : <Menu className="w-5 h-5 stroke-[1.75]" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Executive West Wing Sub-Navigation Bar */}
-        <div className="bg-[#F4F1EA] border-t border-[#D1C7B7] text-[#1A1A1A]">
+        {/* Executive Sub-Navigation Bar */}
+        <div className="bg-[#0B1528]/80 backdrop-blur-xl border-t border-white/10 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="hidden lg:flex items-center space-x-1 py-1.5 overflow-x-auto">
-              <span className="text-[10px] uppercase tracking-widest text-[#8B8378] font-bold pr-3 border-r border-[#D1C7B7]">
+            <nav className="hidden lg:flex items-center space-x-1.5 py-2 overflow-x-auto">
+              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-medium pr-3 border-r border-white/10">
                 Oficinas:
               </span>
               {navItems.map(item => {
@@ -247,14 +248,13 @@ export function App() {
                   <button
                     key={item.key}
                     onClick={() => setActiveOffice(item.key)}
-                    className={`px-3 py-1.5 text-xs font-serif tracking-wide flex items-center gap-1.5 transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs tracking-wide flex items-center gap-2 transition-all duration-200 ${
                       isActive
-                        ? 'bg-[#0A192F] text-white shadow-sm font-semibold'
-                        : 'text-[#1A1A1A] hover:bg-[#E8E4D8]'
+                        ? 'bg-white/15 text-white font-medium border border-white/20 shadow-md'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
                     }`}
                   >
-                    {isActive && <span className="w-1 h-3 bg-[#C5A059] inline-block"></span>}
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#C5A059]' : 'text-[#8B8378]'}`} />
+                    <Icon className={`w-3.5 h-3.5 stroke-[1.75] ${isActive ? 'text-[#C5A059]' : 'text-slate-400'}`} />
                     {item.label}
                   </button>
                 );
@@ -265,7 +265,7 @@ export function App() {
 
         {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden bg-[#0A192F] border-b border-[#D1C7B7] px-4 pt-2 pb-4 space-y-1">
+          <div className="lg:hidden bg-[#0B1528] border-b border-white/10 px-4 pt-3 pb-5 space-y-1.5">
             {navItems.map(item => {
               const Icon = item.icon;
               const isActive = activeOffice === item.key;
@@ -276,35 +276,35 @@ export function App() {
                     setActiveOffice(item.key);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-none text-xs font-serif flex items-center gap-2 ${
-                    isActive ? 'bg-[#C5A059] text-[#0A192F] font-bold' : 'text-white/80 hover:bg-white/10'
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2.5 transition-all ${
+                    isActive ? 'bg-[#C5A059] text-slate-950 font-semibold' : 'text-slate-200 hover:bg-white/10'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 stroke-[1.75]" />
                   {item.label}
                 </button>
               );
             })}
-            <div className="pt-2 border-t border-white/10 flex flex-wrap gap-2">
+            <div className="pt-3 border-t border-white/10 flex flex-wrap gap-2">
               <button
                 onClick={handleExportData}
-                className="flex-1 bg-white/10 text-xs text-white py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px]"
+                className="flex-1 bg-white/10 rounded-xl text-xs text-white py-2 flex justify-center items-center gap-1.5 uppercase tracking-wider text-[10px]"
               >
                 <Download className="w-3.5 h-3.5 text-[#C5A059]" /> Exportar
               </button>
-              <label className="flex-1 bg-white/10 text-xs text-white py-2 flex justify-center items-center gap-1 cursor-pointer uppercase tracking-wider text-[10px]">
+              <label className="flex-1 bg-white/10 rounded-xl text-xs text-white py-2 flex justify-center items-center gap-1.5 cursor-pointer uppercase tracking-wider text-[10px]">
                 <Upload className="w-3.5 h-3.5 text-[#C5A059]" /> Importar
                 <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
               </label>
               <button
                 onClick={() => SecurityStore.lockApp('manual')}
-                className="w-full bg-amber-600/40 text-xs text-amber-200 py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px] font-bold"
+                className="w-full bg-amber-500/20 rounded-xl text-xs text-amber-200 py-2 flex justify-center items-center gap-1.5 uppercase tracking-wider text-[10px] font-medium"
               >
                 <Lock className="w-3.5 h-3.5" /> Bloquear
               </button>
               <button
                 onClick={() => SecurityStore.logoutAndLock()}
-                className="w-full bg-[#C5A059] text-xs text-[#0A192F] py-2 flex justify-center items-center gap-1 uppercase tracking-wider text-[10px] font-bold"
+                className="w-full bg-[#C5A059] rounded-xl text-xs text-slate-950 py-2 flex justify-center items-center gap-1.5 uppercase tracking-wider text-[10px] font-semibold"
               >
                 <LogOut className="w-3.5 h-3.5" /> Cerrar Sesión
               </button>
@@ -314,39 +314,40 @@ export function App() {
       </header>
 
       {/* 2. ÁREA PRINCIPAL DEL CONTENIDO */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {activeOffice === 'ovalOffice' && (
-          <OvalOfficeView
-            state={state}
-            onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
-            onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
-          />
-        )}
-        {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}
-        {activeOffice === 'vidaDiaria' && <DailyLifeView data={state.offices.vidaDiaria} />}
-        {activeOffice === 'financiera' && <FinancialView data={state.offices.financiera} />}
-        {activeOffice === 'vidaSocial' && (
-          <SocialView
-            data={state.offices.vidaSocial}
-            profileName={state.security.userProfile?.fullName}
-          />
-        )}
-        {activeOffice === 'medica' && <MedicalView data={state.offices.medica} />}
-        {activeOffice === 'desarrolloPersonal' && <PersonalDevView data={state.offices.desarrolloPersonal} />}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <div key={activeOffice} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {activeOffice === 'ovalOffice' && (
+            <OvalOfficeView
+              state={state}
+              onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
+              onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
+            />
+          )}
+          {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}
+          {activeOffice === 'vidaDiaria' && <DailyLifeView data={state.offices.vidaDiaria} />}
+          {activeOffice === 'financiera' && <FinancialView data={state.offices.financiera} />}
+          {activeOffice === 'vidaSocial' && (
+            <SocialView
+              data={state.offices.vidaSocial}
+              profileName={state.security.userProfile?.fullName}
+            />
+          )}
+          {activeOffice === 'medica' && <MedicalView data={state.offices.medica} />}
+          {activeOffice === 'desarrolloPersonal' && <PersonalDevView data={state.offices.desarrolloPersonal} />}
+        </div>
       </main>
 
       {/* 3. PIE DE PÁGINA EXECUTIVE PRESTIGE */}
-      <footer className="bg-[#F4F1EA] border-t border-[#D1C7B7] py-4 text-center text-xs text-[#8B8378]">
+      <footer className="bg-[#0B1528]/90 backdrop-blur-xl border-t border-white/10 py-4 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2 font-sans text-[11px]">
-          <span className="tracking-wider uppercase">
-            <strong className="text-[#0A192F]">Casa Blanca Personal</strong> • Despacho Ejecutivo offline
+          <span className="tracking-wide">
+            <strong className="text-white font-medium">Casa Blanca Personal</strong> • Despacho Ejecutivo Native Glass OS
           </span>
-          <span className="opacity-70 italic font-serif">
-            Confidencial • Almacenamiento Local Cifrado
+          <span className="opacity-70 font-normal">
+            Confidencial • Cifrado Local
           </span>
         </div>
       </footer>
-      <div className="h-1 bg-[#C5A059]"></div>
     </div>
   );
 }
