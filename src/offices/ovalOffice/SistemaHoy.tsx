@@ -113,10 +113,10 @@ export const SistemaHoy: React.FC<Props> = ({
               <h4 className="font-serif font-bold text-white text-base leading-tight">
                 {nextEvent.title}
               </h4>
-              {nextEvent.classroom && (
+              {(nextEvent as any).classroom && (
                 <div className="text-xs text-slate-300 flex items-center gap-1">
                   <span>📍 Aula / Ubicación:</span>
-                  <span className="font-semibold text-amber-200">{nextEvent.classroom}</span>
+                  <span className="font-semibold text-amber-200">{(nextEvent as any).classroom}</span>
                 </div>
               )}
               {nextEvent.officeLabel && (

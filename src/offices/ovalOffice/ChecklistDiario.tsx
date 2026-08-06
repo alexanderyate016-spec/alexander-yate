@@ -128,7 +128,7 @@ export const ChecklistDiario: React.FC<Props> = ({
                 )}
                 <div>
                   <div className="font-medium text-xs">{task.name || (task as any).title || 'Tarea'}</div>
-                  {task.subtitle && <div className="text-[10px] text-slate-300">{task.subtitle}</div>}
+                  {(task as any).subtitle && <div className="text-[10px] text-slate-300">{(task as any).subtitle}</div>}
                 </div>
               </div>
 

@@ -35,9 +35,9 @@ export const WidgetsVivos: React.FC<Props> = ({
 
   // 2. SLEEP DATA
   const sleepTarget = medicalData?.sleepTargetHours || 8.0;
-  const sleepHours = healthMetrics?.sleepHours || 0;
+  const sleepHours = (healthMetrics as any)?.sleepHours || healthMetrics?.sleep || 0;
   const sleepPct = Math.min(100, Math.round((sleepHours / sleepTarget) * 100));
-  const sleepQuality = healthMetrics?.sleepQuality || 0;
+  const sleepQuality = (healthMetrics as any)?.sleepQuality || 0;
 
   // 3. FINANCIAL DATA
   const financialData = state.offices.financiera;

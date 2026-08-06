@@ -366,26 +366,38 @@ export interface CustomPersonDate {
   date: string; // YYYY-MM-DD or MM-DD
 }
 
+export interface PersonIdeas {
+  likes?: string;
+  hobbies?: string;
+  favoriteFood?: string;
+  giftIdeas?: string;
+  usefulInfo?: string;
+}
+
 export interface SocialPerson {
   id: string;
   name: string;
+  nickname?: string;
   photoUrl?: string;
   birthday?: string; // YYYY-MM-DD
   anniversaryDate?: string; // YYYY-MM-DD
   phone?: string;
   email?: string;
   address?: string;
+  city?: string;
   profession?: string;
   organization?: string;
   relationship: string;
   category: 'Familia' | 'Amigos' | 'Compañeros de universidad' | 'Profesores' | 'Trabajo' | 'Otros';
   importanceLevel: 'Muy importante' | 'Importante' | 'Frecuente' | 'Ocasional';
+  howWeMet?: string;
   notes?: string;
   interests?: string;
   memoryContext?: string;
   tags: string[];
   isFavorite?: boolean;
   customDates?: CustomPersonDate[];
+  ideas?: PersonIdeas;
 }
 
 export interface SocialInteraction {
@@ -396,6 +408,24 @@ export interface SocialInteraction {
   type: 'Conversación' | 'Llamada' | 'Reunión' | 'Mensaje' | 'Salida' | 'Clase' | 'Otro';
   description: string;
 }
+
+export type SocialEventType =
+  | 'Comer'
+  | 'Café'
+  | 'Cine'
+  | 'Caminar'
+  | 'Deporte'
+  | 'Fiesta'
+  | 'Concierto'
+  | 'Viaje'
+  | 'Reunión familiar'
+  | 'Estudio en grupo'
+  | 'Salida nocturna'
+  | 'Cena'
+  | 'Almuerzo'
+  | 'Partido'
+  | 'Celebración'
+  | 'Otro';
 
 export interface SocialCommitment {
   id: string;
@@ -408,6 +438,11 @@ export interface SocialCommitment {
   description?: string;
   priority: 'low' | 'medium' | 'high';
   type?: 'Reunión' | 'Almuerzo' | 'Clase' | 'Llamada' | 'Celebración' | 'Salida' | 'Otro';
+  eventType?: SocialEventType;
+  rating?: number; // 1 to 5
+  memoryPhotoUrl?: string;
+  memoryNote?: string;
+  isCompleted?: boolean;
 }
 
 export interface SpecialDateItem {

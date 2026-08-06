@@ -2,38 +2,28 @@ import React, { useState } from 'react';
 import { SocialOfficeData, SocialPerson } from '../../types/store';
 import { SocialStore } from './SocialStore';
 import { SocialCalculations } from './SocialCalculations';
-import { PersonProfileModal } from './PersonProfileModal';
-import { RelationshipMapView } from './RelationshipMapView';
+import { SocialAgendaGrid } from './SocialAgendaGrid';
+import { RecentMemoriesSection } from './RecentMemoriesSection';
 import { SocialCalendarView } from './SocialCalendarView';
-import { getTodayDateString } from '../../utils/dates';
-import { useTimeService } from '../../hooks/useTimeService';
-import {
-  GlassPanel,
-  ExecutiveButton,
-  ExecutiveMetricCard,
-  ExecutiveSectionHeader,
-  ExecutiveBadge,
-  ExecutiveEmptyState,
-  ExecutiveInput,
-  ExecutiveSelect,
-  ExecutiveForm,
-} from '../../components/executive';
+import { PersonProfileModal } from './PersonProfileModal';
+import { CreatePlanModal } from './CreatePlanModal';
+import { CreatePersonModal } from './CreatePersonModal';
+import { getTodayDateString, getDaysDifference } from '../../utils/dates';
 import {
   Users,
   Heart,
   Calendar as CalendarIcon,
   Plus,
-  Trash2,
-  MessageSquare,
-  AlertCircle,
-  Flag,
-  UserPlus,
-  Cake,
   Star,
   Sparkles,
-  Network,
   Clock,
-  Filter
+  Cake,
+  MessageSquare,
+  Search,
+  UserPlus,
+  ChevronRight,
+  Smile,
+  ShieldCheck
 } from 'lucide-react';
 
 interface Props {
@@ -42,692 +32,452 @@ interface Props {
 }
 
 export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
-  const [activeTab, setActiveTab] = useState<'cards' | 'map' | 'calendar' | 'interactions' | 'commitments'>('cards');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'calendar' | 'people'>('agenda');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  
+  // Modals state
   const [selectedPerson, setSelectedPerson] = useState<SocialPerson | null>(null);
+  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
+  const [createPlanDefaultDate, setCreatePlanDefaultDate] = useState<string | undefined>(undefined);
+  const [isCreatePersonOpen, setIsCreatePersonOpen] = useState(false);
 
   const todayStr = getTodayDateString();
-  const todayMMDD = todayStr.substring(5);
-
-  // New Person Form State
-  const [pName, setPName] = useState('');
-  const [pRelation, setPRelation] = useState('');
-  const [pCat, setPCat] = useState<'Familia' | 'Amigos' | 'Compañeros de universidad' | 'Profesores' | 'Trabajo' | 'Otros'>('Amigos');
-  const [pImp, setPImp] = useState<'Muy importante' | 'Importante' | 'Frecuente' | 'Ocasional'>('Importante');
-  const [pBday, setPBday] = useState('');
-  const [pPhone, setPPhone] = useState('');
-  const [pPhoto, setPPhoto] = useState('');
-
-  // New Interaction State
-  const [intPersonId, setIntPersonId] = useState('');
-  const [intDesc, setIntDesc] = useState('');
-  const [intType, setIntType] = useState<'Conversación' | 'Llamada' | 'Reunión' | 'Mensaje' | 'Salida' | 'Clase' | 'Otro'>('Llamada');
-
-  // New Commitment State
-  const [comTitle, setComTitle] = useState('');
-  const [comDate, setComDate] = useState(todayStr);
-  const [comStart, setComStart] = useState('16:00');
-  const [comPersonId, setComPersonId] = useState('');
-
-  const timeService = useTimeService(profileName);
-  const greeting = timeService.greeting;
   const people = data.people || [];
-  const interactions = data.interactions || [];
   const commitments = data.commitments || [];
+  const interactions = data.interactions || [];
 
-  const uncontacted = SocialCalculations.getUncontactedPeopleAlerts(data, 30);
-  const upcomingDates = SocialCalculations.getUpcomingDatesList(data, todayStr);
-  const smartAlerts = SocialCalculations.getSmartAlerts(data, todayStr, {
-    period: timeService.periodInfo.period,
-    shortGreeting: timeService.periodInfo.shortGreeting
-  });
+  // ==========================================
+  // REAL INDICATORS CALCULATIONS (NO HARDCODED DATA)
+  // ==========================================
+  
+  // 1. Events this week
+  const today = new Date(todayStr + 'T12:00:00');
+  const endOfWeek = new Date(today);
+  endOfWeek.setDate(today.getDate() + 7);
+  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
 
-  const handleCreatePerson = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pName.trim()) return;
-    SocialStore.addPerson({
-      name: pName.trim(),
-      relationship: pRelation.trim() || pCat,
-      category: pCat,
-      importanceLevel: pImp,
-      birthday: pBday || undefined,
-      phone: pPhone.trim() || undefined,
-      photoUrl: pPhoto.trim() || undefined,
-      tags: []
-    });
-    setPName('');
-    setPRelation('');
-    setPBday('');
-    setPPhone('');
-    setPPhoto('');
-  };
+  const eventsThisWeekCount = commitments.filter(
+    c => c.date >= todayStr && c.date <= endOfWeekStr
+  ).length;
 
-  const handleCreateInteraction = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!intPersonId || !intDesc.trim()) return;
-    SocialStore.addInteraction({
-      personId: intPersonId,
-      date: todayStr,
-      type: intType,
-      description: intDesc.trim()
-    });
-    setIntDesc('');
-  };
+  // 2. Next Birthday
+  const upcomingList = SocialCalculations.getUpcomingDatesList(data, todayStr);
+  const nextBirthday = upcomingList.find(u => u.type === 'birthday');
 
-  const handleCreateCommitment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comTitle.trim()) return;
-    SocialStore.addCommitment({
-      title: comTitle.trim(),
-      date: comDate,
-      startTime: comStart,
-      peopleIds: comPersonId ? [comPersonId] : [],
-      priority: 'medium'
-    });
-    setComTitle('');
-  };
+  // 3. People with upcoming plans
+  const upcomingCommitments = commitments.filter(c => c.date >= todayStr);
+  const peopleWithPlansIds = new Set<string>();
+  upcomingCommitments.forEach(c => (c.peopleIds || []).forEach(id => peopleWithPlansIds.add(id)));
+  const peopleWithPlansCount = peopleWithPlansIds.size;
 
-  // Filtered People
+  // 4. Contact with longest uncontacted time
+  const uncontactedAlerts = SocialCalculations.getUncontactedPeopleAlerts(data, 1);
+  const longestUncontacted = uncontactedAlerts.length > 0 ? uncontactedAlerts[0] : null;
+
+  // Favorites & People filtering
+  const favoritePeople = people.filter(p => p.isFavorite);
+  const displayFavorites = favoritePeople.length > 0 ? favoritePeople : people.slice(0, 6);
+
   const filteredPeople = people.filter(p => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query) ||
-      (p.relationship && p.relationship.toLowerCase().includes(query)) ||
-      (p.organization && p.organization.toLowerCase().includes(query)) ||
-      (p.interests && p.interests.toLowerCase().includes(query)) ||
-      (p.tags && p.tags.some(t => t.toLowerCase().includes(query)));
-
-    const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
-
-    return matchesSearch && matchesCategory;
+    const q = searchQuery.toLowerCase();
+    if (!q) return true;
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.nickname && p.nickname.toLowerCase().includes(q)) ||
+      (p.relationship && p.relationship.toLowerCase().includes(q)) ||
+      (p.city && p.city.toLowerCase().includes(q)) ||
+      (p.category && p.category.toLowerCase().includes(q))
+    );
   });
 
-  const favoritePeople = filteredPeople.filter(p => p.isFavorite);
-  const regularPeople = filteredPeople.filter(p => !p.isFavorite);
-
-  // Category counts
-  const familyCount = people.filter(p => p.category === 'Familia').length;
-  const friendsCount = people.filter(p => p.category === 'Amigos').length;
-  const professorCount = people.filter(p => p.category === 'Profesores').length;
-  const colleaguesCount = people.filter(p => p.category === 'Compañeros de universidad').length;
-  const workCount = people.filter(p => p.category === 'Trabajo').length;
+  const handleOpenCreatePlan = (dateStr?: string) => {
+    setCreatePlanDefaultDate(dateStr);
+    setIsCreatePlanOpen(true);
+  };
 
   return (
-    <div className="space-y-6 text-slate-100 font-sans pb-12">
-      {/* 1. HEADER INSTITUCIONAL */}
-      <ExecutiveSectionHeader
-        title="Centro de Relaciones Personales"
-        subtitle="Gestión Inteligente de Expedientes Personales, Redes Humanas, Fechas Patrias y Compromisos Sociales"
-        icon={<Users className="w-6 h-6 text-purple-400" />}
-        accentColor="purple"
-        badgeText="Redes Humanas"
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Buscar por nombre, relación, organización, intereses o etiquetas..."
-      />
-
-      {/* 2. CENTRO DE METRICAS Y ALERTAS EJECUTIVAS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <ExecutiveMetricCard
-          title="Total Personas"
-          value={people.length}
-          accentColor="purple"
-          subtitle="Expedientes registrados"
-        />
-        <ExecutiveMetricCard
-          title="Familia"
-          value={familyCount}
-          accentColor="purple"
-          subtitle="Núcleo familiar"
-        />
-        <ExecutiveMetricCard
-          title="Amigos"
-          value={friendsCount}
-          accentColor="purple"
-          subtitle="Círculo personal"
-        />
-        <ExecutiveMetricCard
-          title="Universidad / Trabajo"
-          value={colleaguesCount + workCount + professorCount}
-          accentColor="purple"
-          subtitle="Ámbito académico/profesional"
-        />
-        <ExecutiveMetricCard
-          title="Sin Contacto (>30d)"
-          value={uncontacted.length}
-          accentColor={uncontacted.length > 0 ? "rose" : "emerald"}
-          subtitle="Alertas de seguimiento"
-        />
-        <ExecutiveMetricCard
-          title="Próximas Fechas"
-          value={upcomingDates.filter(u => u.daysLeft <= 30).length}
-          accentColor="amber"
-          subtitle="Próximos 30 días"
-        />
-      </div>
-
-      {/* SMART ALERTS BANNER */}
-      {smartAlerts.length > 0 && (
-        <GlassPanel accentColor="purple" padding="sm">
-          <div className="p-3 bg-purple-950/30 border border-purple-500/40 rounded-xl space-y-2">
-            <div className="flex items-center gap-2 font-serif font-bold text-amber-300 text-xs uppercase tracking-wider">
-              <Sparkles className="w-4 h-4 text-amber-400" /> Alertas Inteligentes de Seguimiento
+    <div className="space-y-7 text-slate-100 font-sans pb-16">
+      
+      {/* 1. HEADER & PHILOSOPHY BANNER */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-purple-950/80 via-[#101c30] to-[#0a1220] border border-white/10 backdrop-blur-2xl shadow-2xl space-y-4">
+        <div className="flex flex-wrap justify-between items-start gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                <Heart className="w-5 h-5 fill-purple-400/20" />
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+                Oficina de Relaciones • Centro de Vida Social
+              </h1>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {smartAlerts.slice(0, 6).map((alert, idx) => (
-                <div key={idx} className="p-2 bg-[#132337]/90 border border-white/10 rounded-lg text-xs text-slate-200 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
-                  <span>{alert}</span>
-                </div>
-              ))}
+
+            <p className="text-xs sm:text-sm text-purple-200/90 italic font-medium leading-relaxed">
+              "No administrar contactos. Administrar relaciones. No administrar fechas. Administrar experiencias. No administrar formularios. Administrar momentos."
+            </p>
+
+            <p className="text-xs text-slate-300 font-serif font-bold text-amber-200/90 pt-1">
+              ¿Cómo está mi vida social y qué planes comparto con las personas importantes para mí?
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleOpenCreatePlan()}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shadow-xl transition-all flex items-center gap-2 active:scale-95"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Crear Plan Social</span>
+            </button>
+
+            <button
+              onClick={() => setIsCreatePersonOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all flex items-center gap-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Agregar Persona</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TOP COMPACT SUMMARY BAR (RESUMEN SOCIAL) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/10">
+          
+          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Eventos esta semana</span>
+              <strong className="text-base font-serif font-bold text-white">{eventsThisWeekCount} planes</strong>
             </div>
           </div>
-        </GlassPanel>
-      )}
 
-      {/* 3. MAIN GRID: PRÓXIMAS FECHAS + REGISTRO RÁPIDO */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* TARJETA PRÓXIMAS FECHAS (CRONOLÓGICO) */}
-        <div className="lg:col-span-1">
-          <GlassPanel accentColor="purple" padding="md">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
-              <h3 className="font-serif font-bold text-white text-base flex items-center gap-2">
-                <Cake className="w-4 h-4 text-amber-400" />
-                Próximas Fechas
-              </h3>
-              <ExecutiveBadge variant="subtle" accentColor="amber">
-                Orden Cronológico
-              </ExecutiveBadge>
+          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              <Cake className="w-4 h-4" />
             </div>
-
-            {upcomingDates.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">Sin fechas o compromisos agendados.</p>
-            ) : (
-              <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-                {upcomingDates.slice(0, 10).map(item => {
-                  const person = item.personId ? people.find(p => p.id === item.personId) : undefined;
-
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => person && setSelectedPerson(person)}
-                      className={`p-3 rounded-xl border flex justify-between items-center gap-3 transition-all ${
-                        person ? 'cursor-pointer hover:border-purple-400 hover:scale-[1.01]' : ''
-                      } ${
-                        item.isToday
-                          ? 'bg-amber-500/20 border-amber-500/50 text-white'
-                          : 'bg-[#132337]/80 border-white/10 text-slate-200'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-serif font-bold text-xs text-white flex items-center gap-1.5">
-                          {item.type === 'birthday' && <span>🎂</span>}
-                          {item.type === 'anniversary' && <span>❤️</span>}
-                          {item.type === 'commitment' && <span>📅</span>}
-                          {item.type === 'custom_date' && <span>✨</span>}
-                          <span>{item.title}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                          {item.dateStr} {item.description ? `• ${item.description}` : ''}
-                        </span>
-                      </div>
-
-                      <div className="shrink-0 text-right">
-                        {item.isToday ? (
-                          <span className="text-xs font-bold text-amber-300">¡Es hoy!</span>
-                        ) : (
-                          <span className="text-xs font-semibold text-purple-300">
-                            En {item.daysLeft} días
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </GlassPanel>
-        </div>
-
-        {/* REGISTRO RÁPIDO DE PERSONA */}
-        <div className="lg:col-span-2">
-          <GlassPanel accentColor="purple" padding="md">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
-              <h3 className="font-serif font-bold text-white text-base flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-purple-400" />
-                Registrar Nuevo Expediente Personal
-              </h3>
-              <ExecutiveBadge variant="solid" accentColor="purple">
-                {greeting}
-              </ExecutiveBadge>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Próximo Cumpleaños</span>
+              <strong className="text-xs font-serif font-bold text-amber-200 truncate block max-w-[130px]">
+                {nextBirthday ? `${nextBirthday.personName} (${nextBirthday.daysLeft === 0 ? '¡Hoy!' : `en ${nextBirthday.daysLeft}d`})` : 'Ninguno próximo'}
+              </strong>
             </div>
+          </div>
 
-            <ExecutiveForm onSubmit={handleCreatePerson}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-                <ExecutiveInput
-                  label="Nombre Completo *"
-                  placeholder="Ej: Laura Gómez, Prof. Rodríguez"
-                  value={pName}
-                  onChange={e => setPName(e.target.value)}
-                  accentColor="purple"
-                  required
-                />
+          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
+              <Users className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Personas con Planes</span>
+              <strong className="text-base font-serif font-bold text-white">{peopleWithPlansCount} personas</strong>
+            </div>
+          </div>
 
-                <ExecutiveInput
-                  label="Relación Conmigo"
-                  placeholder="Ej: Mamá, Tutor, Mejor Amigo"
-                  value={pRelation}
-                  onChange={e => setPRelation(e.target.value)}
-                  accentColor="purple"
-                />
+          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Contacto Pendiente</span>
+              <strong className="text-xs font-serif font-bold text-rose-200 truncate block max-w-[130px]">
+                {longestUncontacted ? `${longestUncontacted.person.name} (${longestUncontacted.daysAgo}d)` : 'Al día'}
+              </strong>
+            </div>
+          </div>
 
-                <ExecutiveSelect
-                  label="Categoría"
-                  value={pCat}
-                  onChange={e => setPCat(e.target.value as any)}
-                  accentColor="purple"
-                  options={[
-                    { value: 'Familia', label: 'Familia' },
-                    { value: 'Amigos', label: 'Amigos' },
-                    { value: 'Compañeros de universidad', label: 'Compañeros de universidad' },
-                    { value: 'Profesores', label: 'Profesores' },
-                    { value: 'Trabajo', label: 'Trabajo' },
-                    { value: 'Otros', label: 'Otros' }
-                  ]}
-                />
-
-                <ExecutiveSelect
-                  label="Nivel de Importancia"
-                  value={pImp}
-                  onChange={e => setPImp(e.target.value as any)}
-                  accentColor="purple"
-                  options={[
-                    { value: 'Muy importante', label: '⭐ Muy Importante (Prioritario)' },
-                    { value: 'Importante', label: '🔹 Importante' },
-                    { value: 'Frecuente', label: '💬 Frecuente' },
-                    { value: 'Ocasional', label: '🌱 Ocasional' }
-                  ]}
-                />
-
-                <ExecutiveInput
-                  label="Cumpleaños"
-                  type="date"
-                  value={pBday}
-                  onChange={e => setPBday(e.target.value)}
-                  accentColor="purple"
-                />
-
-                <ExecutiveInput
-                  label="Teléfono (Opcional)"
-                  value={pPhone}
-                  onChange={e => setPPhone(e.target.value)}
-                  accentColor="purple"
-                  placeholder="+57 300 123 4567"
-                />
-              </div>
-
-              <div className="flex justify-end pt-3">
-                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
-                  Crear Expediente Personal
-                </ExecutiveButton>
-              </div>
-            </ExecutiveForm>
-          </GlassPanel>
         </div>
       </div>
 
-      {/* 4. VISTA PRINCIPAL TABS & CATEGORIES */}
-      <div className="flex flex-wrap border-b border-white/10 gap-2 items-center justify-between">
-        <div className="flex space-x-2 overflow-x-auto">
+      {/* 2. PERSONAS FAVORITAS (QUICK ACCESS CAROUSEL/GRID) */}
+      <div className="bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <h3 className="font-serif font-bold text-sm text-white uppercase tracking-wider">
+              Personas Favoritas y Cercanas
+            </h3>
+          </div>
           <button
-            onClick={() => setActiveTab('cards')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-              activeTab === 'cards'
-                ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
+            onClick={() => setActiveTab('people')}
+            className="text-xs text-purple-300 hover:text-white font-bold flex items-center gap-1"
           >
-            <Users className="w-4 h-4" />
-            Tarjetas Expedientes ({filteredPeople.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-              activeTab === 'map'
-                ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Network className="w-4 h-4" />
-            Mapa de Relaciones
-          </button>
-
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-              activeTab === 'calendar'
-                ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <CalendarIcon className="w-4 h-4" />
-            Calendario Social
-          </button>
-
-          <button
-            onClick={() => setActiveTab('interactions')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-              activeTab === 'interactions'
-                ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            Historial ({interactions.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('commitments')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-              activeTab === 'commitments'
-                ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Compromisos ({commitments.length})
+            <span>Ver todos ({people.length})</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* CATEGORY FILTER */}
-        {activeTab === 'cards' && (
-          <div className="flex items-center gap-2 pb-2">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="bg-[#132337] border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white font-semibold focus:outline-none focus:border-purple-400"
+        {people.length === 0 ? (
+          <div className="p-4 text-center border border-dashed border-white/15 rounded-2xl">
+            <p className="text-xs text-slate-400">
+              Aún no tienes personas registradas. Añade a tus amigos, familiares y contactos principales para comenzar.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4 overflow-x-auto pb-2 pr-2">
+            {displayFavorites.map(p => {
+              const initials = p.name ? p.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'P';
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPerson(p)}
+                  className="flex flex-col items-center gap-2 group shrink-0 transition-transform active:scale-95"
+                >
+                  <div className="relative">
+                    {p.photoUrl ? (
+                      <img
+                        src={p.photoUrl}
+                        alt={p.name}
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-purple-400/60 group-hover:border-purple-300 shadow-xl group-hover:scale-105 transition-all"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700 border-2 border-purple-400/60 group-hover:border-purple-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-xl group-hover:scale-105 transition-all">
+                        {initials}
+                      </div>
+                    )}
+                    {p.isFavorite && (
+                      <div className="absolute -top-1 -right-1 p-1 bg-amber-400 rounded-full shadow">
+                        <Star className="w-3 h-3 text-slate-950 fill-slate-950" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-white max-w-[80px] sm:max-w-[90px] truncate group-hover:text-purple-300 transition-colors">
+                      {p.name.split(' ')[0]}
+                    </p>
+                    <p className="text-[10px] text-slate-400 max-w-[80px] truncate">
+                      {p.relationship || p.category}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setIsCreatePersonOpen(true)}
+              className="flex flex-col items-center justify-center gap-2 shrink-0 group"
             >
-              <option value="all">Todas las Categorías</option>
-              <option value="Familia">Familia</option>
-              <option value="Amigos">Amigos</option>
-              <option value="Compañeros de universidad">Compañeros de Universidad</option>
-              <option value="Profesores">Profesores</option>
-              <option value="Trabajo">Trabajo</option>
-              <option value="Otros">Otros</option>
-            </select>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-purple-400/40 hover:border-purple-300 bg-white/5 flex items-center justify-center text-purple-300 group-hover:scale-105 transition-all">
+                <Plus className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-bold text-purple-300 group-hover:text-white">Añadir</span>
+            </button>
           </div>
         )}
       </div>
 
-      {/* VISTA 1: TARJETAS LIQUID GLASS */}
-      {activeTab === 'cards' && (
-        <div className="space-y-6">
-          {filteredPeople.length === 0 ? (
-            <ExecutiveEmptyState
-              icon={<Users className="w-8 h-8 text-purple-400" />}
-              title="Sin Expedientes Personales"
-              description="No hay personas o contactos registrados que coincidan con tu búsqueda."
-              accentColor="purple"
-            />
-          ) : (
-            <div className="space-y-6">
-              {/* FAVORITOS PRIORITARIOS */}
-              {favoritePeople.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 font-serif font-bold text-amber-300 text-sm">
-                    <Star className="w-4 h-4 fill-amber-300" />
-                    Personas Prioritarias & Favoritos ({favoritePeople.length})
+      {/* 3. TABS SWITCHER */}
+      <div className="flex border-b border-white/10 bg-black/20 rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setActiveTab('agenda')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeTab === 'agenda'
+              ? 'bg-purple-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <CalendarIcon className="w-4 h-4" />
+          <span>Agenda Social & Recuerdos</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeTab === 'calendar'
+              ? 'bg-purple-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Calendario Social Mensual</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('people')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+            activeTab === 'people'
+              ? 'bg-purple-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Directorio de Relaciones ({people.length})</span>
+        </button>
+      </div>
+
+      {/* TAB 1: MAIN LAYOUT (AGENDA SOCIAL + PRÓXIMOS EVENTOS SIDE PANEL + RECUERDOS RECIENTES) */}
+      {activeTab === 'agenda' && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            
+            {/* MAIN STAGE (2 COLS): AGENDA SOCIAL */}
+            <div className="lg:col-span-2 space-y-6">
+              <SocialAgendaGrid
+                data={data}
+                onOpenCreatePlan={handleOpenCreatePlan}
+                onSelectPerson={setSelectedPerson}
+              />
+            </div>
+
+            {/* SIDE PANEL (1 COL): PRÓXIMOS EVENTOS */}
+            <div className="space-y-4">
+              <div className="bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <h3 className="font-serif font-bold text-base text-white">Próximos Eventos</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoritePeople.map(p => (
-                      <PersonLiquidGlassCard
-                        key={p.id}
-                        person={p}
-                        data={data}
-                        todayStr={todayStr}
-                        onClick={() => setSelectedPerson(p)}
-                      />
+                  <span className="text-[10px] text-purple-300 font-mono">Compromisos Reales</span>
+                </div>
+
+                {upcomingCommitments.length === 0 && upcomingList.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-6 text-center">Sin eventos o fechas próximas programadas.</p>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                    {/* UPCOMING COMMITMENTS */}
+                    {upcomingCommitments.slice(0, 5).map(c => {
+                      const participant = c.peopleIds.length > 0 ? people.find(p => p.id === c.peopleIds[0]) : undefined;
+                      const daysLeft = getDaysDifference(todayStr, c.date);
+
+                      return (
+                        <div
+                          key={c.id}
+                          className="p-3.5 rounded-2xl bg-gradient-to-r from-[#101b2d] to-[#0d1625] border border-white/10 space-y-1.5"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="font-serif font-bold text-white text-xs">{c.title}</h4>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-200 border border-purple-500/30 shrink-0">
+                              {daysLeft === 0 ? '¡Hoy!' : daysLeft === 1 ? 'Mañana' : `En ${daysLeft} días`}
+                            </span>
+                          </div>
+
+                          <p className="text-[11px] text-slate-300 font-mono">
+                            {c.date} • {c.startTime || '12:00'} {c.location ? `• ${c.location}` : ''}
+                          </p>
+
+                          {participant && (
+                            <button
+                              onClick={() => setSelectedPerson(participant)}
+                              className="text-[11px] text-purple-300 hover:text-white font-medium flex items-center gap-1 pt-1"
+                            >
+                              <span>Con {participant.name}</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* UPCOMING SPECIAL DATES (BIRTHDAYS, ETC.) */}
+                    {upcomingList.filter(u => u.type === 'birthday' || u.type === 'anniversary').slice(0, 4).map(u => (
+                      <div
+                        key={u.id}
+                        className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/30 to-purple-950/30 border border-amber-500/30 space-y-1"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-serif font-bold text-amber-200 text-xs">{u.title}</span>
+                          <span className="text-[10px] font-bold text-amber-400">
+                            {u.isToday ? '¡Hoy!' : `En ${u.daysLeft} días`}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-300 font-mono">{u.dateStr}</p>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* REGULARES */}
-              <div className="space-y-3">
-                {favoritePeople.length > 0 && (
-                  <div className="font-serif font-bold text-slate-300 text-sm pt-2">
-                    Todos los Contactos ({regularPeople.length})
-                  </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {regularPeople.map(p => (
-                    <PersonLiquidGlassCard
-                      key={p.id}
-                      person={p}
-                      data={data}
-                      todayStr={todayStr}
-                      onClick={() => setSelectedPerson(p)}
-                    />
-                  ))}
-                </div>
               </div>
             </div>
-          )}
+
+          </div>
+
+          {/* 4. RECUERDOS RECIENTES */}
+          <RecentMemoriesSection
+            data={data}
+            onSelectPerson={setSelectedPerson}
+          />
         </div>
       )}
 
-      {/* VISTA 2: MAPA DE RELACIONES */}
-      {activeTab === 'map' && (
-        <RelationshipMapView
-          data={data}
-          onSelectPerson={p => setSelectedPerson(p)}
-        />
-      )}
-
-      {/* VISTA 3: CALENDARIO SOCIAL */}
+      {/* TAB 2: CALENDARIO SOCIAL EXCLUSIVO */}
       {activeTab === 'calendar' && (
         <SocialCalendarView
           data={data}
-          onSelectPerson={p => setSelectedPerson(p)}
+          onSelectPerson={setSelectedPerson}
         />
       )}
 
-      {/* VISTA 4: HISTORIAL DE INTERACCIONES */}
-      {activeTab === 'interactions' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="purple" padding="md">
-            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-purple-400" />
-              Registrar Interacción o Conversación
-            </h3>
-
-            <ExecutiveForm onSubmit={handleCreateInteraction}>
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
-                <ExecutiveSelect
-                  label="Persona *"
-                  value={intPersonId}
-                  onChange={e => setIntPersonId(e.target.value)}
-                  accentColor="purple"
-                  required
-                  options={[
-                    { value: '', label: '-- Seleccionar Persona --' },
-                    ...people.map(p => ({ value: p.id, label: p.name }))
-                  ]}
-                />
-
-                <ExecutiveSelect
-                  label="Tipo de Interacción"
-                  value={intType}
-                  onChange={e => setIntType(e.target.value as any)}
-                  accentColor="purple"
-                  options={[
-                    { value: 'Llamada', label: '📞 Llamada' },
-                    { value: 'Conversación', label: '🗣️ Conversación presencial' },
-                    { value: 'Reunión', label: '🤝 Reunión' },
-                    { value: 'Mensaje', label: '💬 Mensaje / Chat' },
-                    { value: 'Salida', label: '☕ Salida / Almuerzo' },
-                    { value: 'Clase', label: '🎓 Clase / Tutoría' },
-                    { value: 'Otro', label: '📌 Otro' }
-                  ]}
-                />
-
-                <div className="sm:col-span-1 lg:col-span-2">
-                  <ExecutiveInput
-                    label="Descripción *"
-                    placeholder="Ej: Conversación sobre proyectos, consejo o actualización"
-                    value={intDesc}
-                    onChange={e => setIntDesc(e.target.value)}
-                    accentColor="purple"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
-                  Guardar Interacción
-                </ExecutiveButton>
-              </div>
-            </ExecutiveForm>
-          </GlassPanel>
-
-          {interactions.length === 0 ? (
-            <ExecutiveEmptyState
-              icon={<MessageSquare className="w-8 h-8 text-purple-400" />}
-              title="Sin Interacciones Registradas"
-              description="No hay un historial de llamadas, mensajes o conversaciones registradas."
-              accentColor="purple"
-            />
-          ) : (
-            <div className="space-y-2.5">
-              {interactions
-                .slice()
-                .sort((a, b) => b.date.localeCompare(a.date))
-                .map(i => {
-                  const person = people.find(p => p.id === i.personId);
-
-                  return (
-                    <div
-                      key={i.id}
-                      className="p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex justify-between items-center text-xs hover:border-purple-400/40 transition-all"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-serif font-bold text-white text-sm">{person?.name || 'Contacto'}</h4>
-                          <ExecutiveBadge variant="subtle" accentColor="purple">
-                            {i.type}
-                          </ExecutiveBadge>
-                        </div>
-                        <p className="text-slate-300 mt-1">{i.description}</p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-400 font-mono text-[11px]">{i.date}</span>
-                        <button
-                          onClick={() => SocialStore.deleteInteraction(i.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+      {/* TAB 3: DIRECTORIO DE PERSONAS */}
+      {activeTab === 'people' && (
+        <div className="space-y-5">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Buscar persona por nombre, ciudad, relación..."
+                className="w-full bg-white/10 border border-white/15 focus:border-purple-400 rounded-2xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none"
+              />
             </div>
-          )}
-        </div>
-      )}
 
-      {/* VISTA 5: COMPROMISOS */}
-      {activeTab === 'commitments' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="purple" padding="md">
-            <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-purple-400" />
-              Crear Compromiso Social
-            </h3>
+            <button
+              onClick={() => setIsCreatePersonOpen(true)}
+              className="px-4 py-2 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Registrar Persona</span>
+            </button>
+          </div>
 
-            <ExecutiveForm onSubmit={handleCreateCommitment}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-                <ExecutiveInput
-                  label="Título del Compromiso *"
-                  placeholder="Ej: Cena de graduación, Reunión con tutor"
-                  value={comTitle}
-                  onChange={e => setComTitle(e.target.value)}
-                  accentColor="purple"
-                  required
-                />
-
-                <ExecutiveSelect
-                  label="Persona Relacionada"
-                  value={comPersonId}
-                  onChange={e => setComPersonId(e.target.value)}
-                  accentColor="purple"
-                  options={[
-                    { value: '', label: '-- General / Sin persona --' },
-                    ...people.map(p => ({ value: p.id, label: p.name }))
-                  ]}
-                />
-
-                <ExecutiveInput
-                  label="Fecha"
-                  type="date"
-                  value={comDate}
-                  onChange={e => setComDate(e.target.value)}
-                  accentColor="purple"
-                />
-
-                <ExecutiveInput
-                  label="Hora"
-                  type="time"
-                  value={comStart}
-                  onChange={e => setComStart(e.target.value)}
-                  accentColor="purple"
-                />
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <ExecutiveButton type="submit" variant="primary" accentColor="purple" icon={<Plus className="w-4 h-4" />}>
-                  Guardar Compromiso (Sincroniza con Oval Office)
-                </ExecutiveButton>
-              </div>
-            </ExecutiveForm>
-          </GlassPanel>
-
-          {commitments.length === 0 ? (
-            <ExecutiveEmptyState
-              icon={<Clock className="w-8 h-8 text-purple-400" />}
-              title="Sin Compromisos Agendados"
-              description="No hay compromisos o eventos sociales agendados."
-              accentColor="purple"
-            />
+          {filteredPeople.length === 0 ? (
+            <div className="p-12 text-center border border-dashed border-white/15 rounded-3xl space-y-3">
+              <Users className="w-10 h-10 text-slate-500 mx-auto" />
+              <p className="text-sm text-slate-300">No se encontraron expedientes de personas.</p>
+            </div>
           ) : (
-            <div className="space-y-2.5">
-              {commitments.map(c => {
-                const person = c.peopleIds.length > 0 ? people.find(p => p.id === c.peopleIds[0]) : undefined;
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPeople.map(p => {
+                const initials = p.name ? p.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'P';
+                const lastInt = SocialCalculations.getLastInteraction(p.id, interactions);
 
                 return (
                   <div
-                    key={c.id}
-                    className="p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex justify-between items-center text-xs hover:border-purple-400/40 transition-all"
+                    key={p.id}
+                    onClick={() => setSelectedPerson(p)}
+                    className="p-5 rounded-3xl bg-gradient-to-br from-[#0c1828] to-[#101e32] border border-white/10 hover:border-purple-400/50 backdrop-blur-2xl shadow-xl transition-all duration-300 cursor-pointer space-y-4 hover:scale-[1.01]"
                   >
-                    <div>
-                      <h4 className="font-serif font-bold text-white text-sm">{c.title}</h4>
-                      <p className="text-slate-400 font-mono mt-0.5">
-                        Fecha: {c.date} a las {c.startTime || '12:00'} {person ? `• Con: ${person.name}` : ''}
-                      </p>
+                    <div className="flex items-center gap-3.5">
+                      {p.photoUrl ? (
+                        <img
+                          src={p.photoUrl}
+                          alt={p.name}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-400/50 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 border-2 border-purple-400/50 flex items-center justify-center text-white font-serif font-bold text-xl shrink-0">
+                          {initials}
+                        </div>
+                      )}
+
+                      <div className="overflow-hidden">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-serif font-bold text-white text-base truncate">{p.name}</h4>
+                          {p.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />}
+                        </div>
+                        <p className="text-xs text-purple-300 font-medium truncate">{p.relationship || p.category}</p>
+                        {p.city && <p className="text-[10px] text-slate-400 truncate">{p.city}</p>}
+                      </div>
                     </div>
 
-                    <button
-                      onClick={() => SocialStore.deleteCommitment(c.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-300">
+                      <span>Nivel: <strong className="text-white">{p.importanceLevel}</strong></span>
+                      <span className="font-mono text-slate-400">
+                        {lastInt ? `Últ. contacto: ${lastInt.daysAgo === 0 ? 'Hoy' : `${lastInt.daysAgo}d`}` : 'Sin interacciones'}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
@@ -736,7 +486,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
         </div>
       )}
 
-      {/* PERSON PROFILE MODAL / EXPEDIENTE */}
+      {/* MODALS */}
       {selectedPerson && (
         <PersonProfileModal
           person={selectedPerson}
@@ -744,144 +494,19 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
           onClose={() => setSelectedPerson(null)}
         />
       )}
-    </div>
-  );
-};
 
-// LIQUID GLASS PERSON CARD COMPONENT
-const PersonLiquidGlassCard: React.FC<{
-  person: SocialPerson;
-  data: SocialOfficeData;
-  todayStr: string;
-  onClick: () => void;
-}> = ({ person, data, todayStr, onClick }) => {
-  const lastInt = SocialCalculations.getLastInteraction(person.id, data.interactions || []);
-  const pendingCommitment = (data.commitments || []).find(c => c.peopleIds.includes(person.id) && c.date >= todayStr);
+      <CreatePlanModal
+        data={data}
+        isOpen={isCreatePlanOpen}
+        onClose={() => setIsCreatePlanOpen(false)}
+        defaultDate={createPlanDefaultDate}
+      />
 
-  // Next Birthday countdown
-  let bdayInfo: { daysLeft: number; isToday: boolean } | null = null;
-  if (person.birthday) {
-    bdayInfo = SocialCalculations.getDaysUntilNextOccurrence(person.birthday, todayStr);
-  }
+      <CreatePersonModal
+        isOpen={isCreatePersonOpen}
+        onClose={() => setIsCreatePersonOpen(false)}
+      />
 
-  // Visual status indicators
-  const isHighImportance = person.importanceLevel === 'Muy importante';
-  const isUncontacted = lastInt && lastInt.daysAgo >= 30;
-
-  // Initials
-  const initials = person.name
-    ? person.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-    : 'P';
-
-  return (
-    <div
-      onClick={onClick}
-      className={`relative p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] hover:shadow-xl backdrop-blur-xl bg-gradient-to-br from-[#132337]/90 via-[#0c1929]/80 to-[#132337]/90 ${
-        person.isFavorite
-          ? 'border-amber-500/50 hover:border-amber-400'
-          : 'border-white/15 hover:border-purple-400/60'
-      }`}
-    >
-      {/* GLASS REFLECTION SHIMMER */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-
-      <div className="relative z-10 space-y-3">
-        {/* CARD HEADER */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {person.photoUrl ? (
-              <img
-                src={person.photoUrl}
-                alt={person.name}
-                className="w-12 h-12 rounded-xl object-cover border-2 border-purple-400 shadow"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-800 border-2 border-purple-400 flex items-center justify-center font-serif font-bold text-lg text-white shadow">
-                {initials}
-              </div>
-            )}
-
-            <div>
-              <h4 className="font-serif font-bold text-white text-base group-hover:text-purple-300 transition-colors flex items-center gap-1.5">
-                {person.name}
-                {person.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 inline" />}
-              </h4>
-              <p className="text-xs text-purple-300 font-semibold">{person.relationship || person.category}</p>
-            </div>
-          </div>
-
-          <ExecutiveBadge variant="subtle" accentColor={isHighImportance ? 'rose' : 'purple'}>
-            {person.importanceLevel}
-          </ExecutiveBadge>
-        </div>
-
-        {/* METRICS & INDICATORS */}
-        <div className="pt-1 border-t border-white/10 text-xs space-y-1.5">
-          {/* Last Interaction */}
-          <div className="flex justify-between items-center text-slate-300">
-            <span className="text-[11px] text-slate-400">Último contacto:</span>
-            <span className={`font-mono text-[11px] font-bold ${isUncontacted ? 'text-rose-400' : 'text-slate-200'}`}>
-              {lastInt ? (lastInt.daysAgo === 0 ? 'Hoy' : `hace ${lastInt.daysAgo} días`) : 'Sin registro'}
-            </span>
-          </div>
-
-          {/* Birthday countdown if exists */}
-          {bdayInfo && (
-            <div className="flex justify-between items-center text-slate-300">
-              <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                <Cake className="w-3 h-3 text-amber-400" /> Cumpleaños:
-              </span>
-              <span className="text-amber-300 font-bold font-mono text-[11px]">
-                {bdayInfo.isToday ? '¡Hoy! 🎉' : `En ${bdayInfo.daysLeft} días`}
-              </span>
-            </div>
-          )}
-
-          {/* Next Commitment if exists */}
-          {pendingCommitment && (
-            <div className="flex justify-between items-center text-slate-300">
-              <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-blue-400" /> Compromiso:
-              </span>
-              <span className="text-blue-300 font-bold text-[11px] truncate max-w-[130px]">
-                {pendingCommitment.title} ({pendingCommitment.date})
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* VISUAL STATUS BADGES */}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {bdayInfo && bdayInfo.daysLeft <= 14 && (
-            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
-              🎂 Cumpleaños Próximo
-            </span>
-          )}
-          {pendingCommitment && (
-            <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1">
-              📅 Compromiso Pendiente
-            </span>
-          )}
-          {isUncontacted && (
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold flex items-center gap-1">
-              💬 Sin contacto reciente
-            </span>
-          )}
-          {isHighImportance && (
-            <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold flex items-center gap-1">
-              ⭐ Alta Importancia
-            </span>
-          )}
-        </div>
-
-        {/* CLICK TO VIEW EXPEDIENTE CTA */}
-        <div className="pt-2 text-right">
-          <span className="text-[11px] text-purple-300 font-semibold group-hover:underline">
-            Abrir Expediente Personal →
-          </span>
-        </div>
-      </div>
     </div>
   );
 };

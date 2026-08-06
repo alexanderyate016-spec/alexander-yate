@@ -1,6 +1,6 @@
 import React from 'react';
 import { MasterState } from '../../types/store';
-import { OvalOfficeCalculations, UnifiedNotification } from './OvalOfficeCalculations';
+import { OvalOfficeCalculations, ExecutiveNotice } from './OvalOfficeCalculations';
 import { Brain, AlertTriangle, AlertCircle, Info, ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface Props {
@@ -24,7 +24,7 @@ export const CentroInteligenciaEjecutiva: React.FC<Props> = ({
     return (priorityOrder[a.type] || 5) - (priorityOrder[b.type] || 5);
   });
 
-  const getPriorityBadge = (type: UnifiedNotification['type']) => {
+  const getPriorityBadge = (type: ExecutiveNotice['type'] | string) => {
     switch (type) {
       case 'urgent':
         return (
@@ -123,9 +123,9 @@ export const CentroInteligenciaEjecutiva: React.FC<Props> = ({
                 </p>
               </div>
 
-              {notif.actionOffice && (
+              {notif.sourceOffice && (
                 <button
-                  onClick={() => onNavigateToOffice(notif.actionOffice!)}
+                  onClick={() => onNavigateToOffice(notif.sourceOffice)}
                   className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-400/40 text-purple-200 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 active:scale-95 self-end sm:self-center"
                 >
                   <span>Ver en Oficina</span>
