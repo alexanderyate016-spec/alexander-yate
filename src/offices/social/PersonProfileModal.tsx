@@ -129,7 +129,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
       <div className="w-full max-w-4xl bg-[#09111e] border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* DOSSIER HEADER */}
-        <div className="p-5 sm:p-7 bg-gradient-to-r from-purple-950/80 via-[#101d30] to-[#09111e] border-b border-white/10 flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 shrink-0">
+        <div className="p-5 sm:p-7 bg-gradient-to-r from-purple-950/80 via-[#101d30] to-[#09111e] border-b border-slate-200 flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 shrink-0">
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
               {person.photoUrl ? (
@@ -140,7 +140,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-800 border-2 border-purple-400 flex items-center justify-center text-white font-serif font-bold text-3xl shadow-xl">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-800 border-2 border-purple-400 flex items-center justify-center text-slate-900 font-serif font-bold text-3xl shadow-xl">
                   {initials}
                 </div>
               )}
@@ -153,7 +153,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">{person.name}</h2>
+                <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900">{person.name}</h2>
                 {person.nickname && (
                   <span className="text-sm font-semibold text-purple-300 italic">"{person.nickname}"</span>
                 )}
@@ -163,17 +163,17 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                   className={`p-1.5 rounded-lg border transition-all ${
                     person.isFavorite
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-amber-300'
+                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-amber-300'
                   }`}
                 >
                   <Star className={`w-4 h-4 ${person.isFavorite ? 'fill-amber-300' : ''}`} />
                 </button>
               </div>
 
-              <p className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-slate-700 flex items-center gap-2 mt-0.5">
                 <span className="text-purple-300 font-semibold">{person.relationship || person.category}</span>
                 <span>•</span>
-                <span className="text-slate-400">{person.city || person.category}</span>
+                <span className="text-slate-500">{person.city || person.category}</span>
               </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -181,7 +181,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                   {person.importanceLevel}
                 </span>
                 {lastInteraction && (
-                  <span className="text-[11px] text-slate-400 font-mono">
+                  <span className="text-[11px] text-slate-500 font-mono">
                     Última interacción: {lastInteraction.daysAgo === 0 ? 'Hoy' : `hace ${lastInteraction.daysAgo} días`}
                   </span>
                 )}
@@ -205,7 +205,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
 
             <button
               onClick={onClose}
-              className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl transition-colors"
+              className="p-2 bg-slate-50 hover:bg-white/10 text-slate-700 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -213,13 +213,13 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
         </div>
 
         {/* TABS */}
-        <div className="flex border-b border-white/10 bg-[#060c16] px-4 overflow-x-auto shrink-0">
+        <div className="flex border-b border-slate-200 bg-[#060c16] px-4 overflow-x-auto shrink-0">
           <button
             onClick={() => setActiveTab('info')}
             className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'info'
                 ? 'border-purple-400 text-purple-300 bg-purple-500/10'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
             <User className="w-4 h-4" />
@@ -231,7 +231,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
             className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'dates'
                 ? 'border-purple-400 text-purple-300 bg-purple-500/10'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
             <Calendar className="w-4 h-4" />
@@ -243,7 +243,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
             className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'timeline'
                 ? 'border-purple-400 text-purple-300 bg-purple-500/10'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
             <Clock className="w-4 h-4" />
@@ -255,7 +255,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
             className={`px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'ideas'
                 ? 'border-purple-400 text-purple-300 bg-purple-500/10'
-                : 'border-transparent text-slate-400 hover:text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
             <Gift className="w-4 h-4" />
@@ -264,51 +264,51 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
         </div>
 
         {/* TAB CONTENTS */}
-        <div className="p-5 sm:p-7 overflow-y-auto space-y-6 flex-1 text-white">
+        <div className="p-5 sm:p-7 overflow-y-auto space-y-6 flex-1 text-slate-900">
           
           {/* TAB 1: INFORMACIÓN GENERAL */}
           {activeTab === 'info' && (
             <form onSubmit={handleSaveGeneralInfo} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Nombre Completo *</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Completo *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     required
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Apodo (Opcional)</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Apodo (Opcional)</label>
                   <input
                     type="text"
                     value={nickname}
                     onChange={e => setNickname(e.target.value)}
                     placeholder="Ej: Lau, Juancho"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Relación Conmigo</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Relación Conmigo</label>
                   <input
                     type="text"
                     value={relationship}
                     onChange={e => setRelationship(e.target.value)}
                     placeholder="Ej: Mamá, Amigo de universidad"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Categoría</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Categoría</label>
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as any)}
-                    className="w-full bg-[#101d30] border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   >
                     <option value="Familia">Familia</option>
                     <option value="Amigos">Amigos</option>
@@ -320,87 +320,87 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Fotografía (URL)</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Fotografía (URL)</label>
                   <input
                     type="url"
                     value={photoUrl}
                     onChange={e => setPhotoUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Teléfono</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     placeholder="+57 300 000 0000"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Correo Electrónico</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Correo Electrónico</label>
                   <input
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="correo@ejemplo.com"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Ciudad</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Ciudad</label>
                   <input
                     type="text"
                     value={city}
                     onChange={e => setCity(e.target.value)}
                     placeholder="Ej. Bogotá, Medellín"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Profesión</label>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">Profesión</label>
                   <input
                     type="text"
                     value={profession}
                     onChange={e => setProfession(e.target.value)}
                     placeholder="Ej. Diseñadora, Médico"
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">¿Cómo nos conocimos?</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">¿Cómo nos conocimos?</label>
                 <input
                   type="text"
                   value={howWeMet}
                   onChange={e => setHowWeMet(e.target.value)}
                   placeholder="Ej. En la universidad durante el primer semestre de ingeniería..."
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Notas Generales</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Notas Generales</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Notas adicionales..."
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none resize-none"
                 />
               </div>
 
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-slate-900 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Guardar Información</span>
@@ -413,7 +413,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
           {activeTab === 'dates' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-white/5 border border-purple-500/30 rounded-2xl space-y-2">
+                <div className="p-4 bg-slate-50 border border-purple-500/30 rounded-2xl space-y-2">
                   <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
                     <Cake className="w-4 h-4" /> Cumpleaños
                   </div>
@@ -421,8 +421,8 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     const { daysLeft, isToday, nextDateStr } = SocialCalculations.getDaysUntilNextOccurrence(person.birthday, todayStr);
                     return (
                       <div>
-                        <p className="text-white font-serif font-bold text-base">{person.birthday}</p>
-                        <p className="text-xs text-slate-300 mt-1">
+                        <p className="text-slate-900 font-serif font-bold text-base">{person.birthday}</p>
+                        <p className="text-xs text-slate-700 mt-1">
                           {isToday ? (
                             <strong className="text-amber-300 font-bold">🎉 ¡Es hoy! 🎉</strong>
                           ) : (
@@ -432,11 +432,11 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                       </div>
                     );
                   })() : (
-                    <p className="text-xs text-slate-400">Sin fecha registrada.</p>
+                    <p className="text-xs text-slate-500">Sin fecha registrada.</p>
                   )}
                 </div>
 
-                <div className="p-4 bg-white/5 border border-purple-500/30 rounded-2xl space-y-2">
+                <div className="p-4 bg-slate-50 border border-purple-500/30 rounded-2xl space-y-2">
                   <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
                     <Heart className="w-4 h-4" /> Aniversario
                   </div>
@@ -444,8 +444,8 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     const { daysLeft, isToday, nextDateStr } = SocialCalculations.getDaysUntilNextOccurrence(person.anniversaryDate, todayStr);
                     return (
                       <div>
-                        <p className="text-white font-serif font-bold text-base">{person.anniversaryDate}</p>
-                        <p className="text-xs text-slate-300 mt-1">
+                        <p className="text-slate-900 font-serif font-bold text-base">{person.anniversaryDate}</p>
+                        <p className="text-xs text-slate-700 mt-1">
                           {isToday ? (
                             <strong className="text-rose-300 font-bold">❤️ ¡Es hoy el aniversario! ❤️</strong>
                           ) : (
@@ -455,14 +455,14 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                       </div>
                     );
                   })() : (
-                    <p className="text-xs text-slate-400">Sin fecha de aniversario registrada.</p>
+                    <p className="text-xs text-slate-500">Sin fecha de aniversario registrada.</p>
                   )}
                 </div>
               </div>
 
               {/* CUSTOM DATES */}
               <div className="space-y-4 pt-2">
-                <h4 className="font-serif font-bold text-white text-sm">Otras Fechas Importantes (Graduación, Boda, etc.)</h4>
+                <h4 className="font-serif font-bold text-slate-900 text-sm">Otras Fechas Importantes (Graduación, Boda, etc.)</h4>
 
                 <form onSubmit={handleAddCustomDate} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                   <input
@@ -471,18 +471,18 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     onChange={e => setCDateTitle(e.target.value)}
                     placeholder="Título (ej. Grado, Boda)"
                     required
-                    className="bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
                   <input
                     type="date"
                     value={cDateVal}
                     onChange={e => setCDateVal(e.target.value)}
                     required
-                    className="bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-slate-900 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Agregar Fecha</span>
@@ -494,16 +494,16 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     {person.customDates.map(cd => {
                       const { daysLeft, isToday, nextDateStr } = SocialCalculations.getDaysUntilNextOccurrence(cd.date, todayStr);
                       return (
-                        <div key={cd.id} className="p-3 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center text-xs">
+                        <div key={cd.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs">
                           <div>
-                            <span className="font-bold text-white block">{cd.title}</span>
+                            <span className="font-bold text-slate-900 block">{cd.title}</span>
                             <span className="text-purple-300 font-mono">
                               {cd.date} • {isToday ? '¡Es hoy!' : `Faltan ${daysLeft} días (${nextDateStr})`}
                             </span>
                           </div>
                           <button
                             onClick={() => SocialStore.deleteCustomDate(person.id, cd.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400"
+                            className="p-1.5 text-slate-500 hover:text-rose-400"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -512,7 +512,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400">No hay fechas personalizadas guardadas.</p>
+                  <p className="text-xs text-slate-500">No hay fechas personalizadas guardadas.</p>
                 )}
               </div>
             </div>
@@ -523,20 +523,20 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
             <div className="space-y-5">
               
               {/* ADD INTERACTION QUICK FORM */}
-              <form onSubmit={handleAddInteraction} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                <h4 className="font-serif font-bold text-white text-xs uppercase tracking-wider">Registrar Nueva Experiencia o Encuentro</h4>
+              <form onSubmit={handleAddInteraction} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <h4 className="font-serif font-bold text-slate-900 text-xs uppercase tracking-wider">Registrar Nueva Experiencia o Encuentro</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <input
                     type="date"
                     value={intDate}
                     onChange={e => setIntDate(e.target.value)}
                     required
-                    className="bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1.5 text-xs text-white font-mono"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono"
                   />
                   <select
                     value={intType}
                     onChange={e => setIntType(e.target.value as any)}
-                    className="bg-[#0e1828] border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1.5 text-xs text-white"
+                    className="bg-[#0e1828] border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1.5 text-xs text-slate-900"
                   >
                     <option value="Salida">☕ Salida / Café</option>
                     <option value="Reunión">🤝 Reunión / Visita</option>
@@ -551,13 +551,13 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     onChange={e => setIntDesc(e.target.value)}
                     placeholder="Descripción / ¿Qué compartieron? *"
                     required
-                    className="bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1.5 text-xs text-white"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1.5 text-xs text-slate-900"
                   />
                 </div>
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5"
+                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-slate-900 font-bold text-xs rounded-xl flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Guardar en Historial</span>
@@ -568,18 +568,18 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
               {/* TIMELINE ITEMS */}
               <div className="space-y-3">
                 {timeline.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-6 text-center">Sin interacciones ni eventos registrados en el historial.</p>
+                  <p className="text-xs text-slate-500 py-6 text-center">Sin interacciones ni eventos registrados en el historial.</p>
                 ) : (
                   <div className="relative border-l-2 border-purple-500/30 pl-4 space-y-3.5 ml-2">
                     {timeline.map(ev => (
                       <div key={ev.id} className="relative">
                         <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-purple-400 border-2 border-slate-950" />
-                        <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl space-y-1">
+                        <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-1">
                           <div className="flex justify-between items-center">
-                            <span className="font-serif font-bold text-white text-xs">{ev.title}</span>
+                            <span className="font-serif font-bold text-slate-900 text-xs">{ev.title}</span>
                             <span className="text-[10px] text-purple-300 font-mono">{ev.date}</span>
                           </div>
-                          {ev.description && <p className="text-xs text-slate-300">{ev.description}</p>}
+                          {ev.description && <p className="text-xs text-slate-700">{ev.description}</p>}
                         </div>
                       </div>
                     ))}
@@ -592,7 +592,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
           {/* TAB 4: IDEAS & GUSTOS */}
           {activeTab === 'ideas' && (
             <form onSubmit={handleSaveIdeas} className="space-y-4">
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-700">
                 Registra la información clave que te ayude a cultivar la relación: gustos, comida preferida, hobbies e ideas de regalo.
               </p>
 
@@ -606,7 +606,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     value={likes}
                     onChange={e => setLikes(e.target.value)}
                     placeholder="Ej. Le encanta el café de especialidad, la música en vinilo..."
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl p-3 text-xs text-white focus:outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl p-3 text-xs text-slate-900 focus:outline-none resize-none"
                   />
                 </div>
 
@@ -619,7 +619,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     value={hobbies}
                     onChange={e => setHobbies(e.target.value)}
                     placeholder="Ej. Ciclismo de montaña, lectura de novela histórica..."
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl p-3 text-xs text-white focus:outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl p-3 text-xs text-slate-900 focus:outline-none resize-none"
                   />
                 </div>
 
@@ -632,7 +632,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     value={favoriteFood}
                     onChange={e => setFavoriteFood(e.target.value)}
                     placeholder="Ej. Comida italiana, sushi, café sin azúcar..."
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl p-3 text-xs text-white focus:outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl p-3 text-xs text-slate-900 focus:outline-none resize-none"
                   />
                 </div>
 
@@ -645,7 +645,7 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                     value={giftIdeas}
                     onChange={e => setGiftIdeas(e.target.value)}
                     placeholder="Ej. Libro específico, café en grano, boletas para concierto..."
-                    className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl p-3 text-xs text-white focus:outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl p-3 text-xs text-slate-900 focus:outline-none resize-none"
                   />
                 </div>
               </div>
@@ -659,14 +659,14 @@ export const PersonProfileModal: React.FC<Props> = ({ person, data, onClose }) =
                   value={usefulInfo}
                   onChange={e => setUsefulInfo(e.target.value)}
                   placeholder="Detalles útiles a recordar antes de encontrarse..."
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl p-3 text-xs text-white focus:outline-none resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl p-3 text-xs text-slate-900 focus:outline-none resize-none"
                 />
               </div>
 
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-slate-900 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Guardar Ideas y Gustos</span>

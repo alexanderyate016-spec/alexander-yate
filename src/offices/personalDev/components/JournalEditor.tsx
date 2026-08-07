@@ -136,12 +136,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   }, [selectedDate]);
 
   return (
-    <div className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
+    <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
       {/* Top Glass Highlight */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
 
       {/* Editor Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300 shrink-0">
             <Feather className="w-5 h-5 stroke-[1.75]" />
@@ -150,7 +150,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400 block">
               Cuaderno Personal de Reflexión
             </span>
-            <h2 className="text-lg sm:text-xl font-sans font-semibold text-white capitalize tracking-tight">
+            <h2 className="text-lg sm:text-xl font-sans font-semibold text-slate-900 capitalize tracking-tight">
               {dateFormatted}
             </h2>
           </div>
@@ -183,8 +183,8 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         {/* 1. PALABRA DEL DÍA & ESTADO DE ÁNIMO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* PALABRA DEL DÍA */}
-          <div className="space-y-2.5 bg-[#0B1528]/60 p-4 rounded-xl border border-white/10">
-            <label className="block text-xs font-medium text-slate-300">
+          <div className="space-y-2.5 bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+            <label className="block text-xs font-medium text-slate-700">
               Palabra del Día <span className="text-indigo-400 font-normal">(Resumen Emocional)</span>
             </label>
             <input
@@ -193,7 +193,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setWordOfTheDay(e.target.value)}
               placeholder="Ej. Constancia, Gratitud, Esperanza..."
               maxLength={30}
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400/80 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans font-semibold tracking-wide"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600/80 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans font-semibold tracking-wide"
             />
             {/* Quick Word Pills */}
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -205,7 +205,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                   className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all ${
                     wordOfTheDay === word
                       ? 'bg-indigo-500/30 border-indigo-400 text-indigo-200 font-medium'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   {word}
@@ -215,8 +215,8 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           </div>
 
           {/* ESTADO DE ÁNIMO */}
-          <div className="space-y-2.5 bg-[#0B1528]/60 p-4 rounded-xl border border-white/10">
-            <label className="block text-xs font-medium text-slate-300">
+          <div className="space-y-2.5 bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+            <label className="block text-xs font-medium text-slate-700">
               Estado de Ánimo del Día
             </label>
             <div className="grid grid-cols-5 gap-1.5 pt-1">
@@ -230,7 +230,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
                       isSelected
                         ? m.activeClass + ' shadow-md font-semibold'
-                        : 'bg-[#070D18] border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-200'
                     }`}
                   >
                     <span className="text-lg leading-none mb-1">{m.icon}</span>
@@ -256,7 +256,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             </span>
           </div>
 
-          <p className="text-sm sm:text-base font-serif italic text-white leading-relaxed pl-1">
+          <p className="text-sm sm:text-base font-serif italic text-slate-900 leading-relaxed pl-1">
             "{questionInfo.question}"
           </p>
 
@@ -266,7 +266,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setPhilosophicalAnswer(e.target.value)}
               rows={3}
               placeholder="Escribe tu respuesta honesta y profunda a la pregunta de hoy..."
-              className="w-full bg-[#070D18]/90 border border-indigo-500/30 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400/80 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
+              className="w-full bg-slate-50/90 border border-indigo-500/30 rounded-xl p-3.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600/80 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
             />
           </div>
         </div>
@@ -275,7 +275,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Lo mejor que ocurrió hoy */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Sun className="w-3.5 h-3.5 text-amber-400" />
               ¿Qué fue lo mejor que ocurrió hoy?
             </label>
@@ -284,13 +284,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setBestThingToday(e.target.value)}
               rows={2}
               placeholder="Momentos positivos, aciertos, alegrías..."
-              className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
+              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
             />
           </div>
 
           {/* Aprendizaje del día */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Lightbulb className="w-3.5 h-3.5 text-blue-400" />
               ¿Qué aprendí hoy?
             </label>
@@ -299,13 +299,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setLearnedToday(e.target.value)}
               rows={2}
               placeholder="Nuevas lecciones, descubrimientos..."
-              className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
+              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
             />
           </div>
 
           {/* Por mejorar */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5 text-emerald-400" />
               ¿Qué debo mejorar?
             </label>
@@ -314,13 +314,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setImproveTomorrow(e.target.value)}
               rows={2}
               placeholder="Actitudes, acciones o enfoques a pulir..."
-              className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
+              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
             />
           </div>
 
           {/* Decisión importante */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-purple-400" />
               ¿Qué decisión importante tomé?
             </label>
@@ -329,14 +329,14 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               onChange={e => setImportantDecision(e.target.value)}
               rows={2}
               placeholder="Resoluciones, elecciones clave..."
-              className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
+              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
             />
           </div>
         </div>
 
         {/* Gratitud */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+          <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
             <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
             ¿Qué agradezco hoy?
           </label>
@@ -345,13 +345,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             value={gratefulFor}
             onChange={e => setGratefulFor(e.target.value)}
             placeholder="Personas, salud, oportunidades, detalles sencillos..."
-            className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
+            className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans"
           />
         </div>
 
         {/* Reflexión Libre */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+          <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
             <Feather className="w-3.5 h-3.5 text-indigo-400" />
             Reflexión Libre
           </label>
@@ -360,12 +360,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             onChange={e => setFreeReflection(e.target.value)}
             rows={5}
             placeholder="Escribe libremente sobre tus pensamientos, sentimientos o reflexiones del día sin restricciones..."
-            className="w-full bg-[#0B1528]/80 border border-white/15 rounded-xl p-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
+            className="w-full bg-slate-50/80 border border-slate-200 rounded-xl p-4 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
           />
         </div>
 
         {/* Action Bottom */}
-        <div className="flex justify-end pt-2 border-t border-white/10">
+        <div className="flex justify-end pt-2 border-t border-slate-200">
           <ExecutiveButton
             type="submit"
             variant="primary"

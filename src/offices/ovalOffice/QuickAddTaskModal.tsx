@@ -42,105 +42,114 @@ export const QuickAddTaskModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#0A192F] text-white border-2 border-[#C5A059] max-w-md w-full p-6 shadow-2xl space-y-4 rounded-sm">
+    <div className="fixed inset-0 z-50 bg-white backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white text-slate-900 border border-slate-200 max-w-md w-full p-6 shadow-xl space-y-4 rounded-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* HEADER */}
-        <div className="flex justify-between items-center border-b border-[#C5A059]/40 pb-3">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-[#C5A059]" />
-            <h3 className="font-serif font-bold text-base text-white">
-              Nueva Tarea / Pendiente Ejecutivo
+            <span className="text-xl">📅</span>
+            <h3 className="font-bold text-base text-slate-900">
+              Nueva Tarea / Pendiente
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-sans">
-          <div className="space-y-1">
-            <label className="text-white/80 font-bold block">Nombre de la Tarea / Pendiente</label>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Nombre de la tarea *
+            </label>
             <input
               type="text"
+              required
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Ej. Revisar informe presupuestal..."
-              className="w-full p-2.5 bg-[#162A45] border border-[#D1C7B7]/40 text-white focus:border-[#C5A059] focus:outline-none"
-              required
+              className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 focus:bg-white rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none transition-all"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-white/80 font-bold block">Descripción / Detalles (Opcional)</label>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Descripción opcional
+            </label>
             <textarea
+              rows={2}
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Contexto adicional o instrucciones..."
-              className="w-full p-2.5 bg-[#162A45] border border-[#D1C7B7]/40 text-white focus:border-[#C5A059] focus:outline-none h-16"
+              placeholder="Detalles adicionales..."
+              className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 focus:bg-white rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none transition-all resize-none"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-white/80 font-bold block">Prioridad</label>
-            <select
-              value={priority}
-              onChange={e => setPriority(e.target.value as any)}
-              className="w-full p-2.5 bg-[#162A45] border border-[#D1C7B7]/40 text-white focus:border-[#C5A059] focus:outline-none"
-            >
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta (Urgente)</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Prioridad
+              </label>
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value as any)}
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-2 text-slate-900 focus:outline-none"
+              >
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col justify-center">
+              <label className="flex items-center gap-2 cursor-pointer pt-4">
+                <input
+                  type="checkbox"
+                  checked={hasTime}
+                  onChange={e => setHasTime(e.target.checked)}
+                  className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4"
+                />
+                <span className="font-semibold text-slate-700">Asignar hora</span>
+              </label>
+            </div>
           </div>
 
-          <div className="p-3 bg-[#162A45] border border-[#D1C7B7]/20 space-y-2">
-            <label className="flex items-center gap-2 font-bold cursor-pointer text-amber-200">
-              <input
-                type="checkbox"
-                checked={hasTime}
-                onChange={e => setHasTime(e.target.checked)}
-                className="accent-[#C5A059]"
-              />
-              Assignar Horario Fijo (Irá directamente al Horario Ejecutivo)
-            </label>
-
-            {hasTime && (
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#D1C7B7]/10">
-                <div>
-                  <label className="text-white/70 block mb-1">Hora Inicio</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                    className="w-full p-2 bg-[#0A192F] border border-[#D1C7B7]/30 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-white/70 block mb-1">Hora Fin</label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={e => setEndTime(e.target.value)}
-                    className="w-full p-2 bg-[#0A192F] border border-[#D1C7B7]/30 text-white font-mono"
-                  />
-                </div>
+          {hasTime && (
+            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Hora Inicio</label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={e => setStartTime(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900"
+                />
               </div>
-            )}
-          </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Hora Fin</label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={e => setEndTime(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900"
+                />
+              </div>
+            </div>
+          )}
 
-          <div className="pt-2 border-t border-[#C5A059]/40 flex justify-end gap-2">
+          <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-transparent hover:bg-white/10 text-white/80 border border-white/20 uppercase font-bold tracking-wider"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#C5A059] hover:bg-[#D4AF37] text-[#0A192F] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm"
+              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold flex items-center gap-1.5 shadow-xs"
             >
-              <Check className="w-4 h-4" /> Guardar
+              <Plus className="w-4 h-4" /> Guardar Tarea
             </button>
           </div>
         </form>

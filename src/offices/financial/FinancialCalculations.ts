@@ -417,7 +417,7 @@ export const FinancialCalculations = {
         emoji: '⚠',
         message: 'Presupuesto agotado.',
         badgeColor: 'amber' as const,
-        alertClass: 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+        alertClass: 'bg-amber-50 text-amber-800 border-amber-200'
       };
     } else if (percent >= 95) {
       return {
@@ -433,7 +433,7 @@ export const FinancialCalculations = {
         emoji: '🟡',
         message: 'Estás cerca del límite de esta categoría.',
         badgeColor: 'amber' as const,
-        alertClass: 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+        alertClass: 'bg-amber-50 text-amber-800 border-amber-200'
       };
     }
     return {
@@ -441,7 +441,7 @@ export const FinancialCalculations = {
       emoji: '🟢',
       message: 'Presupuesto dentro del límite.',
       badgeColor: 'emerald' as const,
-      alertClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+      alertClass: 'bg-emerald-500/10 text-emerald-800 border-emerald-200'
     };
   }
 };

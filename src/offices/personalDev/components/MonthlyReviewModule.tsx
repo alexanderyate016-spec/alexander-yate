@@ -113,12 +113,12 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Month Navigation */}
-      <div className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400 block">
             Módulo de Síntesis
           </span>
-          <h3 className="font-sans font-semibold text-white text-lg tracking-tight flex items-center gap-2">
+          <h3 className="font-sans font-semibold text-slate-900 text-lg tracking-tight flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-indigo-400 stroke-[1.75]" />
             Revisión Mensual de Crecimiento ({MONTH_NAMES[month - 1]} {year})
           </h3>
@@ -128,24 +128,24 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
         <div className="flex items-center gap-2 self-end md:self-auto">
           <button
             onClick={() => setSelectedYM(currentYM)}
-            className="px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs transition-all"
+            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-900 text-xs transition-all"
           >
             Mes Actual
           </button>
-          <div className="flex items-center bg-[#0B1528] rounded-xl border border-white/10 p-0.5">
+          <div className="flex items-center bg-slate-50 rounded-xl border border-slate-200 p-0.5">
             <button
               onClick={handlePrevMonth}
-              className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               title="Mes Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-3 text-xs font-semibold text-white font-mono">
+            <span className="px-3 text-xs font-semibold text-slate-900 font-mono">
               {selectedYM}
             </span>
             <button
               onClick={handleNextMonth}
-              className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               title="Mes Siguiente"
             >
               <ChevronRight className="w-4 h-4" />
@@ -191,7 +191,7 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
 
       {/* Summary Words of the Month */}
       {monthStats.wordsList.length > 0 && (
-        <div className="bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl space-y-2">
+        <div className="bg-white/70 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl space-y-2">
           <label className="text-xs font-semibold uppercase tracking-wider text-indigo-300 block">
             Palabras Clave del Mes ({MONTH_NAMES[month - 1]})
           </label>
@@ -209,8 +209,8 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
       )}
 
       {/* Manual Monthly Reflection Form */}
-      <form onSubmit={handleSaveReview} className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6">
-        <h4 className="font-sans font-semibold text-white text-base tracking-tight flex items-center gap-2 border-b border-white/10 pb-4">
+      <form onSubmit={handleSaveReview} className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-6">
+        <h4 className="font-sans font-semibold text-slate-900 text-base tracking-tight flex items-center gap-2 border-b border-slate-200 pb-4">
           <FileText className="w-5 h-5 text-indigo-400" />
           Síntesis & Reflexión Mensual
         </h4>
@@ -218,7 +218,7 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
         <div className="space-y-4">
           {/* Mayor Aprendizaje */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-indigo-400" />
               Mayor Aprendizaje del Mes
             </label>
@@ -227,13 +227,13 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
               onChange={e => setBiggestLearning(e.target.value)}
               rows={3}
               placeholder={`¿Cuál fue la enseñanza más profunda que te dejó ${MONTH_NAMES[month - 1]}?`}
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
             />
           </div>
 
           {/* Mayor Reto */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5 text-rose-400" />
               Mayor Reto Enfrentado
             </label>
@@ -242,13 +242,13 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
               onChange={e => setBiggestChallenge(e.target.value)}
               rows={3}
               placeholder="¿Qué dificultad o prueba de carácter exigió mayor fortaleza este mes?"
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
             />
           </div>
 
           {/* Objetivo Próximo Mes */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+            <label className="text-xs font-medium text-slate-700 flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-emerald-400" />
               Objetivo Principal para el Próximo Mes
             </label>
@@ -257,12 +257,12 @@ export const MonthlyReviewModule: React.FC<MonthlyReviewModuleProps> = ({
               onChange={e => setNextMonthGoal(e.target.value)}
               rows={2}
               placeholder="¿En qué hábito, virtud o meta enfocarás tu energía el mes que entra?"
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all font-sans leading-relaxed"
             />
           </div>
         </div>
 
-        <div className="flex justify-end pt-2 border-t border-white/10">
+        <div className="flex justify-end pt-2 border-t border-slate-200">
           <ExecutiveButton
             type="submit"
             variant="primary"

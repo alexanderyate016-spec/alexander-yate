@@ -79,7 +79,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
             activeSubTab === 'exams'
               ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-              : 'border-transparent text-slate-400 hover:text-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           <FileText className="w-4 h-4" /> Exámenes Médicos ({exams.length})
@@ -90,7 +90,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${
             activeSubTab === 'conditions'
               ? 'border-purple-400 bg-purple-500/15 text-purple-300'
-              : 'border-transparent text-slate-400 hover:text-white'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           <ShieldAlert className="w-4 h-4" /> Historial de Enfermedades ({conditions.length})
@@ -138,7 +138,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   />
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Estado del Examen</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Estado del Examen</label>
                     <select
                       value={examStatus}
                       onChange={e => setExamStatus(e.target.value as any)}
@@ -189,7 +189,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   <button
                     type="button"
                     onClick={() => setShowExamForm(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
                   >
                     Cancelar
                   </button>
@@ -215,7 +215,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   <div className="flex justify-between items-start gap-2 border-b border-purple-500/20 pb-2">
                     <div>
                       <h4 className="font-serif font-bold text-white text-base">{ex.name}</h4>
-                      <span className="text-[10px] text-slate-400 font-mono">Fecha: {ex.date}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Fecha: {ex.date}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
 
                       <button
                         onClick={() => MedicalStore.deleteMedicalExam(ex.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -235,11 +235,11 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   {ex.resultSummary && (
                     <div className="p-2.5 bg-[#0D0417] rounded-xl border border-purple-500/20 space-y-1">
                       <span className="text-[10px] uppercase font-bold text-purple-300 block">Resultado:</span>
-                      <p className="text-xs text-slate-200">{ex.resultSummary}</p>
+                      <p className="text-xs text-slate-800">{ex.resultSummary}</p>
                     </div>
                   )}
 
-                  <div className="text-[11px] text-slate-400 font-mono flex flex-wrap justify-between gap-2 pt-1">
+                  <div className="text-[11px] text-slate-500 font-mono flex flex-wrap justify-between gap-2 pt-1">
                     {ex.doctor && <span>Dr: {ex.doctor}</span>}
                     {ex.location && <span>Centro: {ex.location}</span>}
                     {ex.nextControlDate && <span className="text-amber-300 font-bold">Control: {ex.nextControlDate}</span>}
@@ -292,7 +292,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   />
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Estado de la Condición</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Estado de la Condición</label>
                     <select
                       value={condStatus}
                       onChange={e => setCondStatus(e.target.value as any)}
@@ -317,7 +317,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   <button
                     type="button"
                     onClick={() => setShowConditionForm(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
                   >
                     Cancelar
                   </button>
@@ -350,7 +350,7 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
 
                       <button
                         onClick={() => MedicalStore.deleteCondition(c.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -358,13 +358,13 @@ export const ExamsAndConditionsSection: React.FC<Props> = ({ data, todayStr }) =
                   </div>
 
                   {c.diagnosedDate && (
-                    <p className="text-xs text-slate-400 font-mono">
+                    <p className="text-xs text-slate-500 font-mono">
                       Diagnóstico: <strong className="text-purple-300">{c.diagnosedDate}</strong>
                     </p>
                   )}
 
                   {c.notes && (
-                    <p className="text-xs text-slate-200 bg-[#0D0417] p-2.5 rounded-xl border border-purple-500/20">
+                    <p className="text-xs text-slate-800 bg-[#0D0417] p-2.5 rounded-xl border border-purple-500/20">
                       {c.notes}
                     </p>
                   )}

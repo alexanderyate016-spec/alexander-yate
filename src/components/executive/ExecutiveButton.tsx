@@ -10,35 +10,35 @@ export interface ExecutiveButtonProps extends React.ButtonHTMLAttributes<HTMLBut
 }
 
 const primaryBg: Record<AccentColor, string> = {
-  gold: 'bg-gradient-to-r from-[#C5A059] to-[#a8823b] text-slate-950 font-semibold hover:brightness-110 shadow-lg shadow-[#C5A059]/10',
-  blue: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:brightness-110 shadow-lg shadow-blue-500/10',
-  emerald: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold hover:brightness-110 shadow-lg shadow-emerald-500/10',
-  rose: 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-semibold hover:brightness-110 shadow-lg shadow-rose-500/10',
-  amber: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-semibold hover:brightness-110 shadow-lg shadow-amber-500/10',
-  purple: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:brightness-110 shadow-lg shadow-purple-500/10',
-  indigo: 'bg-gradient-to-r from-indigo-600 to-slate-800 text-white font-semibold hover:brightness-110 shadow-lg shadow-indigo-500/10',
+  gold: 'bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-xs',
+  blue: 'bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-xs',
+  emerald: 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs',
+  rose: 'bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-xs',
+  amber: 'bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-xs',
+  purple: 'bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-xs',
+  indigo: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs',
 };
 
 const secondaryBorder: Record<AccentColor, string> = {
-  gold: 'border-[#C5A059]/30 text-[#C5A059] hover:bg-[#C5A059]/15',
-  blue: 'border-blue-400/30 text-blue-300 hover:bg-blue-500/15',
-  emerald: 'border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/15',
-  rose: 'border-rose-400/30 text-rose-300 hover:bg-rose-500/15',
-  amber: 'border-amber-400/30 text-amber-300 hover:bg-amber-500/15',
-  purple: 'border-purple-400/30 text-purple-300 hover:bg-purple-500/15',
-  indigo: 'border-indigo-400/30 text-indigo-300 hover:bg-indigo-500/15',
+  gold: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 font-semibold',
+  blue: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 font-semibold',
+  emerald: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700 font-semibold',
+  rose: 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700 font-semibold',
+  amber: 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 font-semibold',
+  purple: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 font-semibold',
+  indigo: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold',
 };
 
 const sizes: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'px-3 py-1.5 text-xs rounded-xl gap-1.5',
-  md: 'px-4 py-2 text-xs font-medium rounded-xl gap-2',
+  md: 'px-4 py-2 text-xs font-semibold rounded-xl gap-2',
   lg: 'px-5 py-2.5 text-sm font-semibold rounded-xl gap-2.5',
 };
 
 export const ExecutiveButton: React.FC<ExecutiveButtonProps> = ({
   children,
   variant = 'primary',
-  accentColor = 'gold',
+  accentColor = 'purple',
   size = 'md',
   icon,
   iconPosition = 'left',
@@ -49,19 +49,19 @@ export const ExecutiveButton: React.FC<ExecutiveButtonProps> = ({
   let styleClasses = '';
 
   if (variant === 'primary' || variant === 'accent') {
-    styleClasses = primaryBg[accentColor];
+    styleClasses = primaryBg[accentColor] || primaryBg.purple;
   } else if (variant === 'secondary' || variant === 'outline') {
-    styleClasses = `bg-[#0B1528]/80 backdrop-blur-xl border ${secondaryBorder[accentColor]}`;
+    styleClasses = `border ${secondaryBorder[accentColor] || secondaryBorder.purple}`;
   } else if (variant === 'danger') {
-    styleClasses = 'bg-rose-950/70 hover:bg-rose-900/80 border border-rose-500/40 text-rose-200 font-semibold shadow-lg shadow-rose-950/20';
+    styleClasses = 'bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold';
   } else if (variant === 'ghost') {
-    styleClasses = 'bg-transparent hover:bg-white/10 text-slate-300 hover:text-white border border-transparent';
+    styleClasses = 'bg-transparent hover:bg-slate-100 text-slate-700 border border-transparent';
   }
 
   return (
     <button
       disabled={disabled}
-      className={`inline-flex items-center justify-center transition-all duration-200 ease-out shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${sizes[size]} ${styleClasses} ${className}`}
+      className={`inline-flex items-center justify-center transition-all duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${sizes[size]} ${styleClasses} ${className}`}
       {...props}
     >
       {icon && iconPosition === 'left' && <span className="shrink-0">{icon}</span>}

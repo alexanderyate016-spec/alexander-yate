@@ -25,10 +25,10 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
 
   if (reviewedCommitments.length === 0 && interactions.length === 0) {
     return (
-      <div className="p-8 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl text-center space-y-2">
+      <div className="p-8 rounded-3xl bg-white dark:bg-white border border-slate-200 dark:border-slate-200 backdrop-blur-2xl text-center space-y-2">
         <Sparkles className="w-8 h-8 text-purple-400 mx-auto" />
-        <h4 className="font-serif font-bold text-white text-base">Recuerdos Recientes</h4>
-        <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <h4 className="font-serif font-bold text-slate-900 text-base">Recuerdos Recientes</h4>
+        <p className="text-xs text-slate-500 max-w-md mx-auto">
           Aún no has registrado momentos guardados. Cuando termine un café, salida o celebración, podrás calificar la experiencia y guardar fotografías y notas que se transformarán en tus recuerdos.
         </p>
       </div>
@@ -40,7 +40,7 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Heart className="w-5 h-5 text-pink-400 fill-pink-400/20" />
-          <h3 className="font-serif font-bold text-lg text-white">Recuerdos Recientes</h3>
+          <h3 className="font-serif font-bold text-lg text-slate-900">Recuerdos Recientes</h3>
         </div>
         <span className="text-xs text-purple-300 font-mono">
           {reviewedCommitments.length} momentos conservados
@@ -55,12 +55,12 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
           return (
             <div
               key={c.id}
-              className="group p-4 rounded-3xl bg-gradient-to-br from-[#0e1828] to-[#121f35] border border-white/10 hover:border-purple-400/50 backdrop-blur-2xl shadow-xl transition-all duration-300 space-y-3 flex flex-col justify-between"
+              className="group p-4 rounded-3xl bg-white border border-slate-200 hover:border-purple-300 backdrop-blur-2xl shadow-xl transition-all duration-300 space-y-3 flex flex-col justify-between"
             >
               <div className="space-y-2.5">
                 {/* PHOTO IF AVAILABLE */}
                 {c.memoryPhotoUrl && (
-                  <div className="overflow-hidden rounded-2xl h-36 w-full border border-white/10">
+                  <div className="overflow-hidden rounded-2xl h-36 w-full border border-slate-200">
                     <img
                       src={c.memoryPhotoUrl}
                       alt={c.title}
@@ -74,7 +74,7 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{meta.emoji}</span>
                     <div>
-                      <h4 className="font-serif font-bold text-white text-sm line-clamp-1">{c.title}</h4>
+                      <h4 className="font-serif font-bold text-slate-900 text-sm line-clamp-1">{c.title}</h4>
                       <p className="text-[11px] text-purple-300 font-mono">{c.date}</p>
                     </div>
                   </div>
@@ -88,7 +88,7 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
                 </div>
 
                 {c.memoryNote && (
-                  <p className="text-xs text-slate-300 italic bg-black/30 p-2.5 rounded-xl border border-white/5 line-clamp-3">
+                  <p className="text-xs text-slate-700 italic bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-3">
                     "{c.memoryNote}"
                   </p>
                 )}
@@ -96,7 +96,7 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
 
               {/* FOOTER PARTICIPANT */}
               {participant && (
-                <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+                <div className="pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
                   <button
                     onClick={() => onSelectPerson(participant)}
                     className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
@@ -109,16 +109,16 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-purple-600 text-slate-900 font-bold text-[10px] flex items-center justify-center">
                         {participant.name.substring(0, 1)}
                       </div>
                     )}
-                    <span className="text-xs text-slate-300 font-medium truncate max-w-[120px]">
+                    <span className="text-xs text-slate-700 font-medium truncate max-w-[120px]">
                       {participant.name}
                     </span>
                   </button>
 
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-slate-500">
                     {c.location || participant.relationship}
                   </span>
                 </div>

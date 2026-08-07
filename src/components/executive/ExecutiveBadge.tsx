@@ -11,21 +11,21 @@ export interface ExecutiveBadgeProps {
 }
 
 const colorsSubtle: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]/15 text-[#C5A059] border-[#C5A059]/30',
-  blue: 'bg-blue-500/15 text-blue-300 border-blue-400/30',
-  emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-  rose: 'bg-rose-500/15 text-rose-300 border-rose-400/30',
-  amber: 'bg-amber-500/15 text-amber-300 border-amber-400/30',
-  purple: 'bg-purple-500/15 text-purple-300 border-purple-400/30',
-  indigo: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/30',
+  gold: 'bg-purple-50 text-purple-700 border-purple-200',
+  blue: 'bg-purple-50 text-purple-700 border-purple-200',
+  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rose: 'bg-rose-50 text-rose-700 border-rose-200',
+  amber: 'bg-amber-50 text-amber-700 border-amber-200',
+  purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 const colorsSolid: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059] text-slate-950 font-bold border-transparent',
-  blue: 'bg-blue-600 text-white font-bold border-transparent',
+  gold: 'bg-purple-600 text-white font-bold border-transparent',
+  blue: 'bg-purple-600 text-white font-bold border-transparent',
   emerald: 'bg-emerald-600 text-white font-bold border-transparent',
   rose: 'bg-rose-600 text-white font-bold border-transparent',
-  amber: 'bg-amber-500 text-slate-950 font-bold border-transparent',
+  amber: 'bg-amber-600 text-white font-bold border-transparent',
   purple: 'bg-purple-600 text-white font-bold border-transparent',
   indigo: 'bg-indigo-600 text-white font-bold border-transparent',
 };
@@ -33,17 +33,17 @@ const colorsSolid: Record<AccentColor, string> = {
 export const ExecutiveBadge: React.FC<ExecutiveBadgeProps> = ({
   children,
   variant = 'subtle',
-  accentColor = 'gold',
+  accentColor = 'purple',
   size = 'sm',
   icon,
   className = '',
 }) => {
-  const baseStyle = variant === 'solid' ? colorsSolid[accentColor] : colorsSubtle[accentColor];
+  const baseStyle = variant === 'solid' ? (colorsSolid[accentColor] || colorsSolid.purple) : (colorsSubtle[accentColor] || colorsSubtle.purple);
   const sizeStyle = size === 'sm' ? 'px-2.5 py-0.5 text-[10px]' : 'px-3 py-1 text-xs';
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-mono tracking-wide rounded-full border whitespace-nowrap ${baseStyle} ${sizeStyle} ${className}`}
+      className={`inline-flex items-center gap-1 font-mono font-semibold tracking-wide rounded-full border whitespace-nowrap ${baseStyle} ${sizeStyle} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       <span>{children}</span>

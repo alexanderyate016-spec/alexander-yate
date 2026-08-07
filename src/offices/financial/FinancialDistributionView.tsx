@@ -62,7 +62,7 @@ function AnimatedProgressBar({ percent, color = 'emerald', height = 'h-2' }: { p
   };
 
   return (
-    <div className={`w-full bg-slate-900/80 rounded-full overflow-hidden ${height} p-0.5 border border-white/10 relative`}>
+    <div className={`w-full bg-slate-50 rounded-full overflow-hidden ${height} p-0.5 border border-slate-200 relative`}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}
@@ -334,17 +334,17 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     <div className="space-y-6">
       {/* HEADER & LIVE VALIDATION PANEL */}
       <GlassPanel accentColor="emerald" padding="md" className="relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-white/10">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-400 border border-emerald-200">
                 <PieChart className="w-5 h-5" />
               </span>
               <h3 className="text-xl font-serif font-bold text-white">
                 Plan de Distribución Financiera
               </h3>
             </div>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-700">
               Sistema jerárquico de planificación de ingresos a 3 niveles (Fondos Principales → Categorías → Subcategorías)
             </p>
           </div>
@@ -353,7 +353,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
             <ExecutiveButton
               variant="outline"
               size="sm"
-              icon={<RefreshCw className="w-3.5 h-3.5 text-slate-300" />}
+              icon={<RefreshCw className="w-3.5 h-3.5 text-slate-700" />}
               onClick={() => {
                 FinancialStore.resetDistributionPlanToDefault();
                 triggerToast('Plan restablecido al estándar 50/30/20', 'info');
@@ -377,9 +377,9 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         {/* BASE INCOME CONFIG & VALIDATION STATUS BAR */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 items-center">
           {/* BASE INCOME SELECTOR */}
-          <div className="p-3.5 bg-slate-900/80 border border-white/10 rounded-xl space-y-2">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] uppercase font-bold text-slate-300 block">
+              <label className="text-[10px] uppercase font-bold text-slate-700 block">
                 Origen de la Base de Ingresos
               </label>
               <ExecutiveBadge variant="subtle" accentColor={mode === 'manual' ? 'amber' : 'emerald'}>
@@ -394,7 +394,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 FinancialStore.setDistributionIncomeBaseMode(newMode);
                 triggerToast(`Origen de base cambiado a: ${newMode === 'manual' ? 'Manual' : 'Calculado desde movimientos'}`, 'info');
               }}
-              className="w-full bg-[#132337] text-xs font-semibold text-white p-2 rounded-lg border border-white/15 focus:border-emerald-400 focus:outline-none"
+              className="w-full bg-white text-xs font-semibold text-white p-2 rounded-lg border border-slate-200 focus:border-emerald-400 focus:outline-none"
             >
               <option value="calculated">Calculada automáticamente desde movimientos</option>
               <option value="manual">Manual (Ingresar o modificar cifra)</option>
@@ -411,7 +411,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       const val = e.target.value === '' ? undefined : Number(e.target.value);
                       FinancialStore.setDistributionBaseIncome(val);
                     }}
-                    className="w-full bg-transparent text-white font-serif font-bold text-base focus:outline-none border-b border-amber-500/50 focus:border-amber-400"
+                    className="w-full bg-transparent text-white font-serif font-bold text-base focus:outline-none border-b border-amber-200 focus:border-amber-400"
                     placeholder="Ingresa tu base de ingresos..."
                   />
                   {plan.monthlyBaseIncome !== undefined && (
@@ -421,25 +421,25 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                         FinancialStore.setDistributionBaseIncome(undefined);
                         triggerToast('Cifra manual eliminada', 'info');
                       }}
-                      className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                      className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400 block mt-1">
+                <span className="text-[10px] text-slate-500 block mt-1">
                   Ingresado libremente. Puedes editarlo o eliminarlo cuando desees.
                 </span>
               </div>
             ) : (
               <div className="pt-1 flex justify-between items-center">
                 <div>
-                  <span className="text-xs text-slate-400 block">Base del Plan (Movimientos):</span>
+                  <span className="text-xs text-slate-500 block">Base del Plan (Movimientos):</span>
                   <strong className="text-base font-serif font-bold text-emerald-400">
                     {formatCurrency(actualIncome, currency)}
                   </strong>
                 </div>
-                <span className="text-[10px] text-slate-400 max-w-[130px] text-right">
+                <span className="text-[10px] text-slate-500 max-w-[130px] text-right">
                   Suma de todos los ingresos externos en el período.
                 </span>
               </div>
@@ -447,19 +447,19 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
           </div>
 
           {/* FUND TOTAL VALIDATION BAR */}
-          <div className="md:col-span-2 p-3 bg-slate-900/80 border border-white/10 rounded-xl space-y-2">
+          <div className="md:col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 font-medium flex items-center gap-1.5">
+              <span className="text-slate-700 font-medium flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-emerald-400" />
                 Suma de Fondos Principales (Nivel 1):
               </span>
               <div className="flex items-center gap-2">
                 {totalFundsPct === 100 ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-500/40 text-xs font-bold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> 100% Asignado (Perfecto)
                   </span>
                 ) : totalFundsPct < 100 ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" /> {totalFundsPct}% Asignado (Falta {100 - totalFundsPct}%)
                   </span>
                 ) : (
@@ -476,7 +476,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               height="h-3"
             />
 
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono">
+            <div className="flex justify-between text-[11px] text-slate-500 font-mono">
               <span>Total Planificado: <strong className="text-white">{formatCurrency(baseIncome * (totalFundsPct / 100), currency)}</strong></span>
               <span>
                 {totalFundsPct < 100 ? `Disponible por asignar: ${formatCurrency(baseIncome * ((100 - totalFundsPct) / 100), currency)}` :
@@ -524,23 +524,23 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               <motion.div
                 key={fund.id}
                 layout
-                className="rounded-2xl border border-white/10 bg-[#132337]/90 backdrop-blur-md overflow-hidden shadow-xl"
+                className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md overflow-hidden shadow-xl"
               >
                 {/* FUND CARD HEADER */}
-                <div className="p-5 border-b border-white/10 space-y-4">
+                <div className="p-5 border-b border-slate-200 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl p-2 rounded-xl bg-slate-900/80 border border-white/10">
+                      <span className="text-2xl p-2 rounded-xl bg-slate-50 border border-slate-200">
                         {fund.emoji || '🏠'}
                       </span>
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-serif font-bold text-white text-lg">{fund.name}</h4>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
                             {fund.percentage}% del Ingreso
                           </span>
                         </div>
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                           Presupuesto Asignado: <strong className="text-slate-200">{formatCurrency(fundTargetBudget, currency)}</strong>
                         </span>
                       </div>
@@ -552,21 +552,21 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                           <CheckCircle2 className="w-3 h-3" /> Categorías 100%
                         </span>
                       ) : (
-                        <span className="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-300 text-[11px] font-bold border border-amber-500/20 flex items-center gap-1">
+                        <span className="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-500/20 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Categorías {catPctSum}%
                         </span>
                       )}
 
                       <button
                         onClick={() => handleOpenAddCat(fund.id)}
-                        className="px-2.5 py-1.5 text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg border border-emerald-500/30 flex items-center gap-1 transition-colors"
+                        className="px-2.5 py-1.5 text-xs font-bold bg-emerald-50 hover:bg-emerald-500/30 text-emerald-800 rounded-lg border border-emerald-200 flex items-center gap-1 transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" /> Categoría
                       </button>
 
                       <button
                         onClick={() => handleOpenEditFund(fund)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
                         title="Editar fondo"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -577,7 +577,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                           FinancialStore.deleteFund(fund.id);
                           triggerToast('Fondo principal eliminado', 'info');
                         }}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-100 transition-colors"
                         title="Eliminar fondo"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -585,7 +585,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
                       <button
                         onClick={() => toggleFundExpand(fund.id)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
                         title={isExpanded ? 'Colapsar categorías' : 'Expandir categorías'}
                       >
                         {isExpanded ? <ChevronUp className="w-5 h-5 text-emerald-400" /> : <ChevronDown className="w-5 h-5" />}
@@ -595,29 +595,29 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
                   {/* METRICS ROW */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-                    <div className="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
-                      <span className="text-[10px] uppercase text-slate-400 block">Asignado (Nivel 1)</span>
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase text-slate-500 block">Asignado (Nivel 1)</span>
                       <strong className="text-sm text-white">{formatCurrency(fundTargetBudget, currency)}</strong>
                     </div>
 
-                    <div className="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
-                      <span className="text-[10px] uppercase text-slate-400 block">Ejecutado (Gastado)</span>
-                      <strong className={`text-sm ${fundSpent > fundTargetBudget ? 'text-rose-400' : 'text-amber-300'}`}>
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase text-slate-500 block">Ejecutado (Gastado)</span>
+                      <strong className={`text-sm ${fundSpent > fundTargetBudget ? 'text-rose-400' : 'text-amber-800'}`}>
                         {formatCurrency(fundSpent, currency)}
                       </strong>
                     </div>
 
-                    <div className="p-2.5 bg-slate-900/60 rounded-xl border border-white/5">
-                      <span className="text-[10px] uppercase text-slate-400 block">Disponible</span>
-                      <strong className={`text-sm ${fundRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}`}>
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase text-slate-500 block">Disponible</span>
+                      <strong className={`text-sm ${fundRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}`}>
                         {formatCurrency(fundRemaining, currency)}
                       </strong>
                     </div>
 
-                    <div className="p-2.5 bg-slate-900/60 rounded-xl border border-white/5 flex flex-col justify-center">
-                      <div className="flex justify-between items-center text-[10px] uppercase text-slate-400">
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-center">
+                      <div className="flex justify-between items-center text-[10px] uppercase text-slate-500">
                         <span>Consumido</span>
-                        <strong className="text-emerald-300">{Math.round(fundConsumedPct)}%</strong>
+                        <strong className="text-emerald-800">{Math.round(fundConsumedPct)}%</strong>
                       </div>
                       <AnimatedProgressBar
                         percent={fundConsumedPct}
@@ -635,24 +635,24 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="p-5 bg-slate-950/40 space-y-4"
+                      className="p-5 bg-slate-50 space-y-4"
                     >
-                      <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                           <Layers className="w-3.5 h-3.5 text-emerald-400" />
                           Categorías Internas ({categories.length}) — Pertenecen únicamente al {fund.percentage}% de {fund.name}
                         </h5>
 
                         <button
                           onClick={() => handleOpenAddCat(fund.id)}
-                          className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+                          className="text-xs text-emerald-400 hover:text-emerald-800 font-bold flex items-center gap-1"
                         >
                           <Plus className="w-3.5 h-3.5" /> Agregar Categoría
                         </button>
                       </div>
 
                       {categories.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-2 text-center">
+                        <p className="text-xs text-slate-500 italic py-2 text-center">
                           No hay categorías internas creadas en este fondo. Presiona "+ Categoría" para añadir una.
                         </p>
                       ) : (
@@ -673,7 +673,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                             return (
                               <div
                                 key={cat.id}
-                                className="p-4 bg-[#132337]/70 border border-white/10 rounded-xl space-y-3 transition-all hover:border-emerald-500/30"
+                                className="p-4 bg-white/70 border border-slate-200 rounded-xl space-y-3 transition-all hover:border-emerald-200"
                               >
                                 {/* ALERT BANNER IF APPLICABLE */}
                                 {alertStatus.level !== 'ok' && (
@@ -695,10 +695,10 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                     <div>
                                       <div className="flex items-center gap-2">
                                         <span className="font-serif font-bold text-white text-base">{cat.name}</span>
-                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-blue-500/20 text-blue-300 border border-slate-200 font-bold">
                                           {cat.percentage}% del fondo
                                         </span>
-                                        <span className="text-[11px] text-slate-400 font-mono">
+                                        <span className="text-[11px] text-slate-500 font-mono">
                                           ({effectivePctOfTotal.toFixed(1)}% del ingreso total)
                                         </span>
                                       </div>
@@ -708,7 +708,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                   <div className="flex items-center gap-2 text-xs">
                                     {subcategories.length > 0 && (
                                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                        subPctSum === 100 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                                        subPctSum === 100 ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'
                                       }`}>
                                         Subcats: {subPctSum}%
                                       </span>
@@ -716,14 +716,14 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
                                     <button
                                       onClick={() => handleOpenAddSub(fund.id, cat.id)}
-                                      className="px-2 py-1 text-[11px] font-bold bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 rounded border border-purple-500/30 flex items-center gap-1"
+                                      className="px-2 py-1 text-[11px] font-bold bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 rounded border border-purple-200 flex items-center gap-1"
                                     >
                                       <Plus className="w-3 h-3" /> Subcategoría
                                     </button>
 
                                     <button
                                       onClick={() => handleOpenEditCat(fund.id, cat)}
-                                      className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                                      className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100"
                                     >
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -733,7 +733,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                         FinancialStore.deleteCategoryFromFund(fund.id, cat.id);
                                         triggerToast('Categoría eliminada', 'info');
                                       }}
-                                      className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-100"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -741,7 +741,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                     {subcategories.length > 0 && (
                                       <button
                                         onClick={() => toggleCategoryExpand(cat.id)}
-                                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                                        className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100"
                                       >
                                         {isCatExpanded ? <ChevronUp className="w-4 h-4 text-purple-400" /> : <ChevronDown className="w-4 h-4" />}
                                       </button>
@@ -752,16 +752,16 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                 {/* CATEGORY PROGRESS & NUMBERS */}
                                 <div className="space-y-1.5">
                                   <div className="flex justify-between items-center text-xs font-mono">
-                                    <span className="text-slate-300">
+                                    <span className="text-slate-700">
                                       Asignado: <strong className="text-white">{formatCurrency(catBudget, currency)}</strong>
                                     </span>
-                                    <span className="text-slate-300">
-                                      Utilizado: <strong className="text-amber-300">{formatCurrency(catSpent, currency)}</strong>
+                                    <span className="text-slate-700">
+                                      Utilizado: <strong className="text-amber-800">{formatCurrency(catSpent, currency)}</strong>
                                     </span>
-                                    <span className="text-slate-300">
-                                      Disponible: <strong className={catRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}>{formatCurrency(catRemaining, currency)}</strong>
+                                    <span className="text-slate-700">
+                                      Disponible: <strong className={catRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}>{formatCurrency(catRemaining, currency)}</strong>
                                     </span>
-                                    <span className="text-slate-400">
+                                    <span className="text-slate-500">
                                       Consumo: <strong className="text-white">{Math.round(catConsumedPct)}%</strong>
                                     </span>
                                   </div>
@@ -779,7 +779,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3 pt-3 border-t border-white/10 space-y-2 pl-4 border-l-2 border-purple-500/40"
+                                    className="mt-3 pt-3 border-t border-slate-200 space-y-2 pl-4 border-l-2 border-purple-200"
                                   >
                                     <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300 block mb-1">
                                       Subcategorías (Nivel 3)
@@ -797,7 +797,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                         return (
                                           <div
                                             key={sub.id}
-                                            className="p-2.5 bg-slate-900/90 border border-white/10 rounded-lg space-y-1"
+                                            className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1"
                                           >
                                             <div className="flex justify-between items-center text-xs">
                                               <span className="font-serif font-bold text-white flex items-center gap-1">
@@ -809,7 +809,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                                 </span>
                                                 <button
                                                   onClick={() => handleOpenEditSub(fund.id, cat.id, sub)}
-                                                  className="p-0.5 text-slate-400 hover:text-white"
+                                                  className="p-0.5 text-slate-500 hover:text-slate-900"
                                                 >
                                                   <Edit2 className="w-3 h-3" />
                                                 </button>
@@ -818,16 +818,16 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                                                     FinancialStore.deleteSubcategoryFromCategory(fund.id, cat.id, sub.id);
                                                     triggerToast('Subcategoría eliminada', 'info');
                                                   }}
-                                                  className="p-0.5 text-slate-400 hover:text-rose-400"
+                                                  className="p-0.5 text-slate-500 hover:text-rose-400"
                                                 >
                                                   <Trash2 className="w-3 h-3" />
                                                 </button>
                                               </div>
                                             </div>
 
-                                            <div className="text-[11px] font-mono text-slate-300 flex justify-between">
+                                            <div className="text-[11px] font-mono text-slate-700 flex justify-between">
                                               <span>Base: {formatCurrency(subBudget, currency)}</span>
-                                              <span className={subRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}>
+                                              <span className={subRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}>
                                                 Disp: {formatCurrency(subRemaining, currency)}
                                               </span>
                                             </div>
@@ -912,14 +912,14 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
           {/* REAL-TIME PREVIEW OF CALCULATED MONETARY VALUE */}
           {fundPct !== '' && (
-            <div className="p-3 bg-slate-900/90 rounded-xl border border-emerald-500/30 text-xs font-mono space-y-1 text-slate-300">
+            <div className="p-3 bg-slate-50 rounded-xl border border-emerald-200 text-xs font-mono space-y-1 text-slate-700">
               <div className="flex justify-between">
                 <span>Monto mensual calculado:</span>
                 <strong className="text-emerald-400 font-bold text-sm">
                   {formatCurrency(baseIncome * (Number(fundPct) / 100), currency)}
                 </strong>
               </div>
-              <span className="text-[10px] text-slate-400 block">
+              <span className="text-[10px] text-slate-500 block">
                 Basado en base de ingresos de {formatCurrency(baseIncome, currency)}
               </span>
             </div>
@@ -974,7 +974,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
           />
 
           {catPct !== '' && targetFundForCat && (
-            <div className="p-3 bg-slate-900/90 rounded-xl border border-blue-500/30 text-xs font-mono space-y-1 text-slate-300">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono space-y-1 text-slate-700">
               {(() => {
                 const targetFund = plan.funds.find(f => f.id === targetFundForCat);
                 if (!targetFund) return null;
@@ -988,7 +988,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       <span>Monto mensual para esta categoría:</span>
                       <strong className="text-blue-300 font-bold text-sm">{formatCurrency(cBudget, currency)}</strong>
                     </div>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[10px] text-slate-500 block">
                       Representa el {catPct}% de {targetFund.name} ({effPct.toFixed(1)}% del ingreso total)
                     </span>
                   </>
@@ -1046,7 +1046,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
           />
 
           {subPct !== '' && targetCatForSub && (
-            <div className="p-3 bg-slate-900/90 rounded-xl border border-purple-500/30 text-xs font-mono space-y-1 text-slate-300">
+            <div className="p-3 bg-slate-50 rounded-xl border border-purple-200 text-xs font-mono space-y-1 text-slate-700">
               {(() => {
                 const targetFund = plan.funds.find(f => f.id === targetCatForSub.fundId);
                 const targetCat = targetFund?.categories.find(c => c.id === targetCatForSub.catId);
@@ -1062,7 +1062,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       <span>Monto mensual para subcategoría:</span>
                       <strong className="text-purple-300 font-bold text-sm">{formatCurrency(sBudget, currency)}</strong>
                     </div>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[10px] text-slate-500 block">
                       {subPct}% de {targetCat.name}
                     </span>
                   </>

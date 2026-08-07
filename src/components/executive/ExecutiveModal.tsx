@@ -15,23 +15,13 @@ export interface ExecutiveModalProps {
 }
 
 const headerIconBg: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]/20 text-[#C5A059] border-[#C5A059]/40',
-  blue: 'bg-blue-600/20 text-blue-300 border-blue-500/40',
-  emerald: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40',
-  rose: 'bg-rose-600/20 text-rose-300 border-rose-500/40',
-  amber: 'bg-amber-600/20 text-amber-300 border-amber-500/40',
-  purple: 'bg-purple-600/20 text-purple-300 border-purple-500/40',
-  indigo: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40',
-};
-
-const modalBorder: Record<AccentColor, string> = {
-  gold: 'border-[#C5A059]/40',
-  blue: 'border-blue-500/40',
-  emerald: 'border-emerald-500/40',
-  rose: 'border-rose-500/40',
-  amber: 'border-amber-500/40',
-  purple: 'border-purple-500/40',
-  indigo: 'border-indigo-500/40',
+  gold: 'bg-purple-50 text-purple-700 border-purple-200',
+  blue: 'bg-purple-50 text-purple-700 border-purple-200',
+  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rose: 'bg-rose-50 text-rose-700 border-rose-200',
+  amber: 'bg-amber-50 text-amber-700 border-amber-200',
+  purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 const widthClasses: Record<'sm' | 'md' | 'lg' | 'xl' | '2xl', string> = {
@@ -48,7 +38,7 @@ export const ExecutiveModal: React.FC<ExecutiveModalProps> = ({
   title,
   subtitle,
   icon,
-  accentColor = 'gold',
+  accentColor = 'purple',
   children,
   maxWidth = 'lg',
   footer,
@@ -66,43 +56,40 @@ export const ExecutiveModal: React.FC<ExecutiveModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150" onClick={onClose}>
       <div 
-        className={`w-full ${widthClasses[maxWidth]} bg-[#0B1528]/95 border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-200`}
+        className={`w-full ${widthClasses[maxWidth]} bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-150 text-slate-900`}
         onClick={e => e.stopPropagation()}
       >
-        {/* Liquid Glass Reflection */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-
         {/* HEADER */}
-        <div className="p-5 border-b border-white/10 flex items-start justify-between gap-3 bg-[#0F1B2E]/60">
+        <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-slate-50/50">
           <div className="flex items-center gap-3">
             {icon && (
-              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${headerIconBg[accentColor]}`}>
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${headerIconBg[accentColor] || headerIconBg.purple}`}>
                 {icon}
               </div>
             )}
             <div>
-              <h2 className="text-base sm:text-lg font-sans font-semibold text-white tracking-tight">{title}</h2>
-              {subtitle && <p className="text-xs text-slate-300 mt-0.5">{subtitle}</p>}
+              <h2 className="text-base sm:text-lg font-sans font-bold text-slate-900 tracking-tight">{title}</h2>
+              {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
-            <X className="w-5 h-5 stroke-[1.75]" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="p-6 overflow-y-auto space-y-4 text-slate-200 text-xs leading-relaxed">
+        <div className="p-6 overflow-y-auto space-y-4 text-slate-800 text-xs leading-relaxed">
           {children}
         </div>
 
         {/* FOOTER */}
         {footer && (
-          <div className="p-4 border-t border-white/10 bg-[#0F1B2E]/60 flex justify-end gap-2.5">
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2.5">
             {footer}
           </div>
         )}

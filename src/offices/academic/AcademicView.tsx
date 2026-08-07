@@ -76,36 +76,36 @@ const CutsDistributionBar: React.FC<{
   const dist = AcademicCalculations.getCutsDistribution(adjustedCuts);
 
   return (
-    <div className={`p-3.5 rounded-xl border backdrop-blur-md space-y-2 text-xs transition-all ${
+    <div className={`p-3.5 rounded-xl border space-y-2 text-xs transition-all ${
       dist.statusColor === 'emerald'
-        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
         : dist.statusColor === 'rose'
-        ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
-        : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+        ? 'bg-rose-50 border-rose-200 text-rose-800'
+        : 'bg-amber-50 border-amber-200 text-amber-800'
     }`}>
       <div className="flex flex-wrap justify-between items-center gap-2 font-bold">
         <div className="flex items-center gap-2">
-          <Percent className="w-4 h-4 shrink-0 text-[#C5A059]" />
+          <Percent className="w-4 h-4 shrink-0 text-purple-600" />
           <span>Distribución de Cortes de la Materia</span>
         </div>
         <div className="flex items-center gap-3 font-mono text-[11px]">
-          <span>Total asignado: <strong className="text-white font-bold">{dist.totalAssigned}%</strong></span>
+          <span>Total asignado: <strong className="text-slate-900 font-bold">{dist.totalAssigned}%</strong></span>
           {dist.isDeficit && (
-            <span>Faltan por asignar: <strong className="text-amber-300 font-bold">{dist.remaining}%</strong></span>
+            <span>Faltan por asignar: <strong className="text-amber-700 font-bold">{dist.remaining}%</strong></span>
           )}
           {dist.isExcess && (
-            <span className="text-rose-300 font-bold">Exceso: +{dist.excess}%</span>
+            <span className="text-rose-700 font-bold">Exceso: +{dist.excess}%</span>
           )}
         </div>
       </div>
 
       {/* Visual Progress Bar */}
-      <div className="w-full bg-slate-900/80 rounded-full h-2.5 overflow-hidden border border-white/10 relative">
+      <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden border border-slate-300 relative">
         <div 
           className={`h-full transition-all duration-300 rounded-full ${
-            dist.statusColor === 'emerald' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
-            dist.statusColor === 'rose' ? 'bg-gradient-to-r from-rose-500 to-red-600' :
-            'bg-gradient-to-r from-amber-500 to-yellow-400'
+            dist.statusColor === 'emerald' ? 'bg-emerald-600' :
+            dist.statusColor === 'rose' ? 'bg-rose-600' :
+            'bg-amber-500'
           }`}
           style={{ width: `${Math.min(100, dist.totalAssigned)}%` }}
         />
@@ -113,12 +113,12 @@ const CutsDistributionBar: React.FC<{
 
       <div className="flex justify-between items-center text-[11px] font-semibold pt-0.5">
         <span className="flex items-center gap-1.5">
-          {dist.isComplete && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-          {dist.isDeficit && <AlertTriangle className="w-4 h-4 text-amber-400" />}
-          {dist.isExcess && <AlertCircle className="w-4 h-4 text-rose-400" />}
+          {dist.isComplete && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+          {dist.isDeficit && <AlertTriangle className="w-4 h-4 text-amber-600" />}
+          {dist.isExcess && <AlertCircle className="w-4 h-4 text-rose-600" />}
           {dist.statusMessage}
         </span>
-        <span className="font-mono text-slate-300">{dist.totalAssigned}% / 100%</span>
+        <span className="font-mono text-slate-600">{dist.totalAssigned}% / 100%</span>
       </div>
     </div>
   );
@@ -142,31 +142,31 @@ const ActivitiesDistributionBar: React.FC<{
   const dist = AcademicCalculations.getActivitiesDistribution(adjustedActs);
 
   return (
-    <div className={`p-3 rounded-xl border backdrop-blur-md space-y-1.5 text-xs transition-all ${
+    <div className={`p-3 rounded-xl border space-y-1.5 text-xs transition-all ${
       dist.statusColor === 'emerald'
-        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
+        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
         : dist.statusColor === 'rose'
-        ? 'bg-rose-950/30 border-rose-500/30 text-rose-200'
-        : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+        ? 'bg-rose-50 border-rose-200 text-rose-800'
+        : 'bg-amber-50 border-amber-200 text-amber-800'
     }`}>
       <div className="flex flex-wrap justify-between items-center gap-2 font-bold">
         <span className="flex items-center gap-1.5">
-          <Target className="w-3.5 h-3.5 text-[#C5A059]" /> Evaluaciones del Corte
+          <Target className="w-3.5 h-3.5 text-purple-600" /> Evaluaciones del Corte
         </span>
         <div className="flex items-center gap-3 font-mono text-[11px]">
-          <span>Total asignado: <strong className="text-white">{dist.totalAssigned}%</strong></span>
-          {dist.isDeficit && <span>Faltan por asignar: <strong className="text-amber-300">{dist.remaining}%</strong></span>}
-          {dist.isExcess && <span className="text-rose-300 font-bold">Exceso: +{dist.excess}%</span>}
+          <span>Total asignado: <strong className="text-slate-900">{dist.totalAssigned}%</strong></span>
+          {dist.isDeficit && <span>Faltan por asignar: <strong className="text-amber-700">{dist.remaining}%</strong></span>}
+          {dist.isExcess && <span className="text-rose-700 font-bold">Exceso: +{dist.excess}%</span>}
         </div>
       </div>
 
       {/* Visual Progress Bar */}
-      <div className="w-full bg-slate-900/80 rounded-full h-2 overflow-hidden border border-white/10">
+      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-300">
         <div 
           className={`h-full transition-all duration-300 rounded-full ${
-            dist.statusColor === 'emerald' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
-            dist.statusColor === 'rose' ? 'bg-gradient-to-r from-rose-500 to-red-600' :
-            'bg-gradient-to-r from-amber-500 to-yellow-400'
+            dist.statusColor === 'emerald' ? 'bg-emerald-600' :
+            dist.statusColor === 'rose' ? 'bg-rose-600' :
+            'bg-amber-500'
           }`}
           style={{ width: `${Math.min(100, dist.totalAssigned)}%` }}
         />
@@ -174,12 +174,12 @@ const ActivitiesDistributionBar: React.FC<{
 
       <div className="flex justify-between items-center text-[10px] font-semibold">
         <span className="flex items-center gap-1">
-          {dist.isComplete && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-          {dist.isDeficit && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
-          {dist.isExcess && <AlertCircle className="w-3.5 h-3.5 text-rose-400" />}
+          {dist.isComplete && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+          {dist.isDeficit && <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />}
+          {dist.isExcess && <AlertCircle className="w-3.5 h-3.5 text-rose-600" />}
           {dist.statusMessage}
         </span>
-        <span className="font-mono text-slate-300">{dist.totalAssigned}% / 100%</span>
+        <span className="font-mono text-slate-600">{dist.totalAssigned}% / 100%</span>
       </div>
     </div>
   );
@@ -884,9 +884,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40' 
             : toast.type === 'warning'
             ? 'bg-amber-950/90 text-amber-200 border-amber-500/40'
-            : 'bg-rose-950/90 text-rose-200 border-rose-500/40'
+            : 'bg-rose-950/90 text-rose-200 border-rose-200'
         }`}>
-          {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+          {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />}
           {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />}
           {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
           <span className="text-xs font-semibold">{toast.message}</span>
@@ -896,7 +896,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* ========================================================= */}
       {/* 1. TOP LIQUID GLASS PANEL (PANEL SUPERIOR)                */}
       {/* ========================================================= */}
-      <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
         {/* Glow Accent */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
@@ -906,7 +906,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           {/* Active Semester Badge & Title */}
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-900 border border-blue-400/40 flex items-center justify-center text-white shadow-lg shadow-blue-900/30">
-              <GraduationCap className="w-7 h-7 text-[#C5A059]" />
+              <GraduationCap className="w-7 h-7 text-purple-600" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -915,20 +915,20 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </h1>
                 {activeSemester ? (
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 text-xs font-mono font-semibold">
-                    <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <Calendar className="w-3.5 h-3.5 text-purple-600" />
                     <span>{activeSemester.name}</span>
                   </div>
                 ) : (
                   <button
                     onClick={() => handleOpenSemesterModal()}
-                    className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-mono flex items-center gap-1 transition-all"
+                    className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-700 text-xs font-mono flex items-center gap-1 transition-all"
                   >
                     <AlertTriangle className="w-3 h-3 text-amber-400" />
                     <span>Crear semestre activo</span>
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Coordinación Ejecutiva Universitaria & Performance Académico
               </p>
             </div>
@@ -938,18 +938,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
             {/* Search Input */}
             <div className="relative flex-1 sm:w-64 lg:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Buscar materia, profesor o aula..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-[#132337]/80 backdrop-blur-md border border-blue-500/30 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#C5A059] transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-slate-50/80 backdrop-blur-md border border-slate-200 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-purple-600 transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -959,15 +959,15 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             {/* Crear Actividad Académica Button */}
             <button
               onClick={() => handleOpenAcademicActivityModal()}
-              className="px-3.5 py-2 bg-[#132337] hover:bg-[#1A2E48] text-xs font-semibold text-emerald-300 border border-emerald-500/40 rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+              className="px-3.5 py-2 bg-slate-50 hover:bg-[#1A2E48] text-xs font-semibold text-emerald-300 border border-emerald-500/40 rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
             >
-              <Compass className="w-4 h-4 text-emerald-400" /> + Actividad
+              <Compass className="w-4 h-4 text-emerald-700" /> + Actividad
             </button>
 
             {/* Crear Semestre Button */}
             <button
               onClick={() => handleOpenSemesterModal()}
-              className="px-3.5 py-2 bg-[#162A45]/80 hover:bg-[#1E3B61] text-xs font-semibold text-[#C5A059] border border-[#C5A059]/40 rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+              className="px-3.5 py-2 bg-[#162A45]/80 hover:bg-[#1E3B61] text-xs font-semibold text-purple-600 border border-purple-600/40 rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95"
             >
               <Plus className="w-4 h-4" /> Semestre
             </button>
@@ -984,16 +984,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         </div>
 
         {/* INTEGRATED NAVIGATION TABS BAR */}
-        <div className="mt-5 pt-4 border-t border-blue-500/20 flex flex-wrap gap-2 overflow-x-auto">
+        <div className="mt-5 pt-4 border-t border-slate-200 flex flex-wrap gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('my_day')}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'my_day'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <Clock className="w-4 h-4 text-[#C5A059]" /> Mi Día Académico
+            <Clock className="w-4 h-4 text-purple-600" /> Mi Día Académico
           </button>
 
           <button
@@ -1001,10 +1001,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'subjects'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <BookOpen className="w-4 h-4 text-[#C5A059]" /> Materias ({activeSubjects.length})
+            <BookOpen className="w-4 h-4 text-purple-600" /> Materias ({activeSubjects.length})
           </button>
 
           <button
@@ -1012,10 +1012,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'schedule'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <Calendar className="w-4 h-4 text-[#C5A059]" /> Horario Semanal
+            <Calendar className="w-4 h-4 text-purple-600" /> Horario Semanal
           </button>
 
           <button
@@ -1023,10 +1023,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'evaluations'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <Award className="w-4 h-4 text-[#C5A059]" /> Evaluaciones
+            <Award className="w-4 h-4 text-purple-600" /> Evaluaciones
             {groupedEvals.total > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono">
                 {groupedEvals.total}
@@ -1039,10 +1039,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'activities'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <Compass className="w-4 h-4 text-[#C5A059]" /> Actividades Académicas
+            <Compass className="w-4 h-4 text-purple-600" /> Actividades Académicas
             {activeSubjects.reduce((sum, s) => sum + (s.academicActivities?.length || 0), 0) > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/80 text-white text-[10px] font-mono">
                 {activeSubjects.reduce((sum, s) => sum + (s.academicActivities?.length || 0), 0)}
@@ -1055,10 +1055,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'progress'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <TrendingUp className="w-4 h-4 text-[#C5A059]" /> Seguimiento
+            <TrendingUp className="w-4 h-4 text-purple-600" /> Seguimiento
           </button>
 
           <button
@@ -1066,10 +1066,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
               activeTab === 'semesters'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border border-blue-400/40'
-                : 'bg-[#132337]/60 hover:bg-[#192E48] text-slate-300 border border-transparent'
+                : 'bg-slate-50/60 hover:bg-[#192E48] text-slate-600 border border-transparent'
             }`}
           >
-            <Layers className="w-4 h-4 text-[#C5A059]" /> Semestres ({semesters.length})
+            <Layers className="w-4 h-4 text-purple-600" /> Semestres ({semesters.length})
           </button>
         </div>
 
@@ -1081,24 +1081,24 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
         {/* Stat 1: Promedio Semestre */}
-        <div className="bg-[#0B1528]/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
-          <div className="flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
+          <div className="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Promedio GPA</span>
-            <Award className="w-4 h-4 text-[#C5A059]" />
+            <Award className="w-4 h-4 text-purple-600" />
           </div>
           <div className="my-2">
             <div className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-baseline gap-1">
-              {formatGrade(gpa)} <span className="text-xs font-sans text-slate-400">/ 5,00</span>
+              {formatGrade(gpa)} <span className="text-xs font-sans text-slate-500">/ 5,00</span>
             </div>
           </div>
-          <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+          <div className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> Promedio ponderado activo
           </div>
         </div>
 
         {/* Stat 2: Materias Activas */}
-        <div className="bg-[#0B1528]/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
-          <div className="flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
+          <div className="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Materias Activas</span>
             <BookOpen className="w-4 h-4 text-blue-400" />
           </div>
@@ -1107,14 +1107,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {activeSubjects.length}
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium truncate">
+          <div className="text-[11px] text-slate-500 font-medium truncate">
             {activeSemester ? `Inscritas en ${activeSemester.name}` : 'Sin semestre activo'}
           </div>
         </div>
 
         {/* Stat 3: Clases de Hoy */}
-        <div className="bg-[#0B1528]/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
-          <div className="flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
+          <div className="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Clases de Hoy</span>
             <Clock className="w-4 h-4 text-indigo-400" />
           </div>
@@ -1123,14 +1123,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {todayClasses.length}
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium truncate">
+          <div className="text-[11px] text-slate-500 font-medium truncate">
             {todayClasses.length > 0 ? `Primera: ${todayClasses[0].session.startTime}` : 'Sin clases hoy'}
           </div>
         </div>
 
         {/* Stat 4: Próximas Evaluaciones */}
-        <div className="bg-[#0B1528]/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
-          <div className="flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
+          <div className="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Evaluaciones</span>
             <AlertTriangle className="w-4 h-4 text-rose-400" />
           </div>
@@ -1139,19 +1139,19 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {groupedEvals.total}
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium truncate">
+          <div className="text-[11px] text-slate-500 font-medium truncate">
             {groupedEvals.today.length > 0 ? `${groupedEvals.today.length} hoy pendientes` : 'Sin parciales hoy'}
           </div>
         </div>
 
         {/* Stat 5: Porcentaje Semestre Cursado */}
-        <div className="bg-[#0B1528]/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
-          <div className="flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col justify-between hover:border-blue-400/40 transition-all">
+          <div className="flex justify-between items-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             <span>Avance Semestre</span>
-            <Percent className="w-4 h-4 text-emerald-400" />
+            <Percent className="w-4 h-4 text-emerald-700" />
           </div>
           <div className="my-2">
-            <div className="text-2xl sm:text-3xl font-serif font-bold text-emerald-400">
+            <div className="text-2xl sm:text-3xl font-serif font-bold text-emerald-700">
               {semesterProgress}%
             </div>
             <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
@@ -1161,7 +1161,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               />
             </div>
           </div>
-          <div className="text-[11px] text-slate-400 font-medium truncate">
+          <div className="text-[11px] text-slate-500 font-medium truncate">
             Avance sobre calendario
           </div>
         </div>
@@ -1178,13 +1178,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           <div className="lg:col-span-7 space-y-6">
             
             {/* CARD: DYNAMIC ACADEMIC GOAL */}
-            <div className="bg-gradient-to-r from-[#132337]/90 via-[#182C48]/90 to-[#0B1528]/90 backdrop-blur-xl border border-[#C5A059]/40 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#132337]/90 via-[#182C48]/90 to-[#0B1528]/90 backdrop-blur-xl border border-purple-600/40 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#C5A059]/20 border border-[#C5A059]/50 flex items-center justify-center text-[#C5A059] shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-xl bg-[#C5A059]/20 border border-purple-600/50 flex items-center justify-center text-purple-600 shrink-0 mt-0.5">
                   <Target className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[#C5A059] flex items-center gap-1.5">
+                  <div className="text-xs font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
                     OBJETIVO ACADÉMICO DINÁMICO
                   </div>
                   <p className="text-sm text-slate-200 mt-1 font-serif leading-relaxed italic">
@@ -1195,18 +1195,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
 
             {/* CARD: CLASES DE HOY */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
                   <Clock className="w-5 h-5 text-blue-400" /> Clases de Hoy
                 </h3>
-                <span className="text-xs font-mono text-slate-400">{todayStr}</span>
+                <span className="text-xs font-mono text-slate-500">{todayStr}</span>
               </div>
 
               {todayClasses.length === 0 ? (
-                <div className="p-8 text-center bg-[#132337]/40 rounded-xl border border-dashed border-blue-500/20 text-slate-400 space-y-2">
+                <div className="p-8 text-center bg-slate-50/40 rounded-xl border border-dashed border-slate-200 text-slate-500 space-y-2">
                   <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
-                  <p className="text-sm font-medium text-slate-300">No tienes sesiones de clase para el día de hoy.</p>
+                  <p className="text-sm font-medium text-slate-600">No tienes sesiones de clase para el día de hoy.</p>
                   <p className="text-xs text-slate-500">Aprovecha para repasar apuntes o revisar las próximas evaluaciones.</p>
                 </div>
               ) : (
@@ -1214,7 +1214,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   {todayClasses.map(({ subject, session }, idx) => (
                     <div 
                       key={idx} 
-                      className="p-4 bg-[#132337]/70 backdrop-blur-md rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-blue-400/50 transition-all shadow-md cursor-pointer"
+                      className="p-4 bg-slate-50/70 backdrop-blur-md rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-blue-400/50 transition-all shadow-md cursor-pointer"
                       style={{ borderLeftWidth: '5px', borderLeftColor: subject.color }}
                       onClick={() => setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session })}
                     >
@@ -1225,9 +1225,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             {session.classroom ? `Aula: ${session.classroom}` : 'Aula por asignar'}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-300 mt-1 flex items-center gap-3">
+                        <div className="text-xs text-slate-600 mt-1 flex items-center gap-3">
                           <span className="flex items-center gap-1">
-                            <UserCheck className="w-3.5 h-3.5 text-slate-400" /> Prof. {subject.professor}
+                            <UserCheck className="w-3.5 h-3.5 text-slate-500" /> Prof. {subject.professor}
                           </span>
                         </div>
                       </div>
@@ -1241,7 +1241,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             e.stopPropagation();
                             setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session });
                           }}
-                          className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors"
+                          className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-600 hover:text-white rounded-lg transition-colors"
                           title="Editar sesión"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -1259,29 +1259,29 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           <div className="lg:col-span-5 space-y-6">
             
             {/* PRÓXIMAS EVALUACIONES */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
                   <Award className="w-5 h-5 text-rose-400" /> Próximas Evaluaciones
                 </h3>
                 <button
                   onClick={() => setActiveTab('evaluations')}
-                  className="text-xs text-[#C5A059] hover:underline"
+                  className="text-xs text-purple-600 hover:underline"
                 >
                   Ver todas
                 </button>
               </div>
 
               {groupedEvals.total === 0 ? (
-                <div className="p-8 text-center bg-[#132337]/40 rounded-xl border border-dashed border-rose-500/20 text-slate-400 space-y-2">
+                <div className="p-8 text-center bg-slate-50/40 rounded-xl border border-dashed border-rose-500/20 text-slate-500 space-y-2">
                   <CheckCircle className="w-10 h-10 text-emerald-500/80 mx-auto" />
-                  <p className="text-sm font-medium text-slate-300">¡Al día! No hay evaluaciones pendientes.</p>
+                  <p className="text-sm font-medium text-slate-600">¡Al día! No hay evaluaciones pendientes.</p>
                   <p className="text-xs text-slate-500">Todas tus actividades tienen calificación registrada.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {[...groupedEvals.today, ...groupedEvals.tomorrow, ...groupedEvals.thisWeek].slice(0, 5).map((item, idx) => (
-                    <div key={idx} className="p-3.5 bg-[#132337]/70 rounded-xl border border-white/10 flex justify-between items-center gap-3">
+                    <div key={idx} className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200 flex justify-between items-center gap-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span 
@@ -1290,20 +1290,20 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           >
                             {item.subjectName}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <span className="text-[10px] font-mono text-slate-500">
                             {item.activityType} ({item.weightPercent}%)
                           </span>
                         </div>
                         <div className="font-bold text-white text-xs">{item.activityName}</div>
-                        <div className="text-[11px] text-slate-400">Corte: {item.cutName}</div>
+                        <div className="text-[11px] text-slate-500">Corte: {item.cutName}</div>
                       </div>
 
                       <div className="text-right shrink-0 space-y-1">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border block ${
                           item.daysDiff === 0 
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
+                            ? 'bg-rose-500/20 text-rose-700 border-rose-200' 
                             : item.daysDiff === 1 
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                            ? 'bg-amber-500/20 text-amber-700 border-amber-500/40' 
                             : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                         }`}>
                           {item.daysDiff === 0 ? '¡Hoy!' : item.daysDiff === 1 ? 'Mañana' : `En ${item.daysDiff} días`}
@@ -1318,7 +1318,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                 handleOpenEditActivityModal(sub.id, cut.id, act);
                               }
                             }}
-                            className="p-1 text-slate-300 hover:text-white bg-white/5 rounded"
+                            className="p-1 text-slate-600 hover:text-white bg-white/5 rounded"
                             title="Registrar nota / Editar"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -1332,29 +1332,29 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
 
             {/* PRÓXIMAS ACTIVIDADES ACADÉMICAS */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-6 shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-emerald-400" /> Próximas Actividades Académicas
+                  <Compass className="w-5 h-5 text-emerald-700" /> Próximas Actividades Académicas
                 </h3>
                 <button
                   onClick={() => setActiveTab('activities')}
-                  className="text-xs text-[#C5A059] hover:underline"
+                  className="text-xs text-purple-600 hover:underline"
                 >
                   Ver todas
                 </button>
               </div>
 
               {upcomingAcademicActivities.length === 0 ? (
-                <div className="p-6 text-center bg-[#132337]/40 rounded-xl border border-dashed border-emerald-500/20 text-slate-400 space-y-1">
+                <div className="p-6 text-center bg-slate-50/40 rounded-xl border border-dashed border-emerald-500/20 text-slate-500 space-y-1">
                   <Compass className="w-8 h-8 text-emerald-500/50 mx-auto" />
-                  <p className="text-xs text-slate-300">No hay actividades académicas agendadas.</p>
+                  <p className="text-xs text-slate-600">No hay actividades académicas agendadas.</p>
                   <p className="text-[11px] text-slate-500">Salidas de campo, laboratorios y conferencias no calificables.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {upcomingAcademicActivities.slice(0, 5).map(({ activity, subject }, idx) => (
-                    <div key={idx} className="p-3 bg-[#132337]/70 rounded-xl border border-white/10 flex justify-between items-center gap-2">
+                    <div key={idx} className="p-3 bg-slate-50/70 rounded-xl border border-slate-200 flex justify-between items-center gap-2">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm">{AcademicCalculations.getActivityTypeIcon(activity.type)}</span>
@@ -1366,7 +1366,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             {subject.name}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-300">
+                        <div className="text-[11px] text-slate-600">
                           {activity.type} • {activity.date} {activity.startTime ? `(${activity.startTime})` : ''} {activity.location ? `• Salón: ${activity.location}` : ''}
                         </div>
                       </div>
@@ -1374,14 +1374,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleToggleAcademicActivityStatus(activity, activity.status === 'Realizada' ? 'Pendiente' : 'Realizada')}
-                          className={`p-1.5 rounded-lg border text-xs font-bold ${activity.status === 'Realizada' ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'}`}
+                          className={`p-1.5 rounded-lg border text-xs font-bold ${activity.status === 'Realizada' ? 'text-amber-700 bg-amber-500/10 border-amber-500/30' : 'text-emerald-300 bg-emerald-500/10 border-emerald-200'}`}
                           title={activity.status === 'Realizada' ? 'Marcar Pendiente' : 'Marcar Realizada'}
                         >
                           {activity.status === 'Realizada' ? <RotateCcw className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
                         </button>
                         <button
                           onClick={() => handleOpenAcademicActivityModal(subject.id, activity)}
-                          className="p-1.5 text-slate-300 hover:text-white bg-white/5 rounded-lg"
+                          className="p-1.5 text-slate-600 hover:text-white bg-white/5 rounded-lg"
                           title="Editar"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -1415,10 +1415,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           </div>
 
           {filteredSubjects.length === 0 ? (
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-12 text-center space-y-4">
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-12 text-center space-y-4">
               <BookOpen className="w-16 h-16 text-slate-500 mx-auto" />
               <h3 className="text-lg font-serif font-bold text-white">No existen materias registradas</h3>
-              <p className="text-xs text-slate-300 max-w-md mx-auto">
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
                 {searchQuery ? `No se encontraron asignaturas para "${searchQuery}".` : 'Registra tus asignaturas universitarias para organizar tu horario, evaluar cortes y controlar tus calificaciones.'}
               </p>
               {!searchQuery && (
@@ -1441,7 +1441,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 return (
                   <div 
                     key={subject.id}
-                    className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl overflow-hidden shadow-2xl hover:border-blue-400/40 transition-all"
+                    className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl overflow-hidden shadow-2xl hover:border-blue-400/40 transition-all"
                   >
                     {/* SUBJECT CARD HEADER BANNER */}
                     <div 
@@ -1454,10 +1454,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           <h3 className="text-lg font-bold font-serif text-white">{subject.name}</h3>
                           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                             statusInfo.status === 'Aprobada'
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-200'
                               : statusInfo.status === 'En Riesgo'
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                              : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                              ? 'bg-rose-500/20 text-rose-700 border-rose-500/30'
+                              : 'bg-blue-500/20 text-blue-300 border-slate-200'
                           }`}>
                             {statusInfo.status}
                           </span>
@@ -1465,7 +1465,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             {subjectProgress.porcentajeEvaluadoMateria}% Evaluado
                           </span>
                         </div>
-                        <div className="text-xs text-slate-300 flex items-center gap-4 flex-wrap">
+                        <div className="text-xs text-slate-600 flex items-center gap-4 flex-wrap">
                           <span>👤 Prof. {subject.professor}</span>
                           {subject.classroom && <span>🏫 Aula: {subject.classroom}</span>}
                           <span>📅 {subject.scheduleSessions?.length || 0} sesión(es)/semana</span>
@@ -1474,17 +1474,17 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       </div>
 
                       {/* Right stats and buttons */}
-                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-white/10">
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-200">
                         <div className="text-right flex items-center gap-4">
                           <div>
-                            <div className="text-[10px] uppercase tracking-wider text-[#C5A059] font-bold">Nota Acumulada</div>
+                            <div className="text-[10px] uppercase tracking-wider text-purple-600 font-bold">Nota Acumulada</div>
                             <div className="text-xl font-serif font-bold text-white">
-                              {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs font-sans text-slate-400 font-normal">/ 5,00</span>
+                              {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs font-sans text-slate-500 font-normal">/ 5,00</span>
                             </div>
                           </div>
-                          <div className="border-l border-white/10 pl-4">
-                            <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prom. Evaluado</div>
-                            <div className={`text-sm font-serif font-bold ${hasGrades ? (average >= 3.0 ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-400'}`}>
+                          <div className="border-l border-slate-200 pl-4">
+                            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Prom. Evaluado</div>
+                            <div className={`text-sm font-serif font-bold ${hasGrades ? (average >= 3.0 ? 'text-emerald-700' : 'text-rose-400') : 'text-slate-500'}`}>
                               {hasGrades ? formatGrade(average) : 'Sin notas'}
                             </div>
                           </div>
@@ -1496,7 +1496,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               e.stopPropagation();
                               handleOpenSubjectModal(subject);
                             }}
-                            className="p-2 bg-[#132337] hover:bg-blue-900/60 rounded-xl text-slate-300 hover:text-white transition-colors"
+                            className="p-2 bg-slate-50 hover:bg-blue-900/60 rounded-xl text-slate-600 hover:text-white transition-colors"
                             title="Editar materia"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -1506,12 +1506,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               e.stopPropagation();
                               handleDeleteSubject(subject);
                             }}
-                            className="p-2 bg-[#132337] hover:bg-rose-900/60 rounded-xl text-slate-300 hover:text-rose-400 transition-colors"
+                            className="p-2 bg-slate-50 hover:bg-rose-900/60 rounded-xl text-slate-600 hover:text-rose-400 transition-colors"
                             title="Eliminar materia"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                          <div className="p-2 bg-[#132337] rounded-xl text-[#C5A059]">
+                          <div className="p-2 bg-slate-50 rounded-xl text-purple-600">
                             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                           </div>
                         </div>
@@ -1520,16 +1520,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                     {/* EXPANDED SUBJECT CONTENT INLINE */}
                     {isExpanded && (
-                      <div className="p-5 border-t border-blue-500/20 bg-[#0d1b2e]/90 space-y-5 animate-in fade-in duration-200">
+                      <div className="p-5 border-t border-slate-200 bg-slate-50/90 space-y-5 animate-in fade-in duration-200">
                         
                         {/* 5 SUB-TABS: Información, Horario, Evaluaciones, Cronograma, Notas */}
-                        <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+                        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
                           <button
                             onClick={() => setSubjectSubTab('info')}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                               subjectSubTab === 'info'
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-[#132337] text-slate-300 hover:text-white'
+                                : 'bg-slate-50 text-slate-600 hover:text-white'
                             }`}
                           >
                             Información
@@ -1539,7 +1539,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                               subjectSubTab === 'schedule'
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-[#132337] text-slate-300 hover:text-white'
+                                : 'bg-slate-50 text-slate-600 hover:text-white'
                             }`}
                           >
                             Horario ({subject.scheduleSessions?.length || 0})
@@ -1549,7 +1549,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                               subjectSubTab === 'evaluations'
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-[#132337] text-slate-300 hover:text-white'
+                                : 'bg-slate-50 text-slate-600 hover:text-white'
                             }`}
                           >
                             Evaluaciones / Cortes ({subject.cuts?.length || 0})
@@ -1559,7 +1559,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                               subjectSubTab === 'cronograma'
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-[#132337] text-slate-300 hover:text-white'
+                                : 'bg-slate-50 text-slate-600 hover:text-white'
                             }`}
                           >
                             📅 Cronograma ({
@@ -1573,7 +1573,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                               subjectSubTab === 'grades'
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-[#132337] text-slate-300 hover:text-white'
+                                : 'bg-slate-50 text-slate-600 hover:text-white'
                             }`}
                           >
                             Notas & Aprobación
@@ -1583,25 +1583,25 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         {/* SUB-TAB 1: INFORMACIÓN */}
                         {subjectSubTab === 'info' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                            <div className="p-4 bg-[#132337]/70 rounded-xl space-y-2 border border-white/10">
-                              <div className="font-bold text-[#C5A059] uppercase tracking-wider text-[11px]">Detalles Principales</div>
-                              <div><span className="text-slate-400">Nombre de la asignatura:</span> <strong className="text-white">{subject.name}</strong></div>
-                              <div><span className="text-slate-400">Profesor asignado:</span> <strong className="text-white">{subject.professor}</strong></div>
-                              <div><span className="text-slate-400">Aula predeterminada:</span> <strong className="text-white">{subject.classroom || 'Sin aula'}</strong></div>
-                              <div><span className="text-slate-400">Cortes configurados:</span> <strong className="text-white">{subjectProgress.totalCuts} ({subjectProgress.finishedCuts} finalizado(s), {subjectProgress.inProgressCuts} en progreso)</strong></div>
+                            <div className="p-4 bg-slate-50/70 rounded-xl space-y-2 border border-slate-200">
+                              <div className="font-bold text-purple-600 uppercase tracking-wider text-[11px]">Detalles Principales</div>
+                              <div><span className="text-slate-500">Nombre de la asignatura:</span> <strong className="text-white">{subject.name}</strong></div>
+                              <div><span className="text-slate-500">Profesor asignado:</span> <strong className="text-white">{subject.professor}</strong></div>
+                              <div><span className="text-slate-500">Aula predeterminada:</span> <strong className="text-white">{subject.classroom || 'Sin aula'}</strong></div>
+                              <div><span className="text-slate-500">Cortes configurados:</span> <strong className="text-white">{subjectProgress.totalCuts} ({subjectProgress.finishedCuts} finalizado(s), {subjectProgress.inProgressCuts} en progreso)</strong></div>
                               <div className="flex items-center gap-2 pt-1">
-                                <span className="text-slate-400">Color institucional:</span>
-                                <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: subject.color }} />
+                                <span className="text-slate-500">Color institucional:</span>
+                                <div className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: subject.color }} />
                               </div>
                             </div>
 
-                            <div className="p-4 bg-[#132337]/70 rounded-xl space-y-2 border border-white/10">
-                              <div className="font-bold text-[#C5A059] uppercase tracking-wider text-[11px]">Progreso y Rendimiento Real</div>
-                              <div><span className="text-slate-400">Nota Acumulada Actual:</span> <strong className="text-white font-mono text-sm">{formatGrade(subjectProgress.notaAcumuladaMateria)} / 5,00</strong></div>
-                              <div><span className="text-slate-400">Promedio Evaluado:</span> <strong className="text-white">{hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : 'Sin calificaciones'}</strong></div>
-                              <div><span className="text-slate-400">Cobertura Evaluada:</span> <strong className="text-emerald-400">{subjectProgress.porcentajeEvaluadoMateria}% de la materia</strong></div>
-                              <div><span className="text-slate-400">Estado de la Materia:</span> <strong className="text-white">{statusInfo.status}</strong></div>
-                              <div><span className="text-slate-400">Próxima Evaluación:</span> <strong className="text-white">{subjectProgress.nextEvaluation ? `${subjectProgress.nextEvaluation.activityName} (${subjectProgress.nextEvaluation.cutName} - ${subjectProgress.nextEvaluation.date})` : 'Ninguna agendada'}</strong></div>
+                            <div className="p-4 bg-slate-50/70 rounded-xl space-y-2 border border-slate-200">
+                              <div className="font-bold text-purple-600 uppercase tracking-wider text-[11px]">Progreso y Rendimiento Real</div>
+                              <div><span className="text-slate-500">Nota Acumulada Actual:</span> <strong className="text-white font-mono text-sm">{formatGrade(subjectProgress.notaAcumuladaMateria)} / 5,00</strong></div>
+                              <div><span className="text-slate-500">Promedio Evaluado:</span> <strong className="text-white">{hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : 'Sin calificaciones'}</strong></div>
+                              <div><span className="text-slate-500">Cobertura Evaluada:</span> <strong className="text-emerald-700">{subjectProgress.porcentajeEvaluadoMateria}% de la materia</strong></div>
+                              <div><span className="text-slate-500">Estado de la Materia:</span> <strong className="text-white">{statusInfo.status}</strong></div>
+                              <div><span className="text-slate-500">Próxima Evaluación:</span> <strong className="text-white">{subjectProgress.nextEvaluation ? `${subjectProgress.nextEvaluation.activityName} (${subjectProgress.nextEvaluation.cutName} - ${subjectProgress.nextEvaluation.date})` : 'Ninguna agendada'}</strong></div>
                             </div>
                           </div>
                         )}
@@ -1610,28 +1610,28 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         {subjectSubTab === 'schedule' && (
                           <div className="space-y-4">
                             <div className="flex justify-between items-center text-xs">
-                              <span className="font-bold text-slate-300">Sesiones semanales configuradas</span>
+                              <span className="font-bold text-slate-600">Sesiones semanales configuradas</span>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
                               {subject.scheduleSessions?.map((ses) => (
-                                <div key={ses.id} className="p-3 bg-[#132337] border border-blue-500/30 rounded-xl text-xs flex items-center gap-3">
+                                <div key={ses.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center gap-3">
                                   <div>
                                     <div className="font-bold text-white">{getDayOfWeekName(ses.day)}</div>
-                                    <div className="text-slate-300 font-mono text-[11px]">{ses.startTime} – {ses.endTime}</div>
-                                    {ses.classroom && <div className="text-[10px] text-slate-400">Aula: {ses.classroom}</div>}
+                                    <div className="text-slate-600 font-mono text-[11px]">{ses.startTime} – {ses.endTime}</div>
+                                    {ses.classroom && <div className="text-[10px] text-slate-500">Aula: {ses.classroom}</div>}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <button 
                                       onClick={() => setEditingSessionData({ subjectId: subject.id, subjectName: subject.name, session: ses })}
-                                      className="text-slate-300 hover:text-white p-1"
+                                      className="text-slate-600 hover:text-white p-1"
                                       title="Editar sesión"
                                     >
                                       <Edit3 className="w-3.5 h-3.5" />
                                     </button>
                                     <button 
                                       onClick={() => handleDeleteSession(subject.id, ses.id, getDayOfWeekName(ses.day))}
-                                      className="text-rose-400 hover:text-rose-300 p-1"
+                                      className="text-rose-400 hover:text-rose-700 p-1"
                                       title="Eliminar sesión"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -1642,11 +1642,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             </div>
 
                             {/* Add Session Form */}
-                            <div className="p-3.5 bg-[#132337]/80 rounded-xl border border-white/10 flex flex-wrap items-center gap-2.5 text-xs">
+                            <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 flex flex-wrap items-center gap-2.5 text-xs">
                               <select 
                                 value={sessionDay} 
                                 onChange={e => setSessionDay(Number(e.target.value))}
-                                className="p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white"
+                                className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-white"
                               >
                                 <option value={1}>Lunes</option>
                                 <option value={2}>Martes</option>
@@ -1660,21 +1660,21 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                 type="time" 
                                 value={sessionStart} 
                                 onChange={e => setSessionStart(e.target.value)} 
-                                className="p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white font-mono"
+                                className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-white font-mono"
                               />
-                              <span className="text-slate-400">a</span>
+                              <span className="text-slate-500">a</span>
                               <input 
                                 type="time" 
                                 value={sessionEnd} 
                                 onChange={e => setSessionEnd(e.target.value)} 
-                                className="p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white font-mono"
+                                className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-white font-mono"
                               />
                               <input 
                                 type="text" 
                                 placeholder="Aula (opcional)" 
                                 value={sessionRoom} 
                                 onChange={e => setSessionRoom(e.target.value)} 
-                                className="p-2 bg-[#0d131a] border border-blue-500/30 rounded-lg text-white flex-1 min-w-[120px]"
+                                className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-white flex-1 min-w-[120px]"
                               />
                               <button
                                 onClick={() => handleAddSessionToSubject(subject.id)}
@@ -1694,7 +1694,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                             {/* Crear Corte Button */}
                             <div className="flex justify-between items-center text-xs pt-1">
-                              <span className="font-bold text-slate-300">Cortes de Evaluación ({subject.cuts?.length || 0})</span>
+                              <span className="font-bold text-slate-600">Cortes de Evaluación ({subject.cuts?.length || 0})</span>
                               <button
                                 onClick={() => handleOpenCutModal(subject.id)}
                                 className="px-3 py-1.5 bg-[#C5A059] hover:bg-amber-600 text-slate-950 font-bold rounded-lg flex items-center gap-1 shadow-md transition-all active:scale-95"
@@ -1705,7 +1705,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                             {/* List of Cuts */}
                             {(!subject.cuts || subject.cuts.length === 0) ? (
-                              <div className="p-6 text-center bg-[#132337]/40 rounded-xl border border-dashed border-white/10 text-slate-400 text-xs">
+                              <div className="p-6 text-center bg-slate-50/40 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
                                 No hay cortes creados. Agrega cortes para organizar parciales, quices y talleres.
                               </div>
                             ) : (
@@ -1714,10 +1714,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                 const cutProgress = AcademicCalculations.calculateCutProgress(cut);
 
                                 return (
-                                  <div key={cut.id} className="p-4 bg-[#132337]/60 rounded-xl border border-white/10 space-y-3">
-                                    <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                  <div key={cut.id} className="p-4 bg-slate-50/60 rounded-xl border border-slate-200 space-y-3">
+                                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-bold text-[#C5A059] text-sm">{cut.cutName}</span>
+                                        <span className="font-bold text-purple-600 text-sm">{cut.cutName}</span>
                                         <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 font-mono">
                                           Valor: {cut.cutWeightPercent}% de la materia
                                         </span>
@@ -1725,8 +1725,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                           cutProgress.status === 'finalizado'
                                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                                             : cutProgress.status === 'en_progreso'
-                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                            : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                                            ? 'bg-amber-500/20 text-amber-700 border-amber-500/40'
+                                            : 'bg-slate-700/50 text-slate-600 border-slate-600/50'
                                         }`}>
                                           {cutProgress.statusLabel}
                                         </span>
@@ -1734,14 +1734,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       <div className="flex items-center gap-2">
                                         <button
                                           onClick={() => handleOpenCutModal(subject.id, cut)}
-                                          className="text-slate-400 hover:text-white p-1"
+                                          className="text-slate-500 hover:text-white p-1"
                                           title="Editar corte"
                                         >
                                           <Edit3 className="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteCut(subject.id, cut)}
-                                          className="text-rose-400 hover:text-rose-300 p-1"
+                                          className="text-rose-400 hover:text-rose-700 p-1"
                                           title="Eliminar corte"
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
@@ -1750,23 +1750,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                     </div>
 
                                     {/* Corte Real-time Metrics Card Grid */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-[#0d131a]/90 rounded-xl border border-white/5 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-slate-100/90 rounded-xl border border-slate-100 text-xs">
                                       <div>
-                                        <div className="text-[10px] text-slate-400 uppercase font-semibold">Nota Acumulada Corte</div>
+                                        <div className="text-[10px] text-slate-500 uppercase font-semibold">Nota Acumulada Corte</div>
                                         <div className="font-bold text-white text-sm mt-0.5 font-mono">
-                                          {formatGrade(cutProgress.accumulatedCutGrade)} <span className="text-[10px] text-slate-400 font-normal">/ 5,00</span>
+                                          {formatGrade(cutProgress.accumulatedCutGrade)} <span className="text-[10px] text-slate-500 font-normal">/ 5,00</span>
                                         </div>
                                       </div>
                                       <div>
-                                        <div className="text-[10px] text-[#C5A059] uppercase font-bold">Aporte Actual a Materia</div>
-                                        <div className="font-bold text-[#C5A059] text-sm mt-0.5 font-mono">
-                                          +{formatGrade(cutProgress.aporteSubject)} <span className="text-[10px] text-slate-400 font-normal">/ {formatGrade(cutProgress.maxAporteSubject)} pts</span>
+                                        <div className="text-[10px] text-purple-600 uppercase font-bold">Aporte Actual a Materia</div>
+                                        <div className="font-bold text-purple-600 text-sm mt-0.5 font-mono">
+                                          +{formatGrade(cutProgress.aporteSubject)} <span className="text-[10px] text-slate-500 font-normal">/ {formatGrade(cutProgress.maxAporteSubject)} pts</span>
                                         </div>
                                       </div>
                                       <div>
-                                        <div className="text-[10px] text-slate-400 uppercase font-semibold">Cobertura Evaluada</div>
-                                        <div className="font-bold text-emerald-400 text-xs mt-0.5 font-mono">
-                                          {cutProgress.evaluatedWeightPercent}% evaluado <span className="text-slate-400 font-normal">({cutProgress.pendingWeightPercent}% pendiente)</span>
+                                        <div className="text-[10px] text-slate-500 uppercase font-semibold">Cobertura Evaluada</div>
+                                        <div className="font-bold text-emerald-700 text-xs mt-0.5 font-mono">
+                                          {cutProgress.evaluatedWeightPercent}% evaluado <span className="text-slate-500 font-normal">({cutProgress.pendingWeightPercent}% pendiente)</span>
                                         </div>
                                       </div>
                                     </div>
@@ -1777,18 +1777,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                     {/* Activities in Cut */}
                                     <div className="space-y-2">
                                       {(!cut.activities || cut.activities.length === 0) ? (
-                                        <div className="text-[11px] text-slate-400 italic py-1">Sin actividades agregadas en este corte.</div>
+                                        <div className="text-[11px] text-slate-500 italic py-1">Sin actividades agregadas en este corte.</div>
                                       ) : (
                                         cut.activities.map(act => (
-                                          <div key={act.id} className="p-2.5 bg-[#0d131a]/80 rounded-lg border border-white/5 flex flex-wrap justify-between items-center gap-2 text-xs">
+                                          <div key={act.id} className="p-2.5 bg-slate-100/80 rounded-lg border border-slate-100 flex flex-wrap justify-between items-center gap-2 text-xs">
                                             <div className="flex items-center gap-2">
                                               <span className="font-bold text-white">{act.name}</span>
-                                              <span className="text-slate-400 text-[11px]">({act.type} - {act.weightPercent}% del corte)</span>
-                                              <span className="text-slate-400 font-mono text-[11px]">[{act.date}]</span>
+                                              <span className="text-slate-500 text-[11px]">({act.type} - {act.weightPercent}% del corte)</span>
+                                              <span className="text-slate-500 font-mono text-[11px]">[{act.date}]</span>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                              <span className="text-slate-400 text-xs">Nota:</span>
+                                              <span className="text-slate-500 text-xs">Nota:</span>
                                               <input
                                                 type="number"
                                                 step="0.01"
@@ -1797,18 +1797,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                                 value={act.grade !== undefined && act.grade !== null ? act.grade : ''}
                                                 onChange={e => handleQuickGradeChange(subject.id, cut.id, act.id, e.target.value)}
                                                 placeholder="0,00"
-                                                className="w-16 p-1 bg-[#132337] border border-blue-500/30 rounded text-center font-bold text-white font-mono"
+                                                className="w-16 p-1 bg-slate-50 border border-slate-200 rounded text-center font-bold text-white font-mono"
                                               />
                                               <button
                                                 onClick={() => handleOpenEditActivityModal(subject.id, cut.id, act)}
-                                                className="text-slate-300 hover:text-white p-1"
+                                                className="text-slate-600 hover:text-white p-1"
                                                 title="Editar detalles de la evaluación"
                                               >
                                                 <Edit3 className="w-3.5 h-3.5" />
                                               </button>
                                               <button
                                                 onClick={() => handleDeleteActivity(subject.id, cut.id, act)}
-                                                className="text-rose-400 hover:text-rose-300 p-1"
+                                                className="text-rose-400 hover:text-rose-700 p-1"
                                                 title="Eliminar evaluación"
                                               >
                                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1820,18 +1820,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                     </div>
 
                                     {/* Add Activity Form Controlled via React state */}
-                                    <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-2 text-xs">
+                                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs">
                                       <input
                                         type="text"
                                         placeholder="Nueva evaluación..."
                                         value={formState.name}
                                         onChange={e => setInlineActivityState(cut.id, { name: e.target.value })}
-                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white flex-1 min-w-[140px]"
+                                        className="p-1.5 bg-slate-100 border border-slate-200 rounded text-white flex-1 min-w-[140px]"
                                       />
                                       <select 
                                         value={formState.type} 
                                         onChange={e => setInlineActivityState(cut.id, { type: e.target.value as any })} 
-                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white"
+                                        className="p-1.5 bg-slate-100 border border-slate-200 rounded text-white"
                                       >
                                         <option value="Parcial">Parcial</option>
                                         <option value="Quiz">Quiz</option>
@@ -1845,14 +1845,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                         type="date" 
                                         value={formState.date} 
                                         onChange={e => setInlineActivityState(cut.id, { date: e.target.value })} 
-                                        className="p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" 
+                                        className="p-1.5 bg-slate-100 border border-slate-200 rounded text-white font-mono" 
                                       />
                                       <input 
                                         type="number" 
                                         value={formState.weight} 
                                         onChange={e => setInlineActivityState(cut.id, { weight: Number(e.target.value) })} 
                                         placeholder="%" 
-                                        className="w-14 p-1.5 bg-[#0d131a] border border-blue-500/30 rounded text-white font-mono" 
+                                        className="w-14 p-1.5 bg-slate-100 border border-slate-200 rounded text-white font-mono" 
                                       />
                                       <button
                                         onClick={() => handleAddActivityInline(subject.id, cut.id)}
@@ -1925,16 +1925,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           return (
                             <div className="space-y-4">
                               {/* Header & Filter Controls */}
-                              <div className="flex flex-wrap justify-between items-center gap-3 bg-[#132337]/80 p-3 rounded-xl border border-white/10">
+                              <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs font-bold text-slate-300">Filtrar por:</span>
+                                  <span className="text-xs font-bold text-slate-600">Filtrar por:</span>
                                   <div className="flex gap-1.5 flex-wrap">
                                     <button
                                       onClick={() => setCronogramaFilter('all')}
                                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                                         cronogramaFilter === 'all'
                                           ? 'bg-blue-600 text-white shadow'
-                                          : 'bg-[#0d131a] text-slate-400 hover:text-white'
+                                          : 'bg-slate-100 text-slate-500 hover:text-white'
                                       }`}
                                     >
                                       Todo ({classItems.length + evalItems.length + actItems.length})
@@ -1944,7 +1944,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                                         cronogramaFilter === 'classes'
                                           ? 'bg-blue-600 text-white shadow'
-                                          : 'bg-[#0d131a] text-slate-400 hover:text-white'
+                                          : 'bg-slate-100 text-slate-500 hover:text-white'
                                       }`}
                                     >
                                       🏫 Clases ({classItems.length})
@@ -1954,7 +1954,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                                         cronogramaFilter === 'evaluations'
                                           ? 'bg-blue-600 text-white shadow'
-                                          : 'bg-[#0d131a] text-slate-400 hover:text-white'
+                                          : 'bg-slate-100 text-slate-500 hover:text-white'
                                       }`}
                                     >
                                       📊 Evaluaciones ({evalItems.length})
@@ -1964,7 +1964,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                       className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                                         cronogramaFilter === 'activities'
                                           ? 'bg-emerald-600 text-white shadow'
-                                          : 'bg-[#0d131a] text-slate-400 hover:text-white'
+                                          : 'bg-slate-100 text-slate-500 hover:text-white'
                                       }`}
                                     >
                                       🧪 Actividades ({actItems.length})
@@ -1982,12 +1982,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                               {/* Timeline Container */}
                               {items.length === 0 ? (
-                                <div className="p-8 text-center bg-[#132337]/40 rounded-xl border border-dashed border-white/10 text-slate-400 text-xs space-y-2">
+                                <div className="p-8 text-center bg-slate-50/40 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs space-y-2">
                                   <Calendar className="w-8 h-8 text-slate-500 mx-auto" />
                                   <p>No hay eventos registrados en este filtro para {subject.name}.</p>
                                 </div>
                               ) : (
-                                <div className="relative border-l-2 border-blue-500/30 ml-3 pl-5 space-y-3 py-1">
+                                <div className="relative border-l-2 border-slate-200 ml-3 pl-5 space-y-3 py-1">
                                   {items.map((item, idx) => {
                                     const isAct = item.kind === 'activity';
                                     const actStatus = isAct ? (item.status as AcademicActivityStatus) : undefined;
@@ -2003,7 +2003,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                             : 'bg-emerald-400'
                                         }`} />
 
-                                        <div className="p-3.5 bg-[#132337]/80 hover:bg-[#132337] rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-all shadow-sm">
+                                        <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-all shadow-sm">
                                           <div className="space-y-1">
                                             <div className="flex items-center gap-2 flex-wrap">
                                               <span className="text-base">{item.icon}</span>
@@ -2012,17 +2012,17 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                                 item.kind === 'class'
                                                   ? 'bg-blue-500/20 text-blue-300 border-blue-400/30'
                                                   : item.kind === 'evaluation'
-                                                  ? 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+                                                  ? 'bg-rose-500/20 text-rose-700 border-rose-400/30'
                                                   : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
                                               }`}>
                                                 {item.kind === 'class' ? 'Clase' : item.kind === 'evaluation' ? 'Evaluación (Calificable)' : 'Actividad Académica (No Calificable)'}
                                               </span>
                                             </div>
 
-                                            <div className="text-xs text-slate-300">{item.subtitle}</div>
+                                            <div className="text-xs text-slate-600">{item.subtitle}</div>
 
                                             {isAct && (
-                                              <div className="text-[11px] text-slate-400 flex flex-wrap gap-3 pt-0.5">
+                                              <div className="text-[11px] text-slate-500 flex flex-wrap gap-3 pt-0.5">
                                                 {item.professor && <span>👨‍🏫 Prof: {item.professor}</span>}
                                                 {item.description && <span>📝 {item.description}</span>}
                                               </div>
@@ -2036,40 +2036,40 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                                 {isAct ? (
                                                   <span className={`font-bold px-2 py-0.5 rounded ${
                                                     actStatus === 'Realizada'
-                                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-200'
                                                       : actStatus === 'Cancelada'
-                                                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                                      ? 'bg-rose-500/20 text-rose-700 border border-rose-500/30'
                                                       : actStatus === 'Reprogramada'
                                                       ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                      : 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
                                                   }`}>
                                                     {actStatus}
                                                   </span>
                                                 ) : (
-                                                  <span className="text-slate-400">{item.status}</span>
+                                                  <span className="text-slate-500">{item.status}</span>
                                                 )}
                                               </div>
                                             </div>
 
                                             {isAct && 'rawAct' in item && item.rawAct && (
-                                              <div className="flex items-center gap-1 bg-[#0d131a] p-1 rounded-lg border border-white/10">
+                                              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                                                 <button
                                                   onClick={() => handleToggleAcademicActivityStatus(item.rawAct!, item.rawAct!.status === 'Realizada' ? 'Pendiente' : 'Realizada')}
-                                                  className={`p-1 rounded text-xs font-bold ${item.rawAct!.status === 'Realizada' ? 'text-amber-400 hover:bg-amber-500/20' : 'text-emerald-400 hover:bg-emerald-500/20'}`}
+                                                  className={`p-1 rounded text-xs font-bold ${item.rawAct!.status === 'Realizada' ? 'text-amber-400 hover:bg-amber-500/20' : 'text-emerald-700 hover:bg-emerald-500/20'}`}
                                                   title={item.rawAct!.status === 'Realizada' ? 'Marcar Pendiente' : 'Marcar Realizada'}
                                                 >
                                                   {item.rawAct!.status === 'Realizada' ? <RotateCcw className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
                                                 </button>
                                                 <button
                                                   onClick={() => handleOpenAcademicActivityModal(subject.id, item.rawAct!)}
-                                                  className="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10"
+                                                  className="p-1 text-slate-600 hover:text-white rounded hover:bg-white/10"
                                                   title="Editar actividad"
                                                 >
                                                   <Edit3 className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button
                                                   onClick={() => handleDeleteAcademicActivity(item.rawAct!)}
-                                                  className="p-1 text-rose-400 hover:text-rose-300 rounded hover:bg-rose-500/10"
+                                                  className="p-1 text-rose-400 hover:text-rose-700 rounded hover:bg-rose-500/10"
                                                   title="Eliminar actividad"
                                                 >
                                                   <Trash2 className="w-3.5 h-3.5" />
@@ -2096,26 +2096,26 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                 <div className="space-y-4">
                                   {/* Progressive Summary Cards */}
                                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
-                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Nota Acumulada Actual</div>
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                      <div className="text-slate-500 text-[10px] font-semibold uppercase">Nota Acumulada Actual</div>
                                       <div className="text-xl font-serif font-bold text-white mt-0.5">
-                                        {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs text-slate-400 font-sans font-normal">/ 5,00</span>
+                                        {formatGrade(subjectProgress.notaAcumuladaMateria)} <span className="text-xs text-slate-500 font-sans font-normal">/ 5,00</span>
                                       </div>
                                     </div>
-                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
-                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Promedio Evaluado</div>
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                      <div className="text-slate-500 text-[10px] font-semibold uppercase">Promedio Evaluado</div>
                                       <div className="text-xl font-serif font-bold text-white mt-0.5">
                                         {hasGrades ? formatGrade(subjectProgress.promedioAcumuladoEvaluado) : '0,00'}
                                       </div>
                                     </div>
-                                    <div className="p-3 bg-[#132337] rounded-xl border border-white/10">
-                                      <div className="text-slate-400 text-[10px] font-semibold uppercase">Cobertura Evaluada</div>
-                                      <div className="text-xl font-serif font-bold text-emerald-400 mt-0.5">
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                      <div className="text-slate-500 text-[10px] font-semibold uppercase">Cobertura Evaluada</div>
+                                      <div className="text-xl font-serif font-bold text-emerald-700 mt-0.5">
                                         {subjectProgress.porcentajeEvaluadoMateria}%
                                       </div>
                                     </div>
-                                    <div className={`p-3 rounded-xl border ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'}`}>
-                                      <div className="text-slate-300 font-semibold text-[10px] uppercase">Nota Requerida (mín. 3,00)</div>
+                                    <div className={`p-3 rounded-xl border ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-rose-500/20 text-rose-700 border-rose-200'}`}>
+                                      <div className="text-slate-600 font-semibold text-[10px] uppercase">Nota Requerida (mín. 3,00)</div>
                                       <div className="text-xl font-serif font-bold mt-0.5">
                                         {reqInfo.remainingWeight <= 0 ? 'Materia Finalizada' : `${formatGrade(reqInfo.requiredGrade)} en ${reqInfo.remainingWeight}%`}
                                       </div>
@@ -2123,15 +2123,15 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                   </div>
 
                                   {/* Cortes Breakdown Table */}
-                                  <div className="p-4 bg-[#132337]/80 rounded-xl border border-white/10 space-y-3">
-                                    <div className="font-bold text-[#C5A059] text-xs uppercase tracking-wider flex justify-between items-center">
+                                  <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3">
+                                    <div className="font-bold text-purple-600 text-xs uppercase tracking-wider flex justify-between items-center">
                                       <span>Desglose Transparente por Cortes ({subjectProgress.cutsProgress.length})</span>
-                                      <span className="text-slate-400 text-[11px] font-mono font-normal">Calculado en tiempo real sin notas asumidas</span>
+                                      <span className="text-slate-500 text-[11px] font-mono font-normal">Calculado en tiempo real sin notas asumidas</span>
                                     </div>
 
                                     <div className="overflow-x-auto">
                                       <table className="w-full text-left text-xs text-slate-200">
-                                        <thead className="bg-[#0d131a] text-slate-400 font-bold uppercase text-[10px] border-b border-white/10">
+                                        <thead className="bg-slate-100 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
                                           <tr>
                                             <th className="p-2.5">Corte</th>
                                             <th className="p-2.5">Peso Corte</th>
@@ -2146,16 +2146,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                             <tr key={idx} className="hover:bg-white/5 transition-colors">
                                               <td className="p-2.5 font-bold font-sans text-white">{cp.cutName}</td>
                                               <td className="p-2.5">{cp.cutWeightPercent}%</td>
-                                              <td className="p-2.5 text-emerald-400">{cp.evaluatedWeightPercent}% ({cp.gradedActivitiesCount}/{cp.totalActivitiesCount} eval.)</td>
+                                              <td className="p-2.5 text-emerald-700">{cp.evaluatedWeightPercent}% ({cp.gradedActivitiesCount}/{cp.totalActivitiesCount} eval.)</td>
                                               <td className="p-2.5 font-bold text-white">{formatGrade(cp.accumulatedCutGrade)} / 5,00</td>
-                                              <td className="p-2.5 text-[#C5A059] font-bold">+{formatGrade(cp.aporteSubject)} / {formatGrade(cp.maxAporteSubject)} pts</td>
+                                              <td className="p-2.5 text-purple-600 font-bold">+{formatGrade(cp.aporteSubject)} / {formatGrade(cp.maxAporteSubject)} pts</td>
                                               <td className="p-2.5">
                                                 <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded border ${
                                                   cp.status === 'finalizado'
                                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                                                     : cp.status === 'en_progreso'
-                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                                    : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                                                    ? 'bg-amber-500/20 text-amber-700 border-amber-500/40'
+                                                    : 'bg-slate-700/50 text-slate-600 border-slate-600/50'
                                                 }`}>
                                                   {cp.statusLabel}
                                                 </span>
@@ -2187,13 +2187,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* TAB 3: HORARIO SEMANAL (PROFESSIONAL CALENDAR GRID)      */}
       {/* ========================================================= */}
       {activeTab === 'schedule' && (
-        <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 shadow-2xl space-y-4">
-          <div className="flex justify-between items-center border-b border-white/10 pb-3 flex-wrap gap-2">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-5 shadow-2xl space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-200 pb-3 flex-wrap gap-2">
             <div>
               <h3 className="text-base font-bold font-serif text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#C5A059]" /> Horario Semanal Continuo
+                <Calendar className="w-5 h-5 text-purple-600" /> Horario Semanal Continuo
               </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Haz clic en cualquier clase para modificar sus horas, aula o eliminarla.
               </p>
             </div>
@@ -2223,8 +2223,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   key={idx} 
                   className={`p-2.5 rounded-xl text-center text-xs font-bold ${
                     idx === 0 
-                      ? 'bg-[#132337]/40 text-slate-400 font-mono' 
-                      : 'bg-[#132337]/80 text-[#C5A059] border border-blue-500/20'
+                      ? 'bg-slate-50/40 text-slate-500 font-mono' 
+                      : 'bg-slate-50/80 text-purple-600 border border-slate-200'
                   }`}
                 >
                   {dayName}
@@ -2232,10 +2232,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               ))}
 
               {/* Grid content */}
-              <div className="col-span-7 grid grid-cols-7 gap-2 relative min-h-[560px] bg-[#0d1b2e]/60 rounded-xl border border-white/10 p-2">
+              <div className="col-span-7 grid grid-cols-7 gap-2 relative min-h-[560px] bg-slate-50/60 rounded-xl border border-slate-200 p-2">
                 
                 {/* Time Axis Column */}
-                <div className="space-y-8 text-[11px] font-mono text-slate-400 pt-2 text-center border-r border-white/10">
+                <div className="space-y-8 text-[11px] font-mono text-slate-500 pt-2 text-center border-r border-slate-200">
                   {['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((time, idx) => (
                     <div key={idx} className="h-10 flex items-center justify-center">
                       {time}
@@ -2259,7 +2259,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   });
 
                   return (
-                    <div key={dayNum} className="relative border-r border-white/5 last:border-r-0 h-full min-h-[560px]">
+                    <div key={dayNum} className="relative border-r border-slate-100 last:border-r-0 h-full min-h-[560px]">
                       {daySessions.map(({ subject, session }) => {
                         const [startH, startM] = session.startTime.split(':').map(Number);
                         const [endH, endM] = session.endTime.split(':').map(Number);
@@ -2292,7 +2292,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               </div>
                             </div>
 
-                            <div className="text-[9px] text-slate-300 truncate mt-1 border-t border-white/10 pt-1">
+                            <div className="text-[9px] text-slate-600 truncate mt-1 border-t border-slate-200 pt-1">
                               {session.classroom && <div className="font-bold">Aula: {session.classroom}</div>}
                               <div>Prof. {subject.professor}</div>
                             </div>
@@ -2318,7 +2318,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             
             {/* HOY */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-rose-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-rose-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
               <div className="flex justify-between items-center border-b border-rose-500/20 pb-2">
                 <span className="font-bold text-rose-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   🔴 HOY ({groupedEvals.today.length})
@@ -2328,7 +2328,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones hoy.</div>
               ) : (
                 groupedEvals.today.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-rose-500/30 space-y-2 text-xs">
+                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-rose-500/30 space-y-2 text-xs">
                     <div className="flex justify-between items-start">
                       <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
                         {ev.subjectName}
@@ -2341,7 +2341,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             const act = cut?.activities.find(a => a.id === ev.activityId);
                             if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
                           }}
-                          className="p-1 text-slate-300 hover:text-white"
+                          className="p-1 text-slate-600 hover:text-white"
                           title="Editar / Registrar nota"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -2349,14 +2349,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       </div>
                     </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
-                    <div className="text-[11px] text-slate-400">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
+                    <div className="text-[11px] text-slate-500">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
                   </div>
                 ))
               )}
             </div>
 
             {/* MAÑANA */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
               <div className="flex justify-between items-center border-b border-amber-500/20 pb-2">
                 <span className="font-bold text-amber-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   🟠 MAÑANA ({groupedEvals.tomorrow.length})
@@ -2366,7 +2366,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones mañana.</div>
               ) : (
                 groupedEvals.tomorrow.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-amber-500/30 space-y-2 text-xs">
+                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-amber-500/30 space-y-2 text-xs">
                     <div className="flex justify-between items-start">
                       <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
                         {ev.subjectName}
@@ -2378,21 +2378,21 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           const act = cut?.activities.find(a => a.id === ev.activityId);
                           if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
                         }}
-                        className="p-1 text-slate-300 hover:text-white"
+                        className="p-1 text-slate-600 hover:text-white"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
-                    <div className="text-[11px] text-slate-400">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
+                    <div className="text-[11px] text-slate-500">Corte: {ev.cutName} ({ev.weightPercent}%)</div>
                   </div>
                 ))
               )}
             </div>
 
             {/* ESTA SEMANA */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
-              <div className="flex justify-between items-center border-b border-blue-500/20 pb-2">
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-4 shadow-2xl space-y-3">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <span className="font-bold text-blue-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   🟡 ESTA SEMANA ({groupedEvals.thisWeek.length})
                 </span>
@@ -2401,7 +2401,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones esta semana.</div>
               ) : (
                 groupedEvals.thisWeek.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-blue-500/30 space-y-2 text-xs">
+                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
                     <div className="flex justify-between items-start">
                       <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
                         {ev.subjectName}
@@ -2413,20 +2413,20 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           const act = cut?.activities.find(a => a.id === ev.activityId);
                           if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
                         }}
-                        className="p-1 text-slate-300 hover:text-white"
+                        className="p-1 text-slate-600 hover:text-white"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
-                    <div className="text-[11px] text-slate-400">Fecha: {ev.activityDate} (Faltan {ev.daysDiff} días)</div>
+                    <div className="text-[11px] text-slate-500">Fecha: {ev.activityDate} (Faltan {ev.daysDiff} días)</div>
                   </div>
                 ))
               )}
             </div>
 
             {/* MÁS ADELANTE */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
+            <div className="bg-white/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-4 shadow-2xl space-y-3">
               <div className="flex justify-between items-center border-b border-purple-500/20 pb-2">
                 <span className="font-bold text-purple-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   🔵 MÁS ADELANTE ({groupedEvals.later.length})
@@ -2436,7 +2436,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 <div className="p-4 text-center text-xs text-slate-500 italic">Sin evaluaciones futuras registradas.</div>
               ) : (
                 groupedEvals.later.map((ev, idx) => (
-                  <div key={idx} className="p-3 bg-[#132337] rounded-xl border border-purple-500/30 space-y-2 text-xs">
+                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-purple-500/30 space-y-2 text-xs">
                     <div className="flex justify-between items-start">
                       <span className="px-2 py-0.5 rounded text-[10px] text-white font-bold inline-block" style={{ backgroundColor: ev.subjectColor }}>
                         {ev.subjectName}
@@ -2448,13 +2448,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                           const act = cut?.activities.find(a => a.id === ev.activityId);
                           if (sub && cut && act) handleOpenEditActivityModal(sub.id, cut.id, act);
                         }}
-                        className="p-1 text-slate-300 hover:text-white"
+                        className="p-1 text-slate-600 hover:text-white"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="font-bold text-white">{ev.activityName}</div>
-                    <div className="text-[11px] text-slate-400">Fecha: {ev.activityDate}</div>
+                    <div className="text-[11px] text-slate-500">Fecha: {ev.activityDate}</div>
                   </div>
                 ))
               )}
@@ -2496,13 +2496,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         return (
           <div className="space-y-6 animate-in fade-in duration-200">
             {/* Header Banner */}
-            <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="bg-white/80 backdrop-blur-xl border border-emerald-200 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
-                  <Compass className="w-6 h-6 text-emerald-400" />
+                  <Compass className="w-6 h-6 text-emerald-700" />
                   Centro de Actividades Académicas
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+                <p className="text-xs text-slate-600 mt-1 max-w-2xl">
                   Organización semestral de eventos no calificables: salidas de campo, laboratorios, talleres, conferencias, tutorías y entregas documentales.
                 </p>
               </div>
@@ -2516,16 +2516,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
 
             {/* Filter Controls Bar */}
-            <div className="p-4 bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl flex flex-wrap items-center gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-300 font-bold">
-                <Filter className="w-4 h-4 text-[#C5A059]" /> Filtros:
+            <div className="p-4 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl flex flex-wrap items-center gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-600 font-bold">
+                <Filter className="w-4 h-4 text-purple-600" /> Filtros:
               </div>
 
               {/* Subject Filter */}
               <select
                 value={activitiesFilterSubject}
                 onChange={e => setActivitiesFilterSubject(e.target.value)}
-                className="p-2 bg-[#132337] border border-blue-500/30 rounded-xl text-white focus:outline-none focus:border-[#C5A059]"
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-white focus:outline-none focus:border-purple-600"
               >
                 <option value="all">Todas las materias ({activeSubjects.length})</option>
                 {activeSubjects.map(sub => (
@@ -2537,7 +2537,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               <select
                 value={activitiesFilterStatus}
                 onChange={e => setActivitiesFilterStatus(e.target.value)}
-                className="p-2 bg-[#132337] border border-blue-500/30 rounded-xl text-white focus:outline-none focus:border-[#C5A059]"
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-white focus:outline-none focus:border-purple-600"
               >
                 <option value="all">Todos los estados</option>
                 <option value="Pendiente">⏳ Pendiente</option>
@@ -2550,7 +2550,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               <select
                 value={activitiesFilterType}
                 onChange={e => setActivitiesFilterType(e.target.value)}
-                className="p-2 bg-[#132337] border border-blue-500/30 rounded-xl text-white focus:outline-none focus:border-[#C5A059]"
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-white focus:outline-none focus:border-purple-600"
               >
                 <option value="all">Todos los tipos</option>
                 {availableTypes.map((t, idx) => (
@@ -2565,7 +2565,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     setActivitiesFilterStatus('all');
                     setActivitiesFilterType('all');
                   }}
-                  className="px-3 py-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl border border-rose-500/30 font-semibold flex items-center gap-1"
+                  className="px-3 py-2 bg-rose-500/20 text-rose-700 hover:bg-rose-500/30 rounded-xl border border-rose-500/30 font-semibold flex items-center gap-1"
                 >
                   <X className="w-3.5 h-3.5" /> Limpiar filtros
                 </button>
@@ -2574,10 +2574,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
             {/* Activities List / Cards Grid */}
             {filteredActList.length === 0 ? (
-              <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-dashed border-emerald-500/20 rounded-2xl p-12 text-center space-y-3">
+              <div className="bg-white/80 backdrop-blur-xl border border-dashed border-emerald-500/20 rounded-2xl p-12 text-center space-y-3">
                 <Compass className="w-16 h-16 text-emerald-500/40 mx-auto" />
                 <h4 className="text-base font-serif font-bold text-white">No hay actividades académicas registradas</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
                   Toda información debe ser registrada por el usuario. Crea tu primera salida de campo, laboratorio, conferencia o clase especial.
                 </p>
                 <button
@@ -2596,14 +2596,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   return (
                     <div
                       key={activity.id}
-                      className="bg-[#0B1528]/90 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl p-5 shadow-xl space-y-4 transition-all hover:translate-y-[-2px] flex flex-col justify-between"
+                      className="bg-white/90 backdrop-blur-xl border border-slate-200 hover:border-emerald-500/40 rounded-2xl p-5 shadow-xl space-y-4 transition-all hover:translate-y-[-2px] flex flex-col justify-between"
                       style={{ borderTopWidth: '4px', borderTopColor: subject.color }}
                     >
                       <div className="space-y-3">
                         {/* Header: Type icon, title, status */}
                         <div className="flex justify-between items-start gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl p-2 bg-[#132337] rounded-xl border border-white/10">{typeIcon}</span>
+                            <span className="text-xl p-2 bg-slate-50 rounded-xl border border-slate-200">{typeIcon}</span>
                             <div>
                               <h4 className="font-bold text-white text-sm leading-snug">{activity.name}</h4>
                               <span 
@@ -2619,41 +2619,41 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                             status === 'Realizada'
                               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                               : status === 'Cancelada'
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                              ? 'bg-rose-500/20 text-rose-700 border-rose-200'
                               : status === 'Reprogramada'
                               ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                              : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : 'bg-amber-500/20 text-amber-700 border-amber-500/40'
                           }`}>
                             {status}
                           </span>
                         </div>
 
                         {/* Details list */}
-                        <div className="p-3 bg-[#132337]/60 rounded-xl space-y-2 text-xs border border-white/5">
-                          <div className="flex items-center gap-2 text-slate-300 font-mono">
-                            <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
+                        <div className="p-3 bg-slate-50/60 rounded-xl space-y-2 text-xs border border-slate-100">
+                          <div className="flex items-center gap-2 text-slate-600 font-mono">
+                            <Calendar className="w-3.5 h-3.5 text-purple-600" />
                             <span>{activity.date || 'Sin fecha'}</span>
                             {activity.startTime && (
-                              <span className="text-slate-400">({activity.startTime} {activity.endTime ? `- ${activity.endTime}` : ''})</span>
+                              <span className="text-slate-500">({activity.startTime} {activity.endTime ? `- ${activity.endTime}` : ''})</span>
                             )}
                           </div>
 
                           {activity.location && (
-                            <div className="flex items-center gap-2 text-slate-300">
+                            <div className="flex items-center gap-2 text-slate-600">
                               <MapPin className="w-3.5 h-3.5 text-blue-400" />
                               <span>{activity.location}</span>
                             </div>
                           )}
 
                           {activity.professor && (
-                            <div className="flex items-center gap-2 text-slate-300">
+                            <div className="flex items-center gap-2 text-slate-600">
                               <User className="w-3.5 h-3.5 text-indigo-400" />
                               <span>Prof: {activity.professor}</span>
                             </div>
                           )}
 
                           {activity.description && (
-                            <div className="pt-1 text-[11px] text-slate-400 italic border-t border-white/5">
+                            <div className="pt-1 text-[11px] text-slate-500 italic border-t border-slate-100">
                               "{activity.description}"
                             </div>
                           )}
@@ -2661,14 +2661,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex justify-between items-center pt-3 border-t border-white/10 text-xs">
+                      <div className="flex justify-between items-center pt-3 border-t border-slate-200 text-xs">
                         {/* Status Toggle Button */}
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleToggleAcademicActivityStatus(activity, status === 'Realizada' ? 'Pendiente' : 'Realizada')}
                             className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all ${
                               status === 'Realizada'
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                                ? 'bg-amber-500/20 text-amber-700 border-amber-500/40 hover:bg-amber-500/30'
                                 : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                             }`}
                           >
@@ -2683,14 +2683,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleOpenAcademicActivityModal(subject.id, activity)}
-                            className="p-1.5 text-slate-300 hover:text-white bg-[#132337] hover:bg-blue-900/50 rounded-lg border border-white/10 transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-white bg-slate-50 hover:bg-blue-900/50 rounded-lg border border-slate-200 transition-colors"
                             title="Editar actividad"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteAcademicActivity(activity)}
-                            className="p-1.5 text-rose-400 hover:text-rose-300 bg-[#132337] hover:bg-rose-900/50 rounded-lg border border-white/10 transition-colors"
+                            className="p-1.5 text-rose-400 hover:text-rose-700 bg-slate-50 hover:bg-rose-900/50 rounded-lg border border-slate-200 transition-colors"
                             title="Eliminar actividad"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2710,9 +2710,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* TAB 6: SEGUIMIENTO ACADÉMICO                              */}
       {/* ========================================================= */}
       {activeTab === 'progress' && (
-        <div className="bg-[#0B1528]/80 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-2xl space-y-6">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-6">
           <h3 className="text-lg font-bold font-serif text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#C5A059]" /> Seguimiento de Rendimiento y Análisis Predictivo
+            <TrendingUp className="w-5 h-5 text-purple-600" /> Seguimiento de Rendimiento y Análisis Predictivo
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -2723,8 +2723,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               const statusInfo = AcademicCalculations.getSubjectStatus(sub);
 
               return (
-                <div key={sub.id} className="p-5 bg-[#132337]/70 rounded-xl border border-white/10 space-y-3">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                <div key={sub.id} className="p-5 bg-slate-50/70 rounded-xl border border-slate-200 space-y-3">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                     <span className="font-bold text-white text-sm" style={{ color: sub.color }}>{sub.name}</span>
                     <span className="text-xs px-2 py-0.5 rounded font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
                       {subProgress.porcentajeEvaluadoMateria}% Evaluado
@@ -2732,35 +2732,35 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   </div>
 
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Nota Acumulada Actual:</span>
+                    <span className="text-slate-500">Nota Acumulada Actual:</span>
                     <span className="font-bold font-mono text-white text-sm">{formatGrade(subProgress.notaAcumuladaMateria)} / 5,00</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Promedio Evaluado:</span>
+                    <span className="text-slate-500">Promedio Evaluado:</span>
                     <span className="font-bold text-white">{hasGrades ? formatGrade(subProgress.promedioAcumuladoEvaluado) : 'Sin notas'}</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Avance de Cortes:</span>
-                    <span className="text-slate-300">{subProgress.finishedCuts}/{subProgress.totalCuts} cortes finalizados</span>
+                    <span className="text-slate-500">Avance de Cortes:</span>
+                    <span className="text-slate-600">{subProgress.finishedCuts}/{subProgress.totalCuts} cortes finalizados</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Estado Actual:</span>
-                    <span className={`font-bold ${statusInfo.status === 'Aprobada' ? 'text-emerald-400' : statusInfo.status === 'En Riesgo' ? 'text-rose-400' : 'text-blue-300'}`}>
+                    <span className="text-slate-500">Estado Actual:</span>
+                    <span className={`font-bold ${statusInfo.status === 'Aprobada' ? 'text-emerald-700' : statusInfo.status === 'En Riesgo' ? 'text-rose-400' : 'text-blue-300'}`}>
                       {statusInfo.status}
                     </span>
                   </div>
 
-                  <div className={`p-3 rounded-xl border text-xs font-semibold ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                  <div className={`p-3 rounded-xl border text-xs font-semibold ${reqInfo.achievable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-200' : 'bg-rose-500/20 text-rose-700 border-rose-500/30'}`}>
                     {reqInfo.remainingWeight <= 0 ? (
                       <span>Materia finalizada. Nota acumulada final: {formatGrade(subProgress.notaAcumuladaMateria)}</span>
                     ) : (
                       <div>
                         <div>Nota promedio requerida para aprobar (3,00):</div>
                         <div className="text-xl font-serif font-bold mt-1">
-                          {formatGrade(reqInfo.requiredGrade)} <span className="text-xs font-sans font-normal text-slate-300">en el {reqInfo.remainingWeight}% restante</span>
+                          {formatGrade(reqInfo.requiredGrade)} <span className="text-xs font-sans font-normal text-slate-600">en el {reqInfo.remainingWeight}% restante</span>
                         </div>
                       </div>
                     )}
@@ -2791,8 +2791,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             {semesters.map(sem => (
               <div 
                 key={sem.id} 
-                className={`p-5 rounded-2xl border backdrop-blur-xl bg-[#0B1528]/80 transition-all ${
-                  sem.isActive ? 'border-[#C5A059] ring-1 ring-[#C5A059]/30' : 'border-white/10'
+                className={`p-5 rounded-2xl border backdrop-blur-xl bg-white/80 transition-all ${
+                  sem.isActive ? 'border-purple-600 ring-1 ring-[#C5A059]/30' : 'border-slate-200'
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">
@@ -2805,7 +2805,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-slate-400 mt-1">
+                    <div className="text-xs text-slate-500 mt-1">
                       Periodo: {sem.startDate || 'Sin inicio'} - {sem.endDate || 'Sin fin'}
                     </div>
                   </div>
@@ -2821,14 +2821,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     )}
                     <button
                       onClick={() => handleOpenSemesterModal(sem)}
-                      className="text-slate-400 hover:text-white p-1"
+                      className="text-slate-500 hover:text-white p-1"
                       title="Editar semestre"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteSemester(sem)}
-                      className="text-rose-400 hover:text-rose-300 p-1"
+                      className="text-rose-400 hover:text-rose-700 p-1"
                       title="Eliminar semestre"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -2845,27 +2845,27 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL: CONFIRMACIÓN DE ACCIONES CRÍTICAS                  */}
       {/* ========================================================= */}
       {confirmModalData && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-[#0B1528] border border-rose-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white border border-rose-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-base font-serif font-bold text-white">{confirmModalData.title}</h3>
-                <p className="text-xs text-rose-300 font-medium">Confirmación requerida</p>
+                <p className="text-xs text-rose-700 font-medium">Confirmación requerida</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               {confirmModalData.message}
             </p>
 
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setConfirmModalData(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 rounded-xl transition-all"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white/10 rounded-xl transition-all"
               >
                 {confirmModalData.cancelText || 'Cancelar'}
               </button>
@@ -2893,56 +2893,56 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL SEMESTRE (CREAR / EDITAR)                            */}
       {/* ========================================================= */}
       {showSemesterModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="text-lg font-serif font-bold text-white">
                 {editingSemester ? 'Editar Semestre' : 'Registrar Nuevo Semestre'}
               </h3>
-              <button onClick={() => setShowSemesterModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowSemesterModal(false)} className="text-slate-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveSemester} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Nombre del Semestre *</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Nombre del Semestre *</label>
                 <input
                   type="text"
                   placeholder="Ej: 2026-I, Semestre 5"
                   value={semName}
                   onChange={e => setSemName(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white focus:outline-none focus:border-[#C5A059]"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white focus:outline-none focus:border-purple-600"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Fecha de Inicio</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Fecha de Inicio</label>
                   <input
                     type="date"
                     value={semStart}
                     onChange={e => setSemStart(e.target.value)}
-                    className="w-full p-2 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Fecha de Finalización</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Fecha de Finalización</label>
                   <input
                     type="date"
                     value={semEnd}
                     onChange={e => setSemEnd(e.target.value)}
-                    className="w-full p-2 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowSemesterModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                 >
                   Cancelar
                 </button>
@@ -2962,36 +2962,36 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL MATERIA (CREAR / EDITAR)                             */}
       {/* ========================================================= */}
       {showSubjectModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="text-lg font-serif font-bold text-white">
                 {editingSubject ? 'Editar Materia' : 'Registrar Nueva Materia'}
               </h3>
-              <button onClick={() => setShowSubjectModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowSubjectModal(false)} className="text-slate-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveSubject} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Nombre de la Asignatura *</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Nombre de la Asignatura *</label>
                 <input
                   type="text"
                   placeholder="Ej: Fisiología, Cálculo Vectorial"
                   value={subjName}
                   onChange={e => setSubjName(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white focus:outline-none focus:border-[#C5A059]"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white focus:outline-none focus:border-purple-600"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Semestre Perteneciente</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Semestre Perteneciente</label>
                 <select
                   value={subjSemesterId}
                   onChange={e => setSubjSemesterId(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                 >
                   {semesters.map(s => (
                     <option key={s.id} value={s.id}>{s.name} {s.isActive ? '(Activo)' : ''}</option>
@@ -3000,24 +3000,24 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Profesor / Docente</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Profesor / Docente</label>
                 <input
                   type="text"
                   placeholder="Ej: Dr. Martínez"
                   value={subjProf}
                   onChange={e => setSubjProf(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white focus:outline-none focus:border-[#C5A059]"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white focus:outline-none focus:border-purple-600"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 block">Color Institucional</label>
+                <label className="text-xs font-bold text-slate-600 block">Color Institucional</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={subjColor}
                     onChange={e => setSubjColor(e.target.value)}
-                    className="w-10 h-10 p-1 bg-[#132337] border border-blue-500/30 rounded-xl cursor-pointer shrink-0"
+                    className="w-10 h-10 p-1 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer shrink-0"
                   />
                   <div className="flex flex-wrap gap-1.5">
                     {colorPresets.map((hex) => (
@@ -3034,21 +3034,21 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Aula Predeterminada</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Aula Predeterminada</label>
                 <input
                   type="text"
                   placeholder="Ej: Aula 301, Lab de Cómputo"
                   value={subjClassroom}
                   onChange={e => setSubjClassroom(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowSubjectModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                 >
                   Cancelar
                 </button>
@@ -3068,22 +3068,22 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL GLOBAL AGREGAR SESIÓN                                */}
       {/* ========================================================= */}
       {showAddSessionGlobalModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="text-base font-serif font-bold text-white">Agregar Sesión de Clase</h3>
-              <button onClick={() => setShowAddSessionGlobalModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddSessionGlobalModal(false)} className="text-slate-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleGlobalAddSession} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Asignatura *</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Asignatura *</label>
                 <select
                   value={globalSessionSubjectId}
                   onChange={e => setGlobalSessionSubjectId(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                 >
                   {activeSubjects.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -3092,11 +3092,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Día de la Semana</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Día de la Semana</label>
                 <select
                   value={sessionDay}
                   onChange={e => setSessionDay(Number(e.target.value))}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                 >
                   <option value={1}>Lunes</option>
                   <option value={2}>Martes</option>
@@ -3110,41 +3110,41 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Inicio</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Inicio</label>
                   <input
                     type="time"
                     value={sessionStart}
                     onChange={e => setSessionStart(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Fin</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Fin</label>
                   <input
                     type="time"
                     value={sessionEnd}
                     onChange={e => setSessionEnd(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Aula / Salón (Opcional)</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Aula / Salón (Opcional)</label>
                 <input
                   type="text"
                   placeholder="Ej: Aula 301"
                   value={sessionRoom}
                   onChange={e => setSessionRoom(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowAddSessionGlobalModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                 >
                   Cancelar
                 </button>
@@ -3164,28 +3164,28 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL EDITAR SESIÓN DE HORARIO                             */}
       {/* ========================================================= */}
       {editingSessionData && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-base font-serif font-bold text-white">Editar Sesión de Clase</h3>
-                <p className="text-xs text-[#C5A059]">{editingSessionData.subjectName}</p>
+                <p className="text-xs text-purple-600">{editingSessionData.subjectName}</p>
               </div>
-              <button onClick={() => setEditingSessionData(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setEditingSessionData(null)} className="text-slate-500 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveSessionEdit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Día de la semana</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Día de la semana</label>
                 <select
                   value={editingSessionData.session.day}
                   onChange={e => setEditingSessionData({
                     ...editingSessionData,
                     session: { ...editingSessionData.session, day: Number(e.target.value) }
                   })}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                 >
                   <option value={1}>Lunes</option>
                   <option value={2}>Martes</option>
@@ -3199,7 +3199,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Inicio</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Inicio</label>
                   <input
                     type="time"
                     value={editingSessionData.session.startTime}
@@ -3207,11 +3207,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       ...editingSessionData,
                       session: { ...editingSessionData.session, startTime: e.target.value }
                     })}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Fin</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Fin</label>
                   <input
                     type="time"
                     value={editingSessionData.session.endTime}
@@ -3219,13 +3219,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       ...editingSessionData,
                       session: { ...editingSessionData.session, endTime: e.target.value }
                     })}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Aula / Salón</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Aula / Salón</label>
                 <input
                   type="text"
                   value={editingSessionData.session.classroom || ''}
@@ -3233,12 +3233,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     ...editingSessionData,
                     session: { ...editingSessionData.session, classroom: e.target.value }
                   })}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white"
                   placeholder="Ej: Aula 301"
                 />
               </div>
 
-              <div className="flex justify-between items-center pt-3 border-t border-white/10">
+              <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => handleDeleteSession(editingSessionData.subjectId, editingSessionData.session.id, getDayOfWeekName(editingSessionData.session.day))}
@@ -3250,7 +3250,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   <button
                     type="button"
                     onClick={() => setEditingSessionData(null)}
-                    className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                    className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                   >
                     Cancelar
                   </button>
@@ -3274,37 +3274,37 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         const targetSubject = subjects.find(s => s.id === cutSubjectId);
 
         return (
-          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-            <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-serif font-bold text-white">
                   {editingCut ? 'Editar Corte de Evaluación' : 'Crear Corte de Evaluación'}
                 </h3>
-                <button onClick={() => setShowCutModal(false)} className="text-slate-400 hover:text-white">
+                <button onClick={() => setShowCutModal(false)} className="text-slate-500 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveCut} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre del Corte *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Nombre del Corte *</label>
                   <input
                     type="text"
                     placeholder="Ej: Corte 1, Parcial Final"
                     value={cutName}
                     onChange={e => setCutName(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Peso en la asignatura (%) *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Peso en la asignatura (%) *</label>
                   <input
                     type="number"
                     value={cutWeight}
                     onChange={e => setCutWeight(Number(e.target.value))}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white font-mono"
                     required
                   />
                 </div>
@@ -3318,11 +3318,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   }}
                 />
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => setShowCutModal(false)}
-                    className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                    className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                   >
                     Cancelar
                   </button>
@@ -3347,34 +3347,34 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         const targetCut = targetSubj?.cuts?.find(c => c.id === editingActivity.cutId);
 
         return (
-          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
-            <div className="bg-[#0B1528] border border-blue-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                 <h3 className="text-base font-serif font-bold text-white">Editar Evaluación / Actividad</h3>
-                <button onClick={() => setEditingActivity(null)} className="text-slate-400 hover:text-white">
+                <button onClick={() => setEditingActivity(null)} className="text-slate-500 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveActivityEdit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre de la Evaluación *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Nombre de la Evaluación *</label>
                   <input
                     type="text"
                     value={editActName}
                     onChange={e => setEditActName(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Tipo de Actividad</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Tipo de Actividad</label>
                     <select
                       value={editActType}
                       onChange={e => setEditActType(e.target.value as any)}
-                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white"
                     >
                       <option value="Parcial">Parcial</option>
                       <option value="Quiz">Quiz</option>
@@ -3387,12 +3387,12 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Peso en Corte (%)</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Peso en Corte (%)</label>
                     <input
                       type="number"
                       value={editActWeight}
                       onChange={e => setEditActWeight(Number(e.target.value))}
-                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                       required
                     />
                   </div>
@@ -3400,17 +3400,17 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Fecha Programada</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Fecha Programada</label>
                     <input
                       type="date"
                       value={editActDate}
                       onChange={e => setEditActDate(e.target.value)}
-                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Calificación (0,00 - 5,00)</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Calificación (0,00 - 5,00)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -3419,7 +3419,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                       placeholder="0,00"
                       value={editActGrade}
                       onChange={e => setEditActGrade(e.target.value)}
-                      className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-sm text-white font-mono font-bold"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-white font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -3435,7 +3435,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   />
                 )}
 
-                <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => handleDeleteActivity(editingActivity.subjectId, editingActivity.cutId, editingActivity.activity)}
@@ -3447,7 +3447,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     <button
                       type="button"
                       onClick={() => setEditingActivity(null)}
-                      className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl"
+                      className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl"
                     >
                       Cancelar
                     </button>
@@ -3470,15 +3470,15 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* ========================================================= */}
       {showAcademicActivityModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B1528] border border-emerald-500/30 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-white/10 flex justify-between items-center bg-[#132337]/50">
+          <div className="bg-white border border-emerald-200 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-base font-serif font-bold text-white flex items-center gap-2">
-                <Compass className="w-5 h-5 text-emerald-400" />
+                <Compass className="w-5 h-5 text-emerald-700" />
                 {editingAcademicActivity ? 'Editar Actividad Académica' : 'Nueva Actividad Académica'}
               </h3>
               <button
                 onClick={() => setShowAcademicActivityModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="text-slate-500 hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3486,8 +3486,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
             <form onSubmit={handleSaveAcademicActivity} className="p-6 space-y-4">
               {/* Note callout: non-graded clarification */}
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-start gap-2">
-                <Compass className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+              <div className="p-3 bg-emerald-500/10 border border-emerald-200 rounded-xl text-xs text-emerald-300 flex items-start gap-2">
+                <Compass className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" />
                 <span>
                   <strong>Actividad Académica (No Calificable):</strong> Sirve para estructurar y organizar eventos del semestre (salidas de campo, talleres, laboratorios, etc.). No modifica promedios ni notas.
                 </span>
@@ -3495,11 +3495,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               {/* Subject selector */}
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Materia Asociada *</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Materia Asociada *</label>
                 <select
                   value={acadActSubjectId}
                   onChange={e => setAcadActSubjectId(e.target.value)}
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   required
                 >
                   <option value="" disabled>Selecciona una asignatura...</option>
@@ -3511,13 +3511,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               {/* Activity Name */}
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Nombre de la Actividad *</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Nombre de la Actividad *</label>
                 <input
                   type="text"
                   value={acadActName}
                   onChange={e => setAcadActName(e.target.value)}
                   placeholder="Ej. Salida de Campo a la Reserva, Laboratorio #2, Conferencia de Criptografía..."
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   required
                 />
               </div>
@@ -3525,11 +3525,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {/* Type, Status & Class Relation */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Tipo de Actividad *</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Tipo de Actividad *</label>
                   <select
                     value={acadActType}
                     onChange={e => setAcadActType(e.target.value as AcademicActivityType)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   >
                     <option value="Salida de campo">🚌 Salida de campo</option>
                     <option value="Laboratorio">🧪 Laboratorio</option>
@@ -3547,11 +3547,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Estado</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Estado</label>
                   <select
                     value={acadActStatus}
                     onChange={e => setAcadActStatus(e.target.value as AcademicActivityStatus)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   >
                     <option value="Pendiente">⏳ Pendiente</option>
                     <option value="Realizada">✅ Realizada</option>
@@ -3561,11 +3561,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Relación con Clase</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Relación con Clase</label>
                   <select
                     value={acadActClassRelation}
                     onChange={e => setAcadActClassRelation(e.target.value as 'replaces' | 'complements' | 'independent')}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-amber-200 font-bold focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-amber-200 font-bold focus:outline-none focus:border-emerald-400"
                   >
                     <option value="replaces">📍 Sustituye la clase</option>
                     <option value="complements">🤝 Complementa la clase</option>
@@ -3576,13 +3576,13 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               {acadActType === 'Actividad personalizada' && (
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Nombre del Tipo Personalizado</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Nombre del Tipo Personalizado</label>
                   <input
                     type="text"
                     value={acadActCustomType}
                     onChange={e => setAcadActCustomType(e.target.value)}
                     placeholder="Ej. Hackathon interna, Simposio..."
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               )}
@@ -3590,32 +3590,32 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {/* Date & Times */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Fecha</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Fecha</label>
                   <input
                     type="date"
                     value={acadActDate}
                     onChange={e => setAcadActDate(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Inicio</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Inicio</label>
                   <input
                     type="time"
                     value={acadActStartTime}
                     onChange={e => setAcadActStartTime(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Hora Fin</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Hora Fin</label>
                   <input
                     type="time"
                     value={acadActEndTime}
                     onChange={e => setAcadActEndTime(e.target.value)}
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               </div>
@@ -3623,45 +3623,45 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               {/* Location & Professor */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Ubicación / Salón</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Ubicación / Salón</label>
                   <input
                     type="text"
                     value={acadActLocation}
                     onChange={e => setAcadActLocation(e.target.value)}
                     placeholder="Ej. Lab 302, Auditorio Principal, Zoom..."
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">Profesor / Encargado</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Profesor / Encargado</label>
                   <input
                     type="text"
                     value={acadActProfessor}
                     onChange={e => setAcadActProfessor(e.target.value)}
                     placeholder="Ej. Dr. Martínez"
-                    className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Descripción / Notas</label>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Descripción / Notas</label>
                 <textarea
                   rows={2}
                   value={acadActDescription}
                   onChange={e => setAcadActDescription(e.target.value)}
                   placeholder="Detalles importantes, requerimientos o instrucciones para la actividad..."
-                  className="w-full p-2.5 bg-[#132337] border border-blue-500/30 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowAcademicActivityModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-white/5 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>

@@ -18,7 +18,7 @@ export const NotificationsModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-[#0A192F] text-white border-2 border-[#C5A059] max-w-lg w-full p-6 shadow-2xl space-y-4 rounded-sm">
         {/* HEADER */}
         <div className="flex justify-between items-center border-b border-[#C5A059]/40 pb-3">
@@ -30,7 +30,7 @@ export const NotificationsModal: React.FC<Props> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-white/60 hover:text-white transition-colors"
+            className="p-1 text-white/60 hover:text-slate-900 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

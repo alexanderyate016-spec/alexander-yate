@@ -56,7 +56,7 @@ export const ConflictPanel: React.FC<Props> = ({
                 Conflicto entre dos eventos programados:
               </div>
               <div className="flex flex-wrap items-center gap-2 text-white">
-                <span className="font-bold text-amber-300">1. {eventA.title}</span> ({eventA.startTime} - {eventA.endTime})
+                <span className="font-bold text-amber-800">1. {eventA.title}</span> ({eventA.startTime} - {eventA.endTime})
                 <span className="text-white/40">vs</span>
                 <span className="font-bold text-blue-300">2. {eventB.title}</span> ({eventB.startTime} - {eventB.endTime})
               </div>
@@ -73,7 +73,7 @@ export const ConflictPanel: React.FC<Props> = ({
 
               <button
                 onClick={() => onDismissConflict(eventA.id, eventB.id)}
-                className="px-2.5 py-1 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold uppercase tracking-wider transition-colors"
+                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-white font-bold uppercase tracking-wider transition-colors"
               >
                 Mantener Ambos
               </button>

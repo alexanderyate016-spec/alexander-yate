@@ -557,7 +557,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                 ? 'bg-emerald-950/90 border-emerald-500/50 shadow-emerald-500/20'
                 : toast.type === 'warning'
                 ? 'bg-amber-950/90 border-amber-500/50 shadow-amber-500/20'
-                : 'bg-slate-900/90 border-blue-500/50 shadow-blue-500/20'
+                : 'bg-slate-50 border-blue-500/50 shadow-blue-500/20'
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
@@ -574,23 +574,23 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               <ExecutiveBadge variant="solid" accentColor="amber">
                 Oficina de Vida Diaria
               </ExecutiveBadge>
-              <span className="text-xs font-mono text-slate-400">Administración del Tiempo Libre</span>
+              <span className="text-xs font-mono text-slate-500">Administración del Tiempo Libre</span>
             </div>
             <h2 className="text-2xl font-serif font-bold text-white tracking-tight flex items-center gap-2">
               <Clock className="w-6 h-6 text-amber-400" />
               Horario Personal
             </h2>
-            <p className="text-xs text-slate-300 mt-1">
+            <p className="text-xs text-slate-700 mt-1">
               Planificación del tiempo disponible. <span className="text-amber-300 font-medium">Agenda Ejecutiva:</span> ¿Qué tengo programado? | <span className="text-amber-300 font-medium">Horario Personal:</span> ¿Cómo aprovecharé mi tiempo?
             </p>
           </div>
 
           {/* DATE SELECTOR & BUTTONS */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-            <div className="flex items-center bg-[#132337] border border-white/10 rounded-xl p-1 gap-1">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setCurrentDate(addDaysToDateStr(currentDate, -1))}
-                className="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                className="p-2 hover:bg-white/10 rounded-lg text-slate-700 hover:text-slate-900 transition-all cursor-pointer"
                 title="Día Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -599,7 +599,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               <button
                 onClick={() => setCurrentDate(todayStr)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  currentDate === todayStr ? 'bg-amber-500 text-slate-950' : 'text-slate-300 hover:text-white'
+                  currentDate === todayStr ? 'bg-amber-500 text-slate-950' : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
                 Hoy
@@ -607,7 +607,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
 
               <button
                 onClick={() => setCurrentDate(addDaysToDateStr(currentDate, 1))}
-                className="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer"
+                className="p-2 hover:bg-white/10 rounded-lg text-slate-700 hover:text-slate-900 transition-all cursor-pointer"
                 title="Día Siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -640,7 +640,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               <span className="text-xs font-bold text-amber-300 font-mono block">
                 🇨🇴 {holidayInfo.name} — Festivo Nacional de Colombia
               </span>
-              <span className="text-[11px] text-slate-300">
+              <span className="text-[11px] text-slate-700">
                 Las clases del Horario Académico se pausaron automáticamente. Las actividades y bloques creados manualmente sí se muestran.
               </span>
             </div>
@@ -655,7 +655,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               <span className="text-xs font-bold text-indigo-300 font-mono block">
                 🗓 Fin de Semana
               </span>
-              <span className="text-[11px] text-slate-300">
+              <span className="text-[11px] text-slate-700">
                 El Horario Académico no carga clases en fin de semana. Sugerencia: Dedica este tiempo a descanso, estudio autónomo, deporte o tiempo familiar.
               </span>
             </div>
@@ -666,44 +666,44 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
       {/* 2. RESUMEN DEL DÍA (METRICS BAR) */}
       <GlassPanel accentColor="amber" padding="md">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400 block">Tiempo Ocupado</span>
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block">Tiempo Ocupado</span>
             <span className="text-lg font-mono font-bold text-amber-300">{dayStats.occupiedFormatted}</span>
-            <span className="text-[10px] text-slate-400 block">{dayStats.occupiedPercent}% de la jornada</span>
+            <span className="text-[10px] text-slate-500 block">{dayStats.occupiedPercent}% de la jornada</span>
           </div>
 
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400 block">Tiempo Libre</span>
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block">Tiempo Libre</span>
             <span className="text-lg font-mono font-bold text-emerald-300">{dayStats.freeFormatted}</span>
-            <span className="text-[10px] text-slate-400 block">disponible</span>
+            <span className="text-[10px] text-slate-500 block">disponible</span>
           </div>
 
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400 block">Estudio</span>
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block">Estudio</span>
             <span className="text-lg font-mono font-bold text-purple-300">{dayStats.studyFormatted}</span>
-            <span className="text-[10px] text-slate-400 block">planificado</span>
+            <span className="text-[10px] text-slate-500 block">planificado</span>
           </div>
 
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400 block">Ejercicio</span>
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block">Ejercicio</span>
             <span className="text-lg font-mono font-bold text-teal-300">{dayStats.gymFormatted}</span>
-            <span className="text-[10px] text-slate-400 block">actividad física</span>
+            <span className="text-[10px] text-slate-500 block">actividad física</span>
           </div>
 
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-400 block">Descanso</span>
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-slate-500 block">Descanso</span>
             <span className="text-lg font-mono font-bold text-blue-300">{dayStats.restFormatted}</span>
-            <span className="text-[10px] text-slate-400 block">pausas & reposo</span>
+            <span className="text-[10px] text-slate-500 block">pausas & reposo</span>
           </div>
 
-          <div className="p-3 bg-[#132337] border border-white/10 rounded-xl space-y-1">
+          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
             <span className="text-[10px] font-bold uppercase text-amber-400 block flex items-center gap-1">
               <Flame className="w-3 h-3 text-amber-400" /> Hábitos
             </span>
             <span className="text-lg font-mono font-bold text-amber-300">
               {dayStats.habitsCompletedCount} / {dayStats.habitsScheduledCount}
             </span>
-            <span className="text-[10px] text-slate-400 block">cumplidos hoy</span>
+            <span className="text-[10px] text-slate-500 block">cumplidos hoy</span>
           </div>
         </div>
       </GlassPanel>
@@ -717,7 +717,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               Plan del Día ({formatFriendlyDate(currentDate)})
             </h3>
           </div>
-          <span className="text-xs font-mono text-slate-400">
+          <span className="text-xs font-mono text-slate-500">
             {fixedEvents.length} institucionales • {personalBlocks.length} bloques • {scheduledHabits.length} hábitos
           </span>
         </div>
@@ -737,7 +737,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                 return (
                   <div
                     key={item.id}
-                    className="relative pl-10 p-3.5 bg-[#0F1B2D]/90 border border-blue-500/30 rounded-xl flex items-center justify-between shadow-lg"
+                    className="relative pl-10 p-3.5 bg-slate-50/90 border border-blue-500/30 rounded-xl flex items-center justify-between shadow-lg"
                   >
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-blue-400 border-2 border-[#0B1528] shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
 
@@ -753,7 +753,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                       <h4 className="text-sm font-bold text-white flex items-center gap-2">
                         {fe.title}
                       </h4>
-                      {fe.subtitle && <p className="text-xs text-slate-400">{fe.subtitle}</p>}
+                      {fe.subtitle && <p className="text-xs text-slate-500">{fe.subtitle}</p>}
                     </div>
 
                     <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-300 text-xs font-mono flex items-center gap-1.5 shrink-0">
@@ -775,7 +775,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                     className={`relative pl-10 p-3.5 border rounded-xl flex items-center justify-between transition-all ${
                       isCompleted
                         ? 'bg-emerald-950/20 border-emerald-500/30 opacity-80'
-                        : 'bg-[#132337]/90 border-amber-500/30 shadow-md'
+                        : 'bg-white/90 border-amber-500/30 shadow-md'
                     }`}
                   >
                     <div
@@ -792,22 +792,22 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                           🔥 Rutina / Hábito
                         </ExecutiveBadge>
                         {isCompleted && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/40 font-mono">
                             ✓ Cumplido
                           </span>
                         )}
                       </div>
-                      <h4 className={`text-sm font-bold ${isCompleted ? 'line-through text-slate-400' : 'text-white'}`}>
+                      <h4 className={`text-sm font-bold ${isCompleted ? 'line-through text-slate-500' : 'text-white'}`}>
                         {habit.name}
                       </h4>
-                      {habit.description && <p className="text-xs text-slate-400">{habit.description}</p>}
+                      {habit.description && <p className="text-xs text-slate-500">{habit.description}</p>}
                     </div>
 
                     <button
                       onClick={() => handleToggleHabit(habit.id, habit.name)}
                       className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isCompleted
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 border-emerald-500/40'
                           : 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
                       }`}
                     >
@@ -829,7 +829,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                     className={`relative pl-10 p-3.5 border rounded-xl flex items-center justify-between transition-all ${
                       pb.completed
                         ? 'bg-emerald-950/20 border-emerald-500/30 opacity-80'
-                        : 'bg-[#132337]/90 border-amber-500/30 hover:border-amber-400/60 shadow-lg'
+                        : 'bg-white/90 border-amber-500/30 hover:border-purple-300/60 shadow-lg'
                     }`}
                   >
                     <div
@@ -853,13 +853,13 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                           {preset.label}
                         </span>
                         {pb.completed && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/40 font-mono">
                             ✓ Completado
                           </span>
                         )}
                       </div>
 
-                      <h4 className={`text-sm font-bold ${pb.completed ? 'line-through text-slate-400' : 'text-white'}`}>
+                      <h4 className={`text-sm font-bold ${pb.completed ? 'line-through text-slate-500' : 'text-white'}`}>
                         {pb.title}
                       </h4>
 
@@ -871,22 +871,22 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                         </div>
                       )}
 
-                      {pb.notes && <p className="text-xs text-slate-400 italic">{pb.notes}</p>}
+                      {pb.notes && <p className="text-xs text-slate-500 italic">{pb.notes}</p>}
                     </div>
 
                     {/* QUICK CONTROLS & ACTIONS */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <div className="hidden sm:flex items-center gap-1 bg-[#0F1B2D] border border-white/10 rounded-lg p-0.5">
+                      <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
                         <button
                           onClick={() => handleShiftBlockTime(pb, -15)}
-                          className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all cursor-pointer"
+                          className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
                           title="Adelantar 15 min"
                         >
                           <ArrowUp className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleShiftBlockTime(pb, 15)}
-                          className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all cursor-pointer"
+                          className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
                           title="Atrasar 15 min"
                         >
                           <ArrowDown className="w-3 h-3" />
@@ -894,7 +894,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                         <span className="text-[10px] font-mono text-slate-500 px-1">|</span>
                         <button
                           onClick={() => handleResizeBlockDuration(pb, 15)}
-                          className="px-1.5 py-0.5 hover:bg-white/10 rounded text-[10px] font-mono text-amber-300 hover:text-white transition-all cursor-pointer"
+                          className="px-1.5 py-0.5 hover:bg-white/10 rounded text-[10px] font-mono text-amber-300 hover:text-slate-900 transition-all cursor-pointer"
                           title="Extender 15 min"
                         >
                           +15m
@@ -905,8 +905,8 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                         onClick={() => handleToggleComplete(pb)}
                         className={`p-2 rounded-lg border transition-all cursor-pointer ${
                           pb.completed
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-slate-800 text-slate-400 hover:text-white border-white/10'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 border-emerald-500/40'
+                            : 'bg-slate-100 text-slate-500 hover:text-slate-900 border-slate-200'
                         }`}
                         title={pb.completed ? 'Reabrir' : 'Marcar Completado'}
                       >
@@ -915,7 +915,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
 
                       <button
                         onClick={() => handleOpenEditBlock(pb)}
-                        className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                        className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
                         title="Editar Bloque"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -923,7 +923,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
 
                       <button
                         onClick={() => handleDeleteBlock(pb)}
-                        className="p-2 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
+                        className="p-2 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
                         title="Eliminar Bloque"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -938,7 +938,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                 return (
                   <div
                     key={item.id}
-                    className="relative pl-10 p-3 border-2 border-dashed border-amber-500/30 hover:border-amber-400/70 rounded-xl flex items-center justify-between transition-all bg-amber-950/10 group cursor-pointer"
+                    className="relative pl-10 p-3 border-2 border-dashed border-amber-500/30 hover:border-purple-300/70 rounded-xl flex items-center justify-between transition-all bg-amber-950/10 group cursor-pointer"
                     onClick={() => handleOpenNewBlock(item.startTime, Math.min(item.durationMinutes, 120))}
                   >
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-amber-500/30 border border-amber-400" />
@@ -1050,7 +1050,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
                   className={`px-2.5 py-1 text-xs font-mono rounded-lg border transition-all cursor-pointer ${
                     durationMinutes === m
                       ? 'bg-amber-500 text-slate-950 font-bold border-amber-400'
-                      : 'bg-[#132337] text-slate-300 border-white/10 hover:border-amber-400/40'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-purple-300/40'
                   }`}
                 >
                   {m} min
@@ -1060,7 +1060,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
 
             {/* ACADEMIC INTEGRATION (FOR STUDY CATEGORY) */}
             {category === 'study' && (
-              <div className="p-3 bg-[#132337] border border-purple-500/30 rounded-xl space-y-3">
+              <div className="p-3 bg-white border border-purple-500/30 rounded-xl space-y-3">
                 <span className="text-xs font-bold text-purple-300 font-mono block flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4 text-purple-400" /> Integración con Oficina Académica
                 </span>
@@ -1098,7 +1098,7 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
               accentColor="amber"
             />
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
               <ExecutiveButton
                 variant="outline"
                 accentColor="amber"

@@ -48,13 +48,13 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
   return (
     <div className="space-y-6">
       <GlassPanel accentColor="purple" padding="md">
-        <div className="flex flex-wrap justify-between items-center mb-4 border-b border-white/10 pb-3 gap-3">
+        <div className="flex flex-wrap justify-between items-center mb-4 border-b border-slate-200 pb-3 gap-3">
           <div>
-            <h3 className="font-serif font-bold text-white text-base sm:text-lg flex items-center gap-2">
+            <h3 className="font-serif font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-purple-400" />
               Calendario Social Exclusivo
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Cumpleaños, aniversarios, compromisos, fechas especiales y festividades nacionales de Colombia.
             </p>
           </div>
@@ -65,7 +65,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 filterType === 'all'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-900'
               }`}
             >
               Todos ({allEvents.length})
@@ -75,7 +75,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
                 filterType === 'birthday'
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-900'
               }`}
             >
               <Cake className="w-3.5 h-3.5" /> Cumpleaños
@@ -85,7 +85,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
                 filterType === 'anniversary'
                   ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-900'
               }`}
             >
               <Heart className="w-3.5 h-3.5" /> Aniversarios
@@ -95,7 +95,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
                 filterType === 'commitment'
                   ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-900'
               }`}
             >
               <Clock className="w-3.5 h-3.5" /> Compromisos
@@ -105,7 +105,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
                 filterType === 'holiday'
                   ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-900'
               }`}
             >
               <Flag className="w-3.5 h-3.5" /> Festividades
@@ -116,7 +116,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
         {/* EVENTS LIST */}
         <div className="space-y-3">
           {filteredEvents.length === 0 ? (
-            <p className="text-xs text-slate-400 py-8 text-center">No hay eventos para el filtro seleccionado.</p>
+            <p className="text-xs text-slate-500 py-8 text-center">No hay eventos para el filtro seleccionado.</p>
           ) : (
             filteredEvents.slice(0, 30).map(ev => {
               const person = ev.personId ? (data.people || []).find(p => p.id === ev.personId) : undefined;
@@ -127,7 +127,7 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
                   className={`p-4 rounded-xl border backdrop-blur-md flex flex-wrap sm:flex-nowrap justify-between items-center gap-4 transition-all ${
                     ev.isToday
                       ? 'bg-gradient-to-r from-purple-900/40 to-amber-950/30 border-amber-500/50 shadow-lg'
-                      : 'bg-[#132337]/80 border-white/10 hover:border-purple-500/30'
+                      : 'bg-white/80 border-slate-200 hover:border-purple-500/30'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -157,15 +157,15 @@ export const SocialCalendarView: React.FC<Props> = ({ data, onSelectPerson }) =>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-serif font-bold text-white text-sm">{ev.title}</h4>
+                        <h4 className="font-serif font-bold text-slate-900 text-sm">{ev.title}</h4>
                         <ExecutiveBadge variant="subtle" accentColor={
                           ev.type === 'birthday' ? 'amber' : ev.type === 'anniversary' ? 'rose' : ev.type === 'commitment' ? 'blue' : 'purple'
                         }>
                           {ev.type === 'birthday' ? 'Cumpleaños' : ev.type === 'anniversary' ? 'Aniversario' : ev.type === 'commitment' ? 'Compromiso' : ev.type === 'holiday' ? 'Festividad' : 'Fecha Especial'}
                         </ExecutiveBadge>
                       </div>
-                      <p className="text-xs text-slate-300 font-mono mt-0.5">{ev.dateStr}</p>
-                      {ev.description && <p className="text-xs text-slate-400 mt-0.5">{ev.description}</p>}
+                      <p className="text-xs text-slate-700 font-mono mt-0.5">{ev.dateStr}</p>
+                      {ev.description && <p className="text-xs text-slate-500 mt-0.5">{ev.description}</p>}
                     </div>
                   </div>
 

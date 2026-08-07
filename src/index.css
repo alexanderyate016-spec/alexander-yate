@@ -2,6 +2,21 @@
 
 @layer base {
   :root {
+    --time-bg-main: #f8fafc;
+    --time-header-bg: #ffffff;
+    --time-card-bg: #ffffff;
+    --time-subtle-bg: #f1f5f9;
+    --time-border: #e2e8f0;
+    --time-border-subtle: #f1f5f9;
+    --time-text-main: #0f172a;
+    --time-text-muted: #475569;
+    --time-text-light: #64748b;
+    --time-accent-bg: #f5f3ff;
+    --time-accent-text: #7c3aed;
+    --time-accent-border: #ddd6fe;
+    --time-input-bg: #f8fafc;
+    --time-shadow: rgba(15, 23, 42, 0.04);
+
     --bg-cream: #F9F7F2;
     --navy-primary: #0A192F;
     --navy-secondary: #162A45;
@@ -15,8 +30,8 @@
   }
 
   body {
-    background-color: var(--bg-cream);
-    color: var(--text-main);
+    background-color: var(--time-bg-main);
+    color: var(--time-text-main);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
   }
@@ -24,6 +39,206 @@
   h1, h2, h3, h4, .font-serif-presidential {
     font-family: 'Cormorant Garamond', Georgia, Cambria, "Times New Roman", serif;
   }
+}
+
+/* ==========================================================================
+   DYNAMIC TIME-OF-DAY ATMOSPHERIC THEME ENGINE
+   Sincronización automática en tiempo real con el ciclo natural del día
+   ========================================================================== */
+
+/* 🌅 Amanecer (Dawn: 05:00 - 07:59) - Soft warm, golden peach sunrise tones */
+[data-time-period="dawn"] {
+  --time-bg-main: #fffaf5;
+  --time-header-bg: #ffffff;
+  --time-card-bg: #ffffff;
+  --time-subtle-bg: #fff2e8;
+  --time-border: #fcd34d;
+  --time-border-subtle: #fef3c7;
+  --time-text-main: #451a03;
+  --time-text-muted: #78350f;
+  --time-text-light: #92400e;
+  --time-accent-bg: #fff7ed;
+  --time-accent-text: #ea580c;
+  --time-accent-border: #ffedd5;
+  --time-input-bg: #fffaf5;
+  --time-shadow: rgba(234, 88, 12, 0.06);
+}
+
+/* ☀️ Mañana (Morning: 08:00 - 11:59) - Fresh bright sky blue & clean light tones */
+[data-time-period="morning"] {
+  --time-bg-main: #f0f9ff;
+  --time-header-bg: #ffffff;
+  --time-card-bg: #ffffff;
+  --time-subtle-bg: #e0f2fe;
+  --time-border: #bae6fd;
+  --time-border-subtle: #e0f2fe;
+  --time-text-main: #0c4a6e;
+  --time-text-muted: #0369a1;
+  --time-text-light: #0284c7;
+  --time-accent-bg: #f0f9ff;
+  --time-accent-text: #0284c7;
+  --time-accent-border: #bae6fd;
+  --time-input-bg: #f0f9ff;
+  --time-shadow: rgba(2, 132, 199, 0.06);
+}
+
+/* 🌤️ Mediodía (Noon: 12:00 - 16:59) - Maximum clarity, crisp neutral executive layout */
+[data-time-period="midday"] {
+  --time-bg-main: #f8fafc;
+  --time-header-bg: #ffffff;
+  --time-card-bg: #ffffff;
+  --time-subtle-bg: #f1f5f9;
+  --time-border: #e2e8f0;
+  --time-border-subtle: #f1f5f9;
+  --time-text-main: #0f172a;
+  --time-text-muted: #334155;
+  --time-text-light: #64748b;
+  --time-accent-bg: #f5f3ff;
+  --time-accent-text: #7c3aed;
+  --time-accent-border: #ddd6fe;
+  --time-input-bg: #f8fafc;
+  --time-shadow: rgba(124, 58, 237, 0.05);
+}
+
+/* 🌇 Atardecer (Sunset: 17:00 - 19:29) - Golden orange, warm sunset glow */
+[data-time-period="sunset"] {
+  --time-bg-main: #fff7ed;
+  --time-header-bg: #fffaf5;
+  --time-card-bg: #ffffff;
+  --time-subtle-bg: #ffedd5;
+  --time-border: #fdba74;
+  --time-border-subtle: #fed7aa;
+  --time-text-main: #431407;
+  --time-text-muted: #7c2d12;
+  --time-text-light: #9a3412;
+  --time-accent-bg: #fef3c7;
+  --time-accent-text: #d97706;
+  --time-accent-border: #fde68a;
+  --time-input-bg: #fff7ed;
+  --time-shadow: rgba(217, 119, 6, 0.08);
+}
+
+/* 🌆 Crepúsculo (Dusk: 19:30 - 20:59) - Deepening twilight indigo/violet tones */
+[data-time-period="dusk"] {
+  --time-bg-main: #1e1b4b;
+  --time-header-bg: #2e1065;
+  --time-card-bg: #312e81;
+  --time-subtle-bg: #3730a3;
+  --time-border: #6366f1;
+  --time-border-subtle: #4f46e5;
+  --time-text-main: #f8fafc;
+  --time-text-muted: #cbd5e1;
+  --time-text-light: #a5b4fc;
+  --time-accent-bg: #581c87;
+  --time-accent-text: #e9d5ff;
+  --time-accent-border: #7e22ce;
+  --time-input-bg: #3730a3;
+  --time-shadow: rgba(168, 85, 247, 0.15);
+}
+
+/* 🌙 Noche (Night: 21:00 - 04:59) - Elegant dark interface with deep blue/purple tones */
+[data-time-period="night"] {
+  --time-bg-main: #090d16;
+  --time-header-bg: #0f172a;
+  --time-card-bg: #131f37;
+  --time-subtle-bg: #1e293b;
+  --time-border: #334155;
+  --time-border-subtle: #1e293b;
+  --time-text-main: #f8fafc;
+  --time-text-muted: #cbd5e1;
+  --time-text-light: #94a3b8;
+  --time-accent-bg: #31103f;
+  --time-accent-text: #e9d5ff;
+  --time-accent-border: #6b21a8;
+  --time-input-bg: #1e293b;
+  --time-shadow: rgba(192, 132, 252, 0.2);
+}
+
+/* GLOBAL THEME OVERRIDES (Inherited automatically by all offices & elements) */
+[data-time-period] body,
+[data-time-period] .bg-slate-50 {
+  background-color: var(--time-bg-main) !important;
+  color: var(--time-text-main);
+  transition: background-color 0.6s ease-in-out, color 0.6s ease-in-out;
+}
+
+[data-time-period] header,
+[data-time-period] footer {
+  background-color: var(--time-header-bg) !important;
+  border-color: var(--time-border) !important;
+  transition: background-color 0.6s ease-in-out, border-color 0.6s ease-in-out;
+}
+
+[data-time-period] .bg-white {
+  background-color: var(--time-card-bg) !important;
+  transition: background-color 0.6s ease-in-out;
+}
+
+[data-time-period] .bg-slate-100 {
+  background-color: var(--time-subtle-bg) !important;
+  transition: background-color 0.6s ease-in-out;
+}
+
+[data-time-period] .border-slate-200 {
+  border-color: var(--time-border) !important;
+  transition: border-color 0.6s ease-in-out;
+}
+
+[data-time-period] .border-slate-100 {
+  border-color: var(--time-border-subtle) !important;
+  transition: border-color 0.6s ease-in-out;
+}
+
+[data-time-period] .text-slate-900 {
+  color: var(--time-text-main) !important;
+  transition: color 0.6s ease-in-out;
+}
+
+[data-time-period] .text-slate-700,
+[data-time-period] .text-slate-800 {
+  color: var(--time-text-muted) !important;
+  transition: color 0.6s ease-in-out;
+}
+
+[data-time-period] .text-slate-500,
+[data-time-period] .text-slate-400 {
+  color: var(--time-text-light) !important;
+  transition: color 0.6s ease-in-out;
+}
+
+[data-time-period] .bg-purple-50 {
+  background-color: var(--time-accent-bg) !important;
+  transition: background-color 0.6s ease-in-out;
+}
+
+[data-time-period] .text-purple-700,
+[data-time-period] .text-purple-600 {
+  color: var(--time-accent-text) !important;
+  transition: color 0.6s ease-in-out;
+}
+
+[data-time-period] .border-purple-200,
+[data-time-period] .border-purple-100 {
+  border-color: var(--time-accent-border) !important;
+  transition: border-color 0.6s ease-in-out;
+}
+
+/* Form inputs & controls in dark modes (night & dusk) */
+[data-time-period="dusk"] input,
+[data-time-period="dusk"] select,
+[data-time-period="dusk"] textarea,
+[data-time-period="night"] input,
+[data-time-period="night"] select,
+[data-time-period="night"] textarea {
+  background-color: var(--time-subtle-bg) !important;
+  color: var(--time-text-main) !important;
+  border-color: var(--time-border) !important;
+}
+
+[data-time-period="dusk"] select option,
+[data-time-period="night"] select option {
+  background-color: var(--time-card-bg) !important;
+  color: var(--time-text-main) !important;
 }
 
 .bg-presidential-navy {
@@ -75,23 +290,23 @@
 }
 
 .presidential-card {
-  background: #FFFFFF;
-  border: 1px solid #D1C7B7;
-  box-shadow: 0 2px 8px -2px rgba(10, 25, 47, 0.04);
+  background: var(--time-card-bg);
+  border: 1px solid var(--time-border);
+  box-shadow: 0 2px 8px -2px var(--time-shadow);
 }
 
 .presidential-card-gold {
-  background: #FFFFFF;
-  border: 1px solid #D1C7B7;
+  background: var(--time-card-bg);
+  border: 1px solid var(--time-border);
   border-left: 3px solid #C5A059;
-  box-shadow: 0 2px 8px -2px rgba(197, 160, 89, 0.08);
+  box-shadow: 0 2px 8px -2px var(--time-shadow);
 }
 
 .presidential-card-navy {
-  background: #FFFFFF;
-  border: 1px solid #D1C7B7;
+  background: var(--time-card-bg);
+  border: 1px solid var(--time-border);
   border-left: 3px solid #0A192F;
-  box-shadow: 0 2px 8px -2px rgba(10, 25, 47, 0.08);
+  box-shadow: 0 2px 8px -2px var(--time-shadow);
 }
 
 /* Custom scrollbars */
@@ -100,13 +315,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F4F1EA;
+  background: var(--time-subtle-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D1C7B7;
+  background: var(--time-border);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C5A059;
+  background: var(--time-accent-text);
 }
-

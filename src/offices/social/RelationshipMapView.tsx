@@ -25,13 +25,13 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
   return (
     <div className="space-y-6">
       <GlassPanel accentColor="purple" padding="md">
-        <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+        <div className="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
           <div>
-            <h3 className="font-serif font-bold text-white text-base sm:text-lg flex items-center gap-2">
+            <h3 className="font-serif font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
               <Network className="w-5 h-5 text-purple-400" />
               Mapa Visual de Redes Personales
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Organización por clústeres relacionales y nodos de vinculación personal.
             </p>
           </div>
@@ -45,7 +45,7 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
               selectedCategory === null
                 ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
-                : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-900'
             }`}
           >
             Todos los Clústeres ({people.length})
@@ -59,7 +59,7 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border ${
                   selectedCategory === cat.name
                     ? 'bg-purple-500/25 text-purple-300 border-purple-400'
-                    : 'bg-[#132337]/80 text-slate-300 border-white/10 hover:border-purple-500/40'
+                    : 'bg-white/80 text-slate-700 border-slate-200 hover:border-purple-500/40'
                 }`}
               >
                 {cat.icon}
@@ -80,10 +80,10 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
               return (
                 <div
                   key={cat.name}
-                  className="p-4 bg-[#132337]/90 border border-purple-500/30 rounded-2xl space-y-3 relative overflow-hidden backdrop-blur-md shadow-lg"
+                  className="p-4 bg-white/90 border border-purple-500/30 rounded-2xl space-y-3 relative overflow-hidden backdrop-blur-md shadow-lg"
                 >
-                  <div className="flex justify-between items-center border-b border-white/10 pb-2.5">
-                    <div className="flex items-center gap-2 font-serif font-bold text-white text-sm">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                    <div className="flex items-center gap-2 font-serif font-bold text-slate-900 text-sm">
                       {cat.icon}
                       <span>{cat.name}</span>
                     </div>
@@ -93,7 +93,7 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
                   </div>
 
                   {catPeople.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">Sin contactos en este grupo.</p>
+                    <p className="text-xs text-slate-500 py-4 text-center">Sin contactos en este grupo.</p>
                   ) : (
                     <div className="space-y-2">
                       {catPeople.map(p => {
@@ -105,7 +105,7 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
                           <div
                             key={p.id}
                             onClick={() => onSelectPerson(p)}
-                            className="p-2.5 bg-slate-900/80 border border-white/10 hover:border-purple-400 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-all hover:translate-x-0.5 group"
+                            className="p-2.5 bg-slate-50 border border-slate-200 hover:border-purple-400 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-all hover:translate-x-0.5 group"
                           >
                             <div className="flex items-center gap-2.5">
                               {p.photoUrl ? (
@@ -121,11 +121,11 @@ export const RelationshipMapView: React.FC<Props> = ({ data, onSelectPerson }) =
                                 </div>
                               )}
                               <div>
-                                <h5 className="font-serif font-bold text-white text-xs group-hover:text-purple-300 transition-colors flex items-center gap-1">
+                                <h5 className="font-serif font-bold text-slate-900 text-xs group-hover:text-purple-300 transition-colors flex items-center gap-1">
                                   {p.name}
                                   {p.isFavorite && <Star className="w-3 h-3 text-amber-400 fill-amber-400 inline" />}
                                 </h5>
-                                <span className="text-[10px] text-slate-400 block">{p.relationship || p.importanceLevel}</span>
+                                <span className="text-[10px] text-slate-500 block">{p.relationship || p.importanceLevel}</span>
                               </div>
                             </div>
 

@@ -99,14 +99,14 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
     <div className="space-y-7 text-slate-100 font-sans pb-16">
       
       {/* 1. HEADER & PHILOSOPHY BANNER */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-purple-950/80 via-[#101c30] to-[#0a1220] border border-white/10 backdrop-blur-2xl shadow-2xl space-y-4">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-purple-950/80 via-[#101c30] to-[#0a1220] border border-slate-200 backdrop-blur-2xl shadow-2xl space-y-4">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div className="space-y-1.5 max-w-3xl">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-400/30">
                 <Heart className="w-5 h-5 fill-purple-400/20" />
               </span>
-              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 tracking-tight">
                 Oficina de Relaciones • Centro de Vida Social
               </h1>
             </div>
@@ -115,7 +115,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
               "No administrar contactos. Administrar relaciones. No administrar fechas. Administrar experiencias. No administrar formularios. Administrar momentos."
             </p>
 
-            <p className="text-xs text-slate-300 font-serif font-bold text-amber-200/90 pt-1">
+            <p className="text-xs text-slate-700 font-serif font-bold text-amber-200/90 pt-1">
               ¿Cómo está mi vida social y qué planes comparto con las personas importantes para mí?
             </p>
           </div>
@@ -123,7 +123,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => handleOpenCreatePlan()}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shadow-xl transition-all flex items-center gap-2 active:scale-95"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-slate-900 font-bold text-xs shadow-xl transition-all flex items-center gap-2 active:scale-95"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>Crear Plan Social</span>
@@ -131,7 +131,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
 
             <button
               onClick={() => setIsCreatePersonOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-900 font-bold text-xs border border-slate-200 transition-all flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
               <span>Agregar Persona</span>
@@ -140,46 +140,46 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
         </div>
 
         {/* TOP COMPACT SUMMARY BAR (RESUMEN SOCIAL) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200">
           
-          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
               <CalendarIcon className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Eventos esta semana</span>
-              <strong className="text-base font-serif font-bold text-white">{eventsThisWeekCount} planes</strong>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Eventos esta semana</span>
+              <strong className="text-base font-serif font-bold text-slate-900">{eventsThisWeekCount} planes</strong>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
               <Cake className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Próximo Cumpleaños</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Próximo Cumpleaños</span>
               <strong className="text-xs font-serif font-bold text-amber-200 truncate block max-w-[130px]">
                 {nextBirthday ? `${nextBirthday.personName} (${nextBirthday.daysLeft === 0 ? '¡Hoy!' : `en ${nextBirthday.daysLeft}d`})` : 'Ninguno próximo'}
               </strong>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Personas con Planes</span>
-              <strong className="text-base font-serif font-bold text-white">{peopleWithPlansCount} personas</strong>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Personas con Planes</span>
+              <strong className="text-base font-serif font-bold text-slate-900">{peopleWithPlansCount} personas</strong>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Contacto Pendiente</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Contacto Pendiente</span>
               <strong className="text-xs font-serif font-bold text-rose-200 truncate block max-w-[130px]">
                 {longestUncontacted ? `${longestUncontacted.person.name} (${longestUncontacted.daysAgo}d)` : 'Al día'}
               </strong>
@@ -190,17 +190,17 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
       </div>
 
       {/* 2. PERSONAS FAVORITAS (QUICK ACCESS CAROUSEL/GRID) */}
-      <div className="bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-3">
+      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-            <h3 className="font-serif font-bold text-sm text-white uppercase tracking-wider">
+            <h3 className="font-serif font-bold text-sm text-slate-900 uppercase tracking-wider">
               Personas Favoritas y Cercanas
             </h3>
           </div>
           <button
             onClick={() => setActiveTab('people')}
-            className="text-xs text-purple-300 hover:text-white font-bold flex items-center gap-1"
+            className="text-xs text-purple-300 hover:text-slate-900 font-bold flex items-center gap-1"
           >
             <span>Ver todos ({people.length})</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -208,8 +208,8 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
         </div>
 
         {people.length === 0 ? (
-          <div className="p-4 text-center border border-dashed border-white/15 rounded-2xl">
-            <p className="text-xs text-slate-400">
+          <div className="p-4 text-center border border-dashed border-slate-200 rounded-2xl">
+            <p className="text-xs text-slate-500">
               Aún no tienes personas registradas. Añade a tus amigos, familiares y contactos principales para comenzar.
             </p>
           </div>
@@ -232,7 +232,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700 border-2 border-purple-400/60 group-hover:border-purple-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-xl group-hover:scale-105 transition-all">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700 border-2 border-purple-400/60 group-hover:border-purple-300 flex items-center justify-center text-slate-900 font-bold text-lg sm:text-xl shadow-xl group-hover:scale-105 transition-all">
                         {initials}
                       </div>
                     )}
@@ -244,10 +244,10 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                   </div>
 
                   <div className="text-center">
-                    <p className="text-xs font-bold text-white max-w-[80px] sm:max-w-[90px] truncate group-hover:text-purple-300 transition-colors">
+                    <p className="text-xs font-bold text-slate-900 max-w-[80px] sm:max-w-[90px] truncate group-hover:text-purple-300 transition-colors">
                       {p.name.split(' ')[0]}
                     </p>
-                    <p className="text-[10px] text-slate-400 max-w-[80px] truncate">
+                    <p className="text-[10px] text-slate-500 max-w-[80px] truncate">
                       {p.relationship || p.category}
                     </p>
                   </div>
@@ -259,23 +259,23 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
               onClick={() => setIsCreatePersonOpen(true)}
               className="flex flex-col items-center justify-center gap-2 shrink-0 group"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-purple-400/40 hover:border-purple-300 bg-white/5 flex items-center justify-center text-purple-300 group-hover:scale-105 transition-all">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-purple-400/40 hover:border-purple-300 bg-slate-50 flex items-center justify-center text-purple-300 group-hover:scale-105 transition-all">
                 <Plus className="w-6 h-6" />
               </div>
-              <span className="text-[11px] font-bold text-purple-300 group-hover:text-white">Añadir</span>
+              <span className="text-[11px] font-bold text-purple-300 group-hover:text-slate-900">Añadir</span>
             </button>
           </div>
         )}
       </div>
 
       {/* 3. TABS SWITCHER */}
-      <div className="flex border-b border-white/10 bg-black/20 rounded-2xl p-1 gap-1">
+      <div className="flex border-b border-slate-200 bg-slate-50 rounded-2xl p-1 gap-1">
         <button
           onClick={() => setActiveTab('agenda')}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'agenda'
-              ? 'bg-purple-600 text-white shadow-lg'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-purple-600 text-slate-900 shadow-lg'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <CalendarIcon className="w-4 h-4" />
@@ -286,8 +286,8 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
           onClick={() => setActiveTab('calendar')}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'calendar'
-              ? 'bg-purple-600 text-white shadow-lg'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-purple-600 text-slate-900 shadow-lg'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Sparkles className="w-4 h-4" />
@@ -298,8 +298,8 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
           onClick={() => setActiveTab('people')}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'people'
-              ? 'bg-purple-600 text-white shadow-lg'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-purple-600 text-slate-900 shadow-lg'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -323,17 +323,17 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
 
             {/* SIDE PANEL (1 COL): PRÓXIMOS EVENTOS */}
             <div className="space-y-4">
-              <div className="bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 backdrop-blur-2xl rounded-3xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-400" />
-                    <h3 className="font-serif font-bold text-base text-white">Próximos Eventos</h3>
+                    <h3 className="font-serif font-bold text-base text-slate-900">Próximos Eventos</h3>
                   </div>
                   <span className="text-[10px] text-purple-300 font-mono">Compromisos Reales</span>
                 </div>
 
                 {upcomingCommitments.length === 0 && upcomingList.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-6 text-center">Sin eventos o fechas próximas programadas.</p>
+                  <p className="text-xs text-slate-500 py-6 text-center">Sin eventos o fechas próximas programadas.</p>
                 ) : (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                     {/* UPCOMING COMMITMENTS */}
@@ -344,23 +344,23 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                       return (
                         <div
                           key={c.id}
-                          className="p-3.5 rounded-2xl bg-gradient-to-r from-[#101b2d] to-[#0d1625] border border-white/10 space-y-1.5"
+                          className="p-3.5 rounded-2xl bg-gradient-to-r from-[#101b2d] to-[#0d1625] border border-slate-200 space-y-1.5"
                         >
                           <div className="flex justify-between items-start gap-2">
-                            <h4 className="font-serif font-bold text-white text-xs">{c.title}</h4>
+                            <h4 className="font-serif font-bold text-slate-900 text-xs">{c.title}</h4>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-200 border border-purple-500/30 shrink-0">
                               {daysLeft === 0 ? '¡Hoy!' : daysLeft === 1 ? 'Mañana' : `En ${daysLeft} días`}
                             </span>
                           </div>
 
-                          <p className="text-[11px] text-slate-300 font-mono">
+                          <p className="text-[11px] text-slate-700 font-mono">
                             {c.date} • {c.startTime || '12:00'} {c.location ? `• ${c.location}` : ''}
                           </p>
 
                           {participant && (
                             <button
                               onClick={() => setSelectedPerson(participant)}
-                              className="text-[11px] text-purple-300 hover:text-white font-medium flex items-center gap-1 pt-1"
+                              className="text-[11px] text-purple-300 hover:text-slate-900 font-medium flex items-center gap-1 pt-1"
                             >
                               <span>Con {participant.name}</span>
                             </button>
@@ -381,7 +381,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                             {u.isToday ? '¡Hoy!' : `En ${u.daysLeft} días`}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-300 font-mono">{u.dateStr}</p>
+                        <p className="text-[10px] text-slate-700 font-mono">{u.dateStr}</p>
                       </div>
                     ))}
                   </div>
@@ -412,19 +412,19 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
         <div className="space-y-5">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar persona por nombre, ciudad, relación..."
-                className="w-full bg-white/10 border border-white/15 focus:border-purple-400 rounded-2xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-white/10 border border-slate-200 focus:border-purple-600 rounded-2xl pl-10 pr-4 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
 
             <button
               onClick={() => setIsCreatePersonOpen(true)}
-              className="px-4 py-2 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg"
+              className="px-4 py-2 rounded-2xl bg-purple-600 hover:bg-purple-500 text-slate-900 font-bold text-xs flex items-center gap-2 shadow-lg"
             >
               <UserPlus className="w-4 h-4" />
               <span>Registrar Persona</span>
@@ -432,9 +432,9 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
           </div>
 
           {filteredPeople.length === 0 ? (
-            <div className="p-12 text-center border border-dashed border-white/15 rounded-3xl space-y-3">
+            <div className="p-12 text-center border border-dashed border-slate-200 rounded-3xl space-y-3">
               <Users className="w-10 h-10 text-slate-500 mx-auto" />
-              <p className="text-sm text-slate-300">No se encontraron expedientes de personas.</p>
+              <p className="text-sm text-slate-700">No se encontraron expedientes de personas.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -446,7 +446,7 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                   <div
                     key={p.id}
                     onClick={() => setSelectedPerson(p)}
-                    className="p-5 rounded-3xl bg-gradient-to-br from-[#0c1828] to-[#101e32] border border-white/10 hover:border-purple-400/50 backdrop-blur-2xl shadow-xl transition-all duration-300 cursor-pointer space-y-4 hover:scale-[1.01]"
+                    className="p-5 rounded-3xl bg-white border border-slate-200 hover:border-purple-300 backdrop-blur-2xl shadow-xl transition-all duration-300 cursor-pointer space-y-4 hover:scale-[1.01]"
                   >
                     <div className="flex items-center gap-3.5">
                       {p.photoUrl ? (
@@ -457,24 +457,24 @@ export const SocialView: React.FC<Props> = ({ data, profileName = 'Alex' }) => {
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 border-2 border-purple-400/50 flex items-center justify-center text-white font-serif font-bold text-xl shrink-0">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 border-2 border-purple-400/50 flex items-center justify-center text-slate-900 font-serif font-bold text-xl shrink-0">
                           {initials}
                         </div>
                       )}
 
                       <div className="overflow-hidden">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-serif font-bold text-white text-base truncate">{p.name}</h4>
+                          <h4 className="font-serif font-bold text-slate-900 text-base truncate">{p.name}</h4>
                           {p.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />}
                         </div>
                         <p className="text-xs text-purple-300 font-medium truncate">{p.relationship || p.category}</p>
-                        {p.city && <p className="text-[10px] text-slate-400 truncate">{p.city}</p>}
+                        {p.city && <p className="text-[10px] text-slate-500 truncate">{p.city}</p>}
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-300">
-                      <span>Nivel: <strong className="text-white">{p.importanceLevel}</strong></span>
-                      <span className="font-mono text-slate-400">
+                    <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-700">
+                      <span>Nivel: <strong className="text-slate-900">{p.importanceLevel}</strong></span>
+                      <span className="font-mono text-slate-500">
                         {lastInt ? `Últ. contacto: ${lastInt.daysAgo === 0 ? 'Hoy' : `${lastInt.daysAgo}d`}` : 'Sin interacciones'}
                       </span>
                     </div>

@@ -73,14 +73,14 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-sans font-semibold text-white tracking-tight">
+              <h1 className="text-lg sm:text-xl font-sans font-semibold text-slate-900 tracking-tight">
                 Diario Personal Inteligente
               </h1>
               <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300">
                 <ShieldCheck className="w-3 h-3" /> Privado & Confidencial
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="text-xs text-slate-700 mt-0.5">
               Tu espacio inviolable de autorreflexión y crecimiento. Este contenido nunca se sincroniza con el CIE ni la Oval Office.
             </p>
           </div>
@@ -104,7 +104,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
               <h4 className="text-xs font-semibold text-amber-200">
                 Reflexión Diaria Pendiente
               </h4>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-slate-700">
                 Aún no has registrado tu reflexión del día ({todayStr}). Tómate 3 minutos para pausar y escribir.
               </p>
             </div>
@@ -121,13 +121,13 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
       )}
 
       {/* 3. NAVIGATION TABS */}
-      <div className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-1.5 shadow-xl flex items-center justify-start overflow-x-auto gap-1">
+      <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-1.5 shadow-xl flex items-center justify-start overflow-x-auto gap-1">
         <button
           onClick={() => setActiveTab('diario')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
             activeTab === 'diario'
               ? 'bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <BookOpen className="w-4 h-4 stroke-[1.75]" />
@@ -139,7 +139,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
             activeTab === 'pregunta'
               ? 'bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <Sparkles className="w-4 h-4 stroke-[1.75]" />
@@ -154,7 +154,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
             activeTab === 'lecciones'
               ? 'bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <Lightbulb className="w-4 h-4 stroke-[1.75]" />
@@ -166,7 +166,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
             activeTab === 'revision'
               ? 'bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <TrendingUp className="w-4 h-4 stroke-[1.75]" />
@@ -178,7 +178,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
             activeTab === 'historial'
               ? 'bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <Search className="w-4 h-4 stroke-[1.75]" />
@@ -200,8 +200,8 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
               />
 
               {/* Quick Info Box */}
-              <div className="bg-[#0F1B2E]/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl text-xs text-slate-300 space-y-2">
-                <div className="flex items-center justify-between font-semibold text-white">
+              <div className="bg-white/60 backdrop-blur-2xl border border-slate-200 rounded-2xl p-4 shadow-xl text-xs text-slate-700 space-y-2">
+                <div className="flex items-center justify-between font-semibold text-slate-900">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                     Pregunta del Día de Hoy
@@ -210,7 +210,7 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
                     #{getQuestionForDate(todayStr).index} de 365
                   </span>
                 </div>
-                <p className="italic text-slate-300/90 font-serif line-clamp-2">
+                <p className="italic text-slate-700/90 font-serif line-clamp-2">
                   "{getQuestionForDate(todayStr).question}"
                 </p>
               </div>
@@ -240,11 +240,11 @@ export const PersonalDevView: React.FC<Props> = ({ data: initialData }) => {
                 Pregunta Filosófica {questionInfo.index} de {questionInfo.total}
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-serif italic text-white leading-relaxed px-4">
+              <h2 className="text-xl sm:text-2xl font-serif italic text-slate-900 leading-relaxed px-4">
                 "{questionInfo.question}"
               </h2>
 
-              <p className="text-xs text-slate-400 max-w-lg mx-auto">
+              <p className="text-xs text-slate-500 max-w-lg mx-auto">
                 Escribe tu reflexión libre sobre la pregunta correspondiente a la fecha <strong className="text-indigo-300">{selectedDate}</strong>.
               </p>
 

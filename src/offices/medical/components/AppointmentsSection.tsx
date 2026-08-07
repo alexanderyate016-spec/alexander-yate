@@ -200,7 +200,7 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
               />
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Duración (Por defecto 20m)</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Duración (Por defecto 20m)</label>
                 <select
                   value={durationMinutes}
                   onChange={e => handleDurationChange(Number(e.target.value))}
@@ -225,7 +225,7 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
               />
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Estado de la Cita</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Estado de la Cita</label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as any)}
@@ -259,7 +259,7 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
               >
                 Cancelar
               </button>
@@ -301,14 +301,14 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
 
                   <button
                     onClick={() => handleEdit(apt)}
-                    className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors font-medium"
+                    className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-colors font-medium"
                   >
                     Editar
                   </button>
 
                   <button
                     onClick={() => MedicalStore.deleteAppointment(apt.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -317,20 +317,20 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
 
               {/* DETAILS ROW */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1 border-t border-rose-500/10 font-sans">
-                <div className="flex items-center gap-1.5 text-slate-300 font-mono">
+                <div className="flex items-center gap-1.5 text-slate-700 font-mono">
                   <Clock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                   <span>{apt.date} de {apt.startTime} a {apt.endTime || '10:20'}</span>
                 </div>
 
                 {apt.doctor && (
-                  <div className="flex items-center gap-1.5 text-slate-300">
+                  <div className="flex items-center gap-1.5 text-slate-700">
                     <User className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                     <span>Dr(a). {apt.doctor}</span>
                   </div>
                 )}
 
                 {apt.institution && (
-                  <div className="flex items-center gap-1.5 text-slate-300">
+                  <div className="flex items-center gap-1.5 text-slate-700">
                     <Building className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                     <span>{apt.institution}</span>
                   </div>
@@ -338,13 +338,13 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
               </div>
 
               {apt.reason && (
-                <p className="text-xs text-slate-300 bg-[#14060E] p-2 rounded-lg border border-rose-500/20">
+                <p className="text-xs text-slate-700 bg-[#14060E] p-2 rounded-lg border border-rose-500/20">
                   <strong>Motivo:</strong> {apt.reason}
                 </p>
               )}
 
               {apt.notes && (
-                <p className="text-[11px] text-slate-400 italic">
+                <p className="text-[11px] text-slate-500 italic">
                   Observaciones: {apt.notes}
                 </p>
               )}

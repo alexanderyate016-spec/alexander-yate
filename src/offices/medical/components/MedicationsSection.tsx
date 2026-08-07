@@ -165,7 +165,7 @@ export const MedicationsSection: React.FC<Props> = ({ data, todayStr }) => {
               />
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Estado del Tratamiento</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Estado del Tratamiento</label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as any)}
@@ -191,7 +191,7 @@ export const MedicationsSection: React.FC<Props> = ({ data, todayStr }) => {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
               >
                 Cancelar
               </button>
@@ -233,14 +233,14 @@ export const MedicationsSection: React.FC<Props> = ({ data, todayStr }) => {
 
                   <button
                     onClick={() => handleEdit(m)}
-                    className="px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
+                    className="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-colors"
                   >
                     Editar
                   </button>
 
                   <button
                     onClick={() => MedicalStore.deleteMedication(m.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -249,25 +249,25 @@ export const MedicationsSection: React.FC<Props> = ({ data, todayStr }) => {
 
               <div className="grid grid-cols-2 gap-2 text-xs font-sans">
                 <div className="p-2 bg-[#04121B] rounded-lg border border-cyan-500/15">
-                  <span className="text-[10px] text-slate-400 block font-mono">Hora Programada</span>
+                  <span className="text-[10px] text-slate-500 block font-mono">Hora Programada</span>
                   <span className="font-bold text-white font-mono flex items-center gap-1">
                     <Clock className="w-3 h-3 text-cyan-400" /> {m.timeOfDay || '08:00'} AM/PM
                   </span>
                 </div>
 
                 <div className="p-2 bg-[#04121B] rounded-lg border border-cyan-500/15">
-                  <span className="text-[10px] text-slate-400 block font-mono">Frecuencia</span>
+                  <span className="text-[10px] text-slate-500 block font-mono">Frecuencia</span>
                   <span className="font-bold text-cyan-200">{m.schedule}</span>
                 </div>
               </div>
 
               {m.instructions && (
-                <p className="text-xs text-slate-300 bg-[#04121B] p-2 rounded-lg border border-cyan-500/15">
+                <p className="text-xs text-slate-700 bg-[#04121B] p-2 rounded-lg border border-cyan-500/15">
                   <strong>Indicaciones:</strong> {m.instructions}
                 </p>
               )}
 
-              <div className="text-[10px] text-slate-400 font-mono flex justify-between items-center pt-1 border-t border-cyan-500/10">
+              <div className="text-[10px] text-slate-500 font-mono flex justify-between items-center pt-1 border-t border-cyan-500/10">
                 <span>Inicio: {m.startDate}</span>
                 {m.endDate && <span>Fin: {m.endDate}</span>}
               </div>

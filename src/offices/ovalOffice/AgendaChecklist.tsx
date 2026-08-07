@@ -98,8 +98,8 @@ export const AgendaChecklist: React.FC<Props> = ({
               onClick={() => setActiveTab('pending')}
               className={`pb-1 font-semibold transition-colors ${
                 activeTab === 'pending'
-                  ? 'border-b-2 border-amber-400 text-amber-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-b-2 border-amber-400 text-amber-800'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Pendientes
@@ -108,8 +108,8 @@ export const AgendaChecklist: React.FC<Props> = ({
               onClick={() => setActiveTab('in_progress')}
               className={`pb-1 font-semibold transition-colors ${
                 activeTab === 'in_progress'
-                  ? 'border-b-2 border-amber-400 text-amber-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-b-2 border-amber-400 text-amber-800'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               En progreso
@@ -118,8 +118,8 @@ export const AgendaChecklist: React.FC<Props> = ({
               onClick={() => setActiveTab('completed')}
               className={`pb-1 font-semibold transition-colors ${
                 activeTab === 'completed'
-                  ? 'border-b-2 border-amber-400 text-amber-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'border-b-2 border-amber-400 text-amber-800'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Completadas
@@ -129,7 +129,7 @@ export const AgendaChecklist: React.FC<Props> = ({
 
         {/* ITEMS LIST */}
         {filteredItems.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 bg-[#132337]/50 border border-dashed border-[#1E3A5F] text-xs rounded">
+          <div className="p-8 text-center text-slate-500 bg-slate-500 border border-dashed border-[#1E3A5F] text-xs rounded">
             No hay tareas en este estado.
           </div>
         ) : (
@@ -137,26 +137,26 @@ export const AgendaChecklist: React.FC<Props> = ({
             {filteredItems.map(item => (
               <div
                 key={item.id}
-                className="p-2.5 bg-[#132337] hover:bg-[#1C324E] border border-slate-800 rounded transition-colors flex items-center justify-between gap-3 group text-xs"
+                className="p-2.5 bg-white hover:bg-[#1C324E] border border-slate-200 rounded transition-colors flex items-center justify-between gap-3 group text-xs"
               >
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <button
                     onClick={() => handleToggleStatus(item)}
-                    className="text-slate-400 hover:text-amber-400 transition-colors shrink-0"
+                    className="text-slate-500 hover:text-amber-400 transition-colors shrink-0"
                   >
                     {item.status === 'completed' ? (
                       <CheckSquare className="w-4 h-4 text-emerald-400" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-400" />
+                      <Square className="w-4 h-4 text-slate-500" />
                     )}
                   </button>
 
                   <div className="flex flex-col min-w-0">
-                    <span className={`font-sans truncate ${item.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                    <span className={`font-sans truncate ${item.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-800'}`}>
                       {item.title}
                     </span>
                     {item.subtitle && (
-                      <span className="text-[10px] text-slate-400 font-sans truncate">
+                      <span className="text-[10px] text-slate-500 font-sans truncate">
                         {item.subtitle}
                       </span>
                     )}
@@ -174,7 +174,7 @@ export const AgendaChecklist: React.FC<Props> = ({
 
                   <button
                     onClick={() => onOpenAssignTimeModal(item)}
-                    className="p-1 text-slate-400 hover:text-amber-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="p-1 text-slate-500 hover:text-amber-800 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Asignar hora fija"
                   >
                     <Clock className="w-3.5 h-3.5" />
@@ -197,13 +197,13 @@ export const AgendaChecklist: React.FC<Props> = ({
 
       {/* FOOTER */}
       <div className="pt-3 border-t border-[#1E3A5F] flex justify-between items-center text-xs">
-        <span className="text-slate-400 font-mono text-[11px]">
+        <span className="text-slate-500 font-mono text-[11px]">
           {items.filter(i => i.status === 'pending').length} tareas pendientes
         </span>
 
         <button
           onClick={onOpenQuickAddTaskModal}
-          className="px-3 py-1.5 bg-[#1C324E] hover:bg-[#254267] border border-[#C5A059]/50 text-amber-300 font-bold text-xs rounded transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 bg-[#1C324E] hover:bg-[#254267] border border-[#C5A059]/50 text-amber-800 font-bold text-xs rounded transition-colors flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5 text-[#C5A059]" /> Nueva tarea
         </button>

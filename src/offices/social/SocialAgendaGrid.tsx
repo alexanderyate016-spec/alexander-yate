@@ -149,7 +149,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
             </div>
             <button
               onClick={() => setActiveMemoryCommitment(null)}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-slate-500 hover:text-slate-900"
             >
               Cerrar
             </button>
@@ -168,19 +168,19 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{meta.emoji}</span>
                   <div>
-                    <h4 className="font-serif font-bold text-white text-base sm:text-lg">
+                    <h4 className="font-serif font-bold text-slate-900 text-base sm:text-lg">
                       ¿Cómo estuvo {targetCommitment.title}{participantNames ? ` con ${participantNames}` : ''}?
                     </h4>
-                    <p className="text-xs text-slate-300">
+                    <p className="text-xs text-slate-700">
                       {targetCommitment.date} • {targetCommitment.startTime || '12:00'} - {targetCommitment.endTime || '13:00'}
                     </p>
                   </div>
                 </div>
 
-                <form onSubmit={handleSaveMemory} className="space-y-3 bg-black/30 p-3.5 rounded-2xl border border-white/10">
+                <form onSubmit={handleSaveMemory} className="space-y-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-300 font-semibold mr-1">Calificación:</span>
+                      <span className="text-xs text-slate-700 font-semibold mr-1">Calificación:</span>
                       {[1, 2, 3, 4, 5].map(star => (
                         <button
                           key={star}
@@ -204,7 +204,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                       value={memoryPhoto}
                       onChange={e => setMemoryPhoto(e.target.value)}
                       placeholder="Fotografía URL (Opcional)"
-                      className="bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1 text-xs text-white focus:outline-none w-full sm:w-64"
+                      className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1 text-xs text-slate-900 focus:outline-none w-full sm:w-64"
                     />
                   </div>
 
@@ -213,14 +213,14 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                     value={memoryNote}
                     onChange={e => setMemoryNote(e.target.value)}
                     placeholder="Escribe un recuerdo o nota de esta experiencia (ej. Un café delicioso, quedamos en repetir la próxima semana)..."
-                    className="w-full bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
                   />
 
                   <div className="flex justify-end gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setActiveMemoryCommitment(null)}
-                      className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
+                      className="px-3 py-1.5 rounded-xl text-xs text-slate-500 hover:text-slate-900"
                     >
                       Saltar por ahora
                     </button>
@@ -228,7 +228,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                     <button
                       type="submit"
                       onClick={() => setActiveMemoryCommitment(targetCommitment)}
-                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-slate-900 font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
                     >
                       {isMemorySaved ? (
                         <>
@@ -249,27 +249,27 @@ export const SocialAgendaGrid: React.FC<Props> = ({
       )}
 
       {/* AGENDA HEADER & DATE CONTROLS */}
-      <div className="bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-white/10 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
+      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-purple-400/40 text-purple-300">
               <CalendarIcon className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-serif font-bold text-lg sm:text-xl text-white">
+              <h3 className="font-serif font-bold text-lg sm:text-xl text-slate-900">
                 Agenda Social
               </h3>
-              <p className="text-xs text-slate-300 capitalize">
+              <p className="text-xs text-slate-700 capitalize">
                 {formatDisplayDate(selectedDate)}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center bg-black/30 border border-white/10 rounded-2xl p-1">
+            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-2xl p-1">
               <button
                 onClick={() => handleShiftDate(-1)}
-                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-700 hover:text-slate-900 transition-colors"
                 title="Día Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -280,7 +280,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                   isSelectedDateToday
                     ? 'bg-purple-500 text-slate-950 shadow'
-                    : 'text-slate-300 hover:text-white'
+                    : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
                 Hoy
@@ -288,7 +288,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
 
               <button
                 onClick={() => handleShiftDate(1)}
-                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-slate-700 hover:text-slate-900 transition-colors"
                 title="Día Siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -299,12 +299,12 @@ export const SocialAgendaGrid: React.FC<Props> = ({
               type="date"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
-              className="bg-black/30 border border-white/10 rounded-2xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
+              className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-purple-600"
             />
 
             <button
               onClick={() => onOpenCreatePlan(selectedDate)}
-              className="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
+              className="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-slate-900 font-bold text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo Plan Social</span>
@@ -314,10 +314,10 @@ export const SocialAgendaGrid: React.FC<Props> = ({
 
         {/* VISUAL TIMELINE / BLOCKS */}
         {dayCommitments.length === 0 ? (
-          <div className="p-10 border border-dashed border-white/15 rounded-2xl text-center space-y-3">
+          <div className="p-10 border border-dashed border-slate-200 rounded-2xl text-center space-y-3">
             <Clock className="w-10 h-10 text-purple-400/50 mx-auto" />
-            <h4 className="font-serif font-bold text-white text-base">No hay planes sociales para este día</h4>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            <h4 className="font-serif font-bold text-slate-900 text-base">No hay planes sociales para este día</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Planifica un café, cena, caminata o salida con las personas importantes de tu vida.
             </p>
             <button
@@ -348,7 +348,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
               return (
                 <div
                   key={commitment.id}
-                  className="group relative p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#121c2e] via-[#162238] to-[#0f1828] border border-white/10 hover:border-purple-400/50 shadow-lg transition-all duration-200"
+                  className="group relative p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 hover:border-purple-300 shadow-lg transition-all duration-200"
                   style={{
                     // height proportional to duration, minimum 110px
                     minHeight: `${Math.max(110, Math.min(220, durationMinutes * 1.3))}px`
@@ -360,7 +360,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-2xl">{meta.emoji}</span>
-                        <h4 className="font-serif font-bold text-white text-base sm:text-lg">
+                        <h4 className="font-serif font-bold text-slate-900 text-base sm:text-lg">
                           {commitment.title}
                         </h4>
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-gradient-to-r ${meta.color}`}>
@@ -369,14 +369,14 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                       </div>
 
                       {/* TIME & LOCATION */}
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300 font-mono">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-700 font-mono">
                         <span className="flex items-center gap-1 text-purple-300 font-bold">
                           <Clock className="w-3.5 h-3.5" />
                           {commitment.startTime || '12:00'} - {commitment.endTime || '13:00'} ({durationHoursStr})
                         </span>
 
                         {commitment.location && (
-                          <span className="flex items-center gap-1 text-slate-300">
+                          <span className="flex items-center gap-1 text-slate-700">
                             <MapPin className="w-3.5 h-3.5 text-amber-400" />
                             {commitment.location}
                           </span>
@@ -384,7 +384,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                       </div>
 
                       {commitment.description && (
-                        <p className="text-xs text-slate-400 line-clamp-2">
+                        <p className="text-xs text-slate-500 line-clamp-2">
                           {commitment.description}
                         </p>
                       )}
@@ -398,7 +398,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                             ))}
                           </span>
                           {commitment.memoryNote && (
-                            <span className="text-slate-300 italic">"{commitment.memoryNote}"</span>
+                            <span className="text-slate-700 italic">"{commitment.memoryNote}"</span>
                           )}
                         </div>
                       )}
@@ -425,7 +425,7 @@ export const SocialAgendaGrid: React.FC<Props> = ({
                                   referrerPolicy="no-referrer"
                                 />
                               ) : (
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 border-2 border-slate-900 flex items-center justify-center text-white font-bold text-xs shadow-md group-hover/avatar:scale-110 transition-transform">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 border-2 border-slate-900 flex items-center justify-center text-slate-900 font-bold text-xs shadow-md group-hover/avatar:scale-110 transition-transform">
                                   {p.name.substring(0, 2).toUpperCase()}
                                 </div>
                               )}

@@ -78,17 +78,17 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
   return (
     <div className="space-y-6">
       {/* Search Bar & Filters */}
-      <div className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl space-y-4">
+      <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row items-center gap-3">
           {/* Text Search Input */}
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Buscar por palabra del día, texto, fecha o aprendizaje..."
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all"
             />
           </div>
 
@@ -96,7 +96,7 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
           <select
             value={selectedYearMonth}
             onChange={e => setSelectedYearMonth(e.target.value)}
-            className="w-full md:w-48 bg-[#070D18] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-400 transition-all"
+            className="w-full md:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-600 transition-all"
           >
             <option value="all">Todos los meses</option>
             {monthOptions.map(ym => (
@@ -110,7 +110,7 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
           <select
             value={selectedMood}
             onChange={e => setSelectedMood(e.target.value)}
-            className="w-full md:w-48 bg-[#070D18] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-400 transition-all"
+            className="w-full md:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-600 transition-all"
           >
             <option value="all">Todos los estados</option>
             <option value="excelente">✨ Excelente</option>
@@ -121,9 +121,9 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
           </select>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
           <span>
-            Mostrando <strong className="text-white">{filteredEntries.length}</strong> de {entries.length} reflexiones
+            Mostrando <strong className="text-slate-900">{filteredEntries.length}</strong> de {entries.length} reflexiones
           </span>
           {(searchQuery || selectedMood !== 'all' || selectedYearMonth !== 'all') && (
             <button
@@ -156,17 +156,17 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
               <div
                 key={e.id}
                 onClick={() => onSelectEntry(e.date)}
-                className="bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl hover:border-indigo-500/40 hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between space-y-3 relative overflow-hidden"
+                className="bg-white/70 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl hover:border-purple-300 hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer group flex flex-col justify-between space-y-3 relative overflow-hidden"
               >
                 {/* Glass top reflection */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
 
                 <div>
                   {/* Header info */}
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10">
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                      <span className="text-xs font-semibold text-white font-mono">
+                      <span className="text-xs font-semibold text-slate-900 font-mono">
                         {e.date}
                       </span>
                     </div>
@@ -187,7 +187,7 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
                   )}
 
                   {/* Content snippets */}
-                  <div className="space-y-1.5 pt-1 text-xs text-slate-300">
+                  <div className="space-y-1.5 pt-1 text-xs text-slate-700">
                     {e.philosophicalAnswer && (
                       <p className="line-clamp-2 text-indigo-200/90 italic font-serif">
                         "{e.philosophicalAnswer}"
@@ -195,7 +195,7 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
                     )}
 
                     {e.freeReflection && (
-                      <p className="line-clamp-3 leading-relaxed text-slate-300">
+                      <p className="line-clamp-3 leading-relaxed text-slate-700">
                         {e.freeReflection}
                       </p>
                     )}
@@ -209,7 +209,7 @@ export const JournalHistory: React.FC<JournalHistoryProps> = ({
                 </div>
 
                 {/* Card Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/10 text-[11px] text-slate-400">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-[11px] text-slate-500">
                   <span className="group-hover:text-indigo-300 transition-colors flex items-center gap-1">
                     Ver o editar reflexión completa <ArrowUpRight className="w-3.5 h-3.5" />
                   </span>

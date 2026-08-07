@@ -97,7 +97,7 @@ const AnimatedProgressBar: React.FC<{ percent: number; color?: 'emerald' | 'ambe
   };
 
   return (
-    <div className={`w-full bg-slate-900/80 rounded-full ${height} overflow-hidden border border-white/10 relative p-0.5 shadow-inner`}>
+    <div className={`w-full bg-slate-50 rounded-full ${height} overflow-hidden border border-slate-200 relative p-0.5 shadow-inner`}>
       <motion.div
         className={`h-full rounded-full bg-gradient-to-r ${gradientMap[color]}`}
         initial={{ width: 0 }}
@@ -119,9 +119,9 @@ const VisualGaugeBar: React.FC<{ label: string; percent: number; color: 'emerald
   const filledBars = Math.min(10, Math.max(0, Math.round((percent / 100) * barsCount)));
 
   return (
-    <div className="space-y-1.5 p-3 bg-[#132337]/90 border border-white/10 rounded-xl hover:border-emerald-400/40 transition-all">
+    <div className="space-y-1.5 p-3 bg-white/90 border border-slate-200 rounded-xl hover:border-emerald-400/40 transition-all">
       <div className="flex justify-between items-center text-xs">
-        <span className="font-serif font-bold text-slate-300">{label}</span>
+        <span className="font-serif font-bold text-slate-700">{label}</span>
         <span className="font-mono font-bold text-white">{valueText}</span>
       </div>
       <div className="flex items-center gap-1 font-mono text-xs">
@@ -138,12 +138,12 @@ const VisualGaugeBar: React.FC<{ label: string; percent: number; color: 'emerald
                     : color === 'rose'
                     ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
                     : 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.6)]'
-                  : 'bg-slate-800 border border-white/5'
+                  : 'bg-slate-100 border border-slate-100'
               }`}
             />
           ))}
         </div>
-        <span className="text-[11px] text-slate-400 ml-1 font-bold">{Math.round(percent)}%</span>
+        <span className="text-[11px] text-slate-500 ml-1 font-bold">{Math.round(percent)}%</span>
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ const BalanceEvolutionChart: React.FC<{ history: Array<{ date: string; balance: 
   currency
 }) => {
   if (!history || history.length === 0) {
-    return <p className="text-xs text-slate-400 italic p-4 text-center">Sin datos suficientes para construir el gráfico de evolución.</p>;
+    return <p className="text-xs text-slate-500 italic p-4 text-center">Sin datos suficientes para construir el gráfico de evolución.</p>;
   }
 
   const points = history.slice(-25);
@@ -178,12 +178,12 @@ const BalanceEvolutionChart: React.FC<{ history: Array<{ date: string; balance: 
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center text-xs font-mono text-slate-400">
+      <div className="flex justify-between items-center text-xs font-mono text-slate-500">
         <span>Min: {formatCurrency(minBal, currency)}</span>
         <span className="text-emerald-400 font-bold">Máx: {formatCurrency(maxBal, currency)}</span>
       </div>
 
-      <div className="w-full overflow-x-auto bg-[#081220]/90 p-3 rounded-2xl border border-white/10 shadow-inner">
+      <div className="w-full overflow-x-auto bg-[#081220]/90 p-3 rounded-2xl border border-slate-200 shadow-inner">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-w-[500px]">
           <defs>
             <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
@@ -213,7 +213,7 @@ const BalanceEvolutionChart: React.FC<{ history: Array<{ date: string; balance: 
           ))}
         </svg>
       </div>
-      <p className="text-[10px] text-slate-400 text-center italic">Pasa el cursor sobre los puntos para ver fecha, concepto y saldo acumulado.</p>
+      <p className="text-[10px] text-slate-500 text-center italic">Pasa el cursor sobre los puntos para ver fecha, concepto y saldo acumulado.</p>
     </div>
   );
 };
@@ -785,10 +785,10 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 t.type === 'success'
                   ? 'bg-emerald-950/90 border-emerald-500/50 shadow-emerald-500/20'
                   : t.type === 'warning'
-                  ? 'bg-amber-950/90 border-amber-500/50 shadow-amber-500/20'
+                  ? 'bg-amber-950/90 border-amber-200 shadow-amber-500/20'
                   : t.type === 'danger'
                   ? 'bg-rose-950/90 border-rose-500/50 shadow-rose-500/20'
-                  : 'bg-slate-900/90 border-blue-500/50 shadow-blue-500/20'
+                  : 'bg-slate-50 border-blue-500/50 shadow-blue-500/20'
               }`}
             >
               <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -811,13 +811,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       />
 
       {/* 2. BARRA DE NAVEGACIÓN Y PESTAÑAS DE LA OFICINA */}
-      <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1">
+      <div className="flex border-b border-slate-200 space-x-1 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'dashboard'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <Activity className="w-4 h-4" />
@@ -828,8 +828,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('accounts')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'accounts'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <CreditCard className="w-4 h-4" />
@@ -840,8 +840,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('budgets')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'budgets'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <PieChart className="w-4 h-4" />
@@ -852,8 +852,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('expenses')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'expenses'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <ArrowDownRight className="w-4 h-4 text-rose-400" />
@@ -864,8 +864,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('income')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'income'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <ArrowUpRight className="w-4 h-4 text-emerald-400" />
@@ -876,8 +876,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('savings')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'savings'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <PiggyBank className="w-4 h-4 text-purple-400" />
@@ -888,8 +888,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('obligations')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'obligations'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <Calendar className="w-4 h-4 text-amber-400" />
@@ -900,8 +900,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('investments')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'investments'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <TrendingUp className="w-4 h-4 text-blue-400" />
@@ -912,8 +912,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           onClick={() => setActiveTab('transactions')}
           className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
             activeTab === 'transactions'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
           }`}
         >
           <DollarSign className="w-4 h-4" />
@@ -929,7 +929,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             <GlassPanel accentColor="emerald" padding="md" className="border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-[#0A192F]/90 to-emerald-950/40">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
+                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-400/30 text-emerald-800">
                     <TrendingUp className="w-6 h-6" />
                   </div>
                   <div>
@@ -937,21 +937,21 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       <h3 className="font-serif font-bold text-white text-base">Panel Ejecutivo de Rendimientos</h3>
                       <ExecutiveBadge variant="solid" accentColor="emerald">Cálculo Diario Automático</ExecutiveBadge>
                     </div>
-                    <p className="text-xs text-slate-300">Intereses abonados automáticamente como movimientos en cuentas de alto rendimiento.</p>
+                    <p className="text-xs text-slate-700">Intereses abonados automáticamente como movimientos en cuentas de alto rendimiento.</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 bg-slate-900/90 p-3 rounded-2xl border border-white/10 w-full md:w-auto font-mono text-center shadow-lg">
+                <div className="grid grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200 w-full md:w-auto font-mono text-center shadow-lg">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Hoy</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Hoy</span>
                     <span className="text-sm font-bold text-emerald-400">+{formatCurrency(yieldsSummary.today, 'COP')}</span>
                   </div>
-                  <div className="border-x border-white/10 px-3">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Este Mes</span>
-                    <span className="text-sm font-bold text-emerald-300">+{formatCurrency(yieldsSummary.month, 'COP')}</span>
+                  <div className="border-x border-slate-200 px-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Este Mes</span>
+                    <span className="text-sm font-bold text-emerald-800">+{formatCurrency(yieldsSummary.month, 'COP')}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Este Año</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Este Año</span>
                     <span className="text-sm font-bold text-teal-300">+{formatCurrency(yieldsSummary.year, 'COP')}</span>
                   </div>
                 </div>
@@ -961,7 +961,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
           {/* SMART ALERTS PANEL */}
           {smartAlerts.length > 0 && (
-            <GlassPanel accentColor="emerald" padding="md" className="border-emerald-500/30 bg-emerald-950/20">
+            <GlassPanel accentColor="emerald" padding="md" className="border-emerald-200 bg-emerald-950/20">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5 text-emerald-400 animate-pulse" />
@@ -981,7 +981,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       alert.type === 'danger'
                         ? 'bg-rose-950/60 border-rose-500/40 hover:border-rose-400'
                         : alert.type === 'warning'
-                        ? 'bg-amber-950/60 border-amber-500/40 hover:border-amber-400'
+                        ? 'bg-amber-950/60 border-amber-200 hover:border-amber-400'
                         : 'bg-emerald-950/60 border-emerald-500/40 hover:border-emerald-400'
                     }`}
                   >
@@ -997,9 +997,9 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     <div className="space-y-0.5 flex-1">
                       <div className="flex justify-between items-center text-xs font-bold text-white">
                         <span>{alert.title}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                       </div>
-                      <p className="text-xs text-slate-300">{alert.description}</p>
+                      <p className="text-xs text-slate-700">{alert.description}</p>
                     </div>
                   </div>
                 ))}
@@ -1034,7 +1034,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 title="Patrimonio Total (COP)"
                 value={formatCurrency(totalNW.COP || 0, 'COP')}
                 subtitle="Patrimonio Líquido + Patrimonio Invertido"
-                icon={<Landmark className="w-5 h-5 text-emerald-300 group-hover:scale-110 transition-transform" />}
+                icon={<Landmark className="w-5 h-5 text-emerald-800 group-hover:scale-110 transition-transform" />}
                 accentColor="emerald"
               />
             </div>
@@ -1090,13 +1090,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               onClick={() => setActiveTab('expenses')}
             >
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Gastos de Este Mes</span>
+                <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">Gastos de Este Mes</span>
                 <ArrowDownRight className="w-5 h-5 text-rose-400 group-hover:translate-x-1 transition-transform" />
               </div>
               <div className="text-2xl font-serif font-bold text-white mb-1">
                 {formatCurrency(expenseAnalytics.monthTotal, 'COP')}
               </div>
-              <p className="text-xs text-slate-400">Ver desglose por categorías y cuentas →</p>
+              <p className="text-xs text-slate-500">Ver desglose por categorías y cuentas →</p>
             </GlassPanel>
 
             <GlassPanel
@@ -1106,13 +1106,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               onClick={() => setActiveTab('income')}
             >
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Ingresos de Este Mes</span>
+                <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">Ingresos de Este Mes</span>
                 <ArrowUpRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
               </div>
               <div className="text-2xl font-serif font-bold text-white mb-1">
                 {formatCurrency(incomeAnalytics.monthTotal, 'COP')}
               </div>
-              <p className="text-xs text-slate-400">Ver fuentes y rendimientos generados →</p>
+              <p className="text-xs text-slate-500">Ver fuentes y rendimientos generados →</p>
             </GlassPanel>
 
             <GlassPanel
@@ -1122,13 +1122,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               onClick={() => setActiveTab('savings')}
             >
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Ahorro Acumulado</span>
+                <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">Ahorro Acumulado</span>
                 <PiggyBank className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-2xl font-serif font-bold text-white mb-1">
                 {formatCurrency(savingsSummary.totalCurrent, 'COP')}
               </div>
-              <p className="text-xs text-slate-400">Ver metas y registrar nuevos aportes →</p>
+              <p className="text-xs text-slate-500">Ver metas y registrar nuevos aportes →</p>
             </GlassPanel>
           </div>
         </div>
@@ -1233,14 +1233,14 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           </GlassPanel>
 
           {/* FILTER & ACTIVE / ARCHIVED ACCOUNT TOGGLE BAR */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-3 rounded-2xl border border-white/10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setAccountViewFilter('active')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                   accountViewFilter === 'active'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/5'
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1251,8 +1251,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 onClick={() => setAccountViewFilter('archived')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                   accountViewFilter === 'archived'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/5'
                 }`}
               >
                 <Archive className="w-3.5 h-3.5" />
@@ -1260,7 +1260,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               </button>
             </div>
 
-            <span className="text-[11px] text-slate-400 italic">
+            <span className="text-[11px] text-slate-500 italic">
               * Ningún saldo se modifica manualmente; todo cambio se origina por movimientos.
             </span>
           </div>
@@ -1295,7 +1295,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                             <h4 className="font-serif font-bold text-white text-base">{acc.name}</h4>
                             {acc.archived && <ExecutiveBadge variant="subtle" accentColor="amber">Archivada</ExecutiveBadge>}
                           </div>
-                          <p className="text-xs text-slate-400">{acc.institution || 'Entidad no esp.'} • {acc.type.replace('_', ' ')}</p>
+                          <p className="text-xs text-slate-500">{acc.institution || 'Entidad no esp.'} • {acc.type.replace('_', ' ')}</p>
                         </div>
                         <ExecutiveBadge variant="subtle" accentColor="emerald">
                           {acc.currency}
@@ -1303,14 +1303,14 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       </div>
                     }
                     footer={
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 text-xs">
                         <button
                           onClick={() => {
                             setSelectedAccountForPanel(acc);
                             setQuickActionType(null);
                             setAccountPanelTab('stats');
                           }}
-                          className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+                          className="text-emerald-400 hover:text-emerald-800 font-bold flex items-center gap-1"
                         >
                           <BarChart3 className="w-3.5 h-3.5" /> Abrir Panel
                         </button>
@@ -1322,7 +1322,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                 FinancialStore.unarchiveAccount(acc.id);
                                 triggerToast(`Cuenta "${acc.name}" restaurada`, 'success');
                               }}
-                              className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                              className="text-amber-400 hover:text-amber-800 font-bold flex items-center gap-1"
                             >
                               <RotateCcw className="w-3.5 h-3.5" /> Restaurar
                             </button>
@@ -1332,7 +1332,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                 FinancialStore.archiveAccount(acc.id);
                                 triggerToast(`Cuenta "${acc.name}" archivada`, 'info');
                               }}
-                              className="text-slate-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                              className="text-slate-500 hover:text-amber-800 font-bold flex items-center gap-1"
                             >
                               <Archive className="w-3.5 h-3.5" /> Archivar
                             </button>
@@ -1343,27 +1343,27 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   >
                     <div className="space-y-3 py-1">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Saldo Calculado</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Saldo Calculado</span>
                         <div className="text-2xl font-serif font-bold text-emerald-400 mt-0.5">
                           {formatCurrency(calculatedBalance, acc.currency)}
                         </div>
                       </div>
 
                       {acc.type === 'high_yield' && acc.annualInterestRate && (
-                        <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 space-y-0.5">
+                        <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-200 text-xs text-emerald-200 space-y-0.5">
                           <div className="font-bold flex justify-between">
                             <span>TEA: {acc.annualInterestRate}%</span>
                             <span className="text-[10px] text-emerald-400 font-mono">Automático</span>
                           </div>
-                          <div className="text-[11px] text-emerald-300">
+                          <div className="text-[11px] text-emerald-800">
                             Rendimiento diario est.: <strong>{formatCurrency(dailyYieldEst, acc.currency)}/día</strong>
                           </div>
                         </div>
                       )}
 
                       {/* QUICK OPERATIONS BAR ON CARD */}
-                      <div className="pt-2 border-t border-white/10 space-y-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Operaciones Rápidas:</span>
+                      <div className="pt-2 border-t border-slate-200 space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Operaciones Rápidas:</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             onClick={() => {
@@ -1372,7 +1372,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               setTxSourceAcc(acc.id);
                               setTxNature('internal_transfer');
                             }}
-                            className="px-2 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-bold hover:bg-blue-500/30 transition-all flex items-center justify-center gap-1"
+                            className="px-2 py-1.5 rounded-lg bg-blue-500/15 border border-slate-200 text-blue-300 text-[11px] font-bold hover:bg-blue-500/30 transition-all flex items-center justify-center gap-1"
                           >
                             <ArrowLeftRight className="w-3 h-3" /> Transferir
                           </button>
@@ -1384,7 +1384,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               setTxDestAcc(acc.id);
                               setTxNature('external_income');
                             }}
-                            className="px-2 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-1"
+                            className="px-2 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-200 text-emerald-800 text-[11px] font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-1"
                           >
                             <ArrowUpRight className="w-3 h-3" /> Ingreso
                           </button>
@@ -1417,7 +1417,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                 setSelectedAccountForPanel(acc);
                                 setQuickActionType('edit');
                               }}
-                              className="px-2 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-300 text-[11px] font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-1"
+                              className="px-2 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-1"
                             >
                               <Edit2 className="w-3 h-3" /> Editar
                             </button>
@@ -1430,7 +1430,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               setSelectedInvestmentAcc(acc);
                               setIsInvestmentModalOpen(true);
                             }}
-                            className="w-full py-2 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 font-serif font-bold text-xs hover:bg-purple-500/30 transition-all flex items-center justify-center gap-1.5"
+                            className="w-full py-2 rounded-xl bg-purple-500/20 border border-purple-200 text-purple-300 font-serif font-bold text-xs hover:bg-purple-500/30 transition-all flex items-center justify-center gap-1.5"
                           >
                             <Briefcase className="w-3.5 h-3.5 text-purple-300" />
                             Administrar activos
@@ -1457,28 +1457,28 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           {/* SUMMARY CARDS BY TIMEFRAME */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Gastos de Hoy</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Gastos de Hoy</span>
               <strong className="text-xl font-serif font-bold text-rose-400">
                 {formatCurrency(expenseAnalytics.todayTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Últimos 7 Días</span>
-              <strong className="text-xl font-serif font-bold text-amber-300">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Últimos 7 Días</span>
+              <strong className="text-xl font-serif font-bold text-amber-800">
                 {formatCurrency(expenseAnalytics.weekTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Este Mes</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Este Mes</span>
               <strong className="text-xl font-serif font-bold text-rose-400">
                 {formatCurrency(expenseAnalytics.monthTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Este Año</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Este Año</span>
               <strong className="text-xl font-serif font-bold text-slate-200">
                 {formatCurrency(expenseAnalytics.yearTotal, 'COP')}
               </strong>
@@ -1494,13 +1494,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <PieChart className="w-5 h-5 text-rose-400" />
                   Gastos por Categoría
                 </span>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-500">
                   Total: {formatCurrency(expenseAnalytics.totalExpenses, 'COP')}
                 </span>
               </h3>
 
               {expenseAnalytics.categoryList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">No hay registros de gastos suficientes para categorizar.</p>
+                <p className="text-xs text-slate-500 italic">No hay registros de gastos suficientes para categorizar.</p>
               ) : (
                 <div className="space-y-3">
                   {expenseAnalytics.categoryList.map(cat => {
@@ -1511,7 +1511,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       <div
                         key={cat.name}
                         onClick={() => setSelectedCategoryDetail({ name: cat.name, type: 'expense' })}
-                        className="p-3 bg-[#132337]/80 hover:bg-[#132337] border border-white/10 hover:border-rose-400/50 rounded-xl cursor-pointer transition-all space-y-1.5"
+                        className="p-3 bg-white/80 hover:bg-white border border-slate-200 hover:border-rose-400/50 rounded-xl cursor-pointer transition-all space-y-1.5"
                       >
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-serif font-bold text-white flex items-center gap-1.5">
@@ -1537,7 +1537,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               </h3>
 
               {expenseAnalytics.accountList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Sin movimientos de cuentas de origen registrados.</p>
+                <p className="text-xs text-slate-500 italic">Sin movimientos de cuentas de origen registrados.</p>
               ) : (
                 <div className="space-y-3">
                   {expenseAnalytics.accountList.map(acc => {
@@ -1546,11 +1546,11 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     return (
                       <div
                         key={acc.name}
-                        className="p-3 bg-[#132337]/80 border border-white/10 rounded-xl space-y-1.5"
+                        className="p-3 bg-white/80 border border-slate-200 rounded-xl space-y-1.5"
                       >
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-serif font-bold text-white">{acc.name}</span>
-                          <strong className="font-serif font-bold text-amber-300">
+                          <strong className="font-serif font-bold text-amber-800">
                             {formatCurrency(acc.amount, 'COP')}
                           </strong>
                         </div>
@@ -1570,28 +1570,28 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Ingresos de Hoy</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Ingresos de Hoy</span>
               <strong className="text-xl font-serif font-bold text-emerald-400">
                 {formatCurrency(incomeAnalytics.todayTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Últimos 7 Días</span>
-              <strong className="text-xl font-serif font-bold text-emerald-300">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Últimos 7 Días</span>
+              <strong className="text-xl font-serif font-bold text-emerald-800">
                 {formatCurrency(incomeAnalytics.weekTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Este Mes</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Este Mes</span>
               <strong className="text-xl font-serif font-bold text-emerald-400">
                 {formatCurrency(incomeAnalytics.monthTotal, 'COP')}
               </strong>
             </GlassPanel>
 
             <GlassPanel accentColor="emerald" padding="sm" className="text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Este Año</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Este Año</span>
               <strong className="text-xl font-serif font-bold text-slate-200">
                 {formatCurrency(incomeAnalytics.yearTotal, 'COP')}
               </strong>
@@ -1605,13 +1605,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <ArrowUpRight className="w-5 h-5 text-emerald-400" />
                   Fuentes e Ingresos por Categoría
                 </span>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-slate-500">
                   Total: {formatCurrency(incomeAnalytics.totalIncome, 'COP')}
                 </span>
               </h3>
 
               {incomeAnalytics.categoryList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">No hay registros de ingresos para analizar.</p>
+                <p className="text-xs text-slate-500 italic">No hay registros de ingresos para analizar.</p>
               ) : (
                 <div className="space-y-3">
                   {incomeAnalytics.categoryList.map(cat => {
@@ -1621,7 +1621,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       <div
                         key={cat.name}
                         onClick={() => setSelectedCategoryDetail({ name: cat.name, type: 'income' })}
-                        className="p-3 bg-[#132337]/80 hover:bg-[#132337] border border-white/10 hover:border-emerald-400/50 rounded-xl cursor-pointer transition-all space-y-1.5"
+                        className="p-3 bg-white/80 hover:bg-white border border-slate-200 hover:border-emerald-400/50 rounded-xl cursor-pointer transition-all space-y-1.5"
                       >
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-serif font-bold text-white flex items-center gap-1.5">
@@ -1641,12 +1641,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
             <GlassPanel accentColor="emerald" padding="md">
               <h3 className="font-serif font-bold text-white text-base mb-4 flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-emerald-300" />
+                <Landmark className="w-5 h-5 text-emerald-800" />
                 Ingresos por Cuenta de Destino
               </h3>
 
               {incomeAnalytics.accountList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Sin cuentas destino registradas.</p>
+                <p className="text-xs text-slate-500 italic">Sin cuentas destino registradas.</p>
               ) : (
                 <div className="space-y-3">
                   {incomeAnalytics.accountList.map(acc => {
@@ -1655,11 +1655,11 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     return (
                       <div
                         key={acc.name}
-                        className="p-3 bg-[#132337]/80 border border-white/10 rounded-xl space-y-1.5"
+                        className="p-3 bg-white/80 border border-slate-200 rounded-xl space-y-1.5"
                       >
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-serif font-bold text-white">{acc.name}</span>
-                          <strong className="font-serif font-bold text-emerald-300">
+                          <strong className="font-serif font-bold text-emerald-800">
                             {formatCurrency(acc.amount, 'COP')}
                           </strong>
                         </div>
@@ -1680,7 +1680,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-lg font-serif font-bold text-white">Objetivos de Ahorro Patrimonial</h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Establece metas de acumulación de capital y realiza aportes con impacto directo en tus cuentas
               </p>
             </div>
@@ -1724,7 +1724,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <motion.div
                     key={s.id}
                     whileHover={{ y: -3 }}
-                    className="p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-[#132337]/90 border-white/10 hover:border-purple-400/50"
+                    className="p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-white/90 border-slate-200 hover:border-purple-400/50"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -1741,7 +1741,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     <div className="space-y-3 my-3">
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-slate-400">Acumulado:</span>
+                          <span className="text-slate-500">Acumulado:</span>
                           <strong className="text-purple-300 font-serif font-bold">
                             {formatCurrency(current, s.currency || 'COP')}
                           </strong>
@@ -1749,19 +1749,19 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                         <AnimatedProgressBar percent={percent} color="purple" height="h-3" />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono p-2 bg-slate-900/60 rounded-xl">
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono p-2 bg-slate-50 rounded-xl">
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Meta Final</span>
+                          <span className="text-slate-500 block text-[10px]">Meta Final</span>
                           <strong className="text-white">{formatCurrency(target, s.currency || 'COP')}</strong>
                         </div>
                         <div className="text-right">
-                          <span className="text-slate-400 block text-[10px]">Faltante</span>
+                          <span className="text-slate-500 block text-[10px]">Faltante</span>
                           <strong className="text-purple-300">{formatCurrency(remaining, s.currency || 'COP')}</strong>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                    <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                       <button
                         onClick={() => setSavingContributionModal(s)}
                         className="px-3 py-1.5 text-xs font-bold bg-purple-500 text-white hover:bg-purple-400 rounded-lg flex items-center gap-1 transition-all"
@@ -1774,7 +1774,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           FinancialStore.deleteSavingGoal(s.id);
                           triggerToast('Objetivo de ahorro eliminado', 'info');
                         }}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1981,22 +1981,22 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <motion.div
                     key={ob.id}
                     whileHover={{ y: -3 }}
-                    className={`p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-[#132337]/90 ${
+                    className={`p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-white/90 ${
                       statusInfo.status === 'overdue'
                         ? 'border-rose-500/60 shadow-rose-500/10'
                         : statusInfo.status === 'due_soon'
                         ? 'border-amber-400/60 shadow-amber-500/10'
                         : ob.isPaid
-                        ? 'border-emerald-500/30 opacity-70 bg-slate-900/60'
-                        : 'border-white/10 hover:border-emerald-400/40'
+                        ? 'border-emerald-200 opacity-70 bg-slate-50'
+                        : 'border-slate-200 hover:border-emerald-400/40'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className={`font-serif font-bold text-base ${ob.isPaid ? 'line-through text-slate-400' : 'text-white'}`}>
+                        <h4 className={`font-serif font-bold text-base ${ob.isPaid ? 'line-through text-slate-500' : 'text-white'}`}>
                           {ob.title}
                         </h4>
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                           Frecuencia: {ob.frequency || 'Mensual'}
                         </span>
                       </div>
@@ -2005,16 +2005,16 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       </ExecutiveBadge>
                     </div>
 
-                    <div className="space-y-2 my-3 py-2 border-y border-white/10">
+                    <div className="space-y-2 my-3 py-2 border-y border-slate-200">
                       <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-slate-400">Monto:</span>
+                        <span className="text-slate-500">Monto:</span>
                         <strong className="text-base font-serif font-bold text-emerald-400">
                           {formatCurrency(ob.amount, ob.currency)}
                         </strong>
                       </div>
 
                       <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-slate-400">Vencimiento:</span>
+                        <span className="text-slate-500">Vencimiento:</span>
                         <strong className="text-slate-200">{ob.dueDate}</strong>
                       </div>
                     </div>
@@ -2038,7 +2038,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           FinancialStore.deleteObligation(ob.id);
                           triggerToast('Obligación eliminada', 'info');
                         }}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -2057,15 +2057,15 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             accentColor="emerald"
           >
             <ExecutiveForm onSubmit={handlePayObligationSubmit}>
-              <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10 text-xs space-y-1 mb-3">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1 mb-3">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Monto a pagar:</span>
+                  <span className="text-slate-500">Monto a pagar:</span>
                   <strong className="text-emerald-400 font-serif text-sm">
                     {payingObligationModal && formatCurrency(payingObligationModal.amount, payingObligationModal.currency)}
                   </strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Vencimiento:</span>
+                  <span className="text-slate-500">Vencimiento:</span>
                   <span className="text-slate-200">{payingObligationModal?.dueDate}</span>
                 </div>
               </div>
@@ -2171,12 +2171,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <motion.div
                     key={inv.id}
                     whileHover={{ y: -3 }}
-                    className="p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-[#132337]/90 border-white/10 hover:border-blue-400/50"
+                    className="p-5 rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all shadow-lg bg-white/90 border-slate-200 hover:border-blue-400/50"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h4 className="font-serif font-bold text-white text-base">{inv.assetName}</h4>
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                           {inv.quantity} unidades @ {formatCurrency(inv.currentPrice, inv.currency)}
                         </span>
                       </div>
@@ -2185,16 +2185,16 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       </ExecutiveBadge>
                     </div>
 
-                    <div className="space-y-1.5 my-3 py-2 border-y border-white/10 text-xs font-mono">
+                    <div className="space-y-1.5 my-3 py-2 border-y border-slate-200 text-xs font-mono">
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Valoración Actual:</span>
+                        <span className="text-slate-500">Valoración Actual:</span>
                         <strong className="text-emerald-400 font-serif text-sm">
                           {formatCurrency(totalVal, inv.currency)}
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Costo Total:</span>
-                        <span className="text-slate-300">{formatCurrency(totalCost, inv.currency)}</span>
+                        <span className="text-slate-500">Costo Total:</span>
+                        <span className="text-slate-700">{formatCurrency(totalCost, inv.currency)}</span>
                       </div>
                     </div>
 
@@ -2204,7 +2204,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           FinancialStore.deleteInvestment(inv.id);
                           triggerToast('Posición eliminada', 'info');
                         }}
-                        className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                        className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -2277,7 +2277,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
                 {/* DYNAMIC FIELDS PER NATURE */}
                 {txNature === 'external_income' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-200 rounded-xl">
                     <div>
                       <ExecutiveInput
                         label="Origen del Dinero *"
@@ -2374,8 +2374,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           }}
                           className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
                             isSplitExpense
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                              : 'bg-slate-800/80 text-slate-300 border-white/10 hover:bg-slate-700 hover:text-white'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200 shadow-sm'
+                              : 'bg-slate-100/80 text-slate-700 border-slate-200 hover:bg-slate-700 hover:text-slate-900'
                           }`}
                         >
                           <span>✂️</span> {isSplitExpense ? 'Cancelar División' : 'Dividir gasto en varios presupuestos'}
@@ -2416,12 +2416,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                         </div>
                       ) : (
                         /* SPLIT EXPENSE BUILDER */
-                        <div className="p-3 bg-slate-900/90 rounded-xl border border-amber-500/30 space-y-3">
+                        <div className="p-3 bg-slate-50 rounded-xl border border-amber-200 space-y-3">
                           <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="text-amber-300 font-bold flex items-center gap-1">
+                            <span className="text-amber-800 font-bold flex items-center gap-1">
                               <span>✂️</span> Desglose de Gastos por Presupuesto
                             </span>
-                            <span className="text-slate-300">
+                            <span className="text-slate-700">
                               Monto Total Calculado: <strong className="text-emerald-400 font-bold">{formatCurrency(txSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0), txCurr)}</strong>
                             </span>
                           </div>
@@ -2430,7 +2430,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                             {txSplits.map((split, idx) => {
                               const cats = getCategoryOptionsForBudget(split.budgetId);
                               return (
-                                <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-950/70 rounded-lg border border-white/10 text-xs">
+                                <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-50 rounded-lg border border-slate-200 text-xs">
                                   <div className="sm:col-span-4">
                                     <select
                                       value={split.budgetId}
@@ -2438,7 +2438,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         const val = e.target.value;
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
                                       }}
-                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
                                     >
                                       <option value="">-- Presupuesto --</option>
                                       {budgetOptions.map(b => (
@@ -2456,7 +2456,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
                                       }}
                                       disabled={!split.budgetId}
-                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                                     >
                                       <option value="">-- Categoría --</option>
                                       {cats.map(c => (
@@ -2474,7 +2474,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         const val = Number(e.target.value) || 0;
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
                                       }}
-                                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-emerald-500"
                                     />
                                   </div>
 
@@ -2482,7 +2482,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                     <button
                                       type="button"
                                       onClick={() => setTxSplits(prev => prev.filter((_, i) => i !== idx))}
-                                      className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                                      className="p-1 text-slate-500 hover:text-rose-400 hover:bg-slate-100 rounded transition-colors"
                                       title="Eliminar división"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -2496,7 +2496,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           <button
                             type="button"
                             onClick={() => setTxSplits(prev => [...prev, { id: 'split_' + Date.now(), budgetId: '', budgetCategoryId: '', categoryName: '', amount: 0, description: '' }])}
-                            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                            className="text-xs font-bold text-emerald-400 hover:text-emerald-800 flex items-center gap-1"
                           >
                             <Plus className="w-3.5 h-3.5" /> Agregar otra sub-división
                           </button>
@@ -2507,7 +2507,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 )}
 
                 {txNature === 'internal_transfer' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-blue-950/20 border border-blue-500/30 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-blue-950/20 border border-slate-200 rounded-xl">
                     <div>
                       <ExecutiveSelect
                         label="Cuenta Origen (Sale) *"
@@ -2596,7 +2596,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 )}
 
                 {txNature === 'investment_sell' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-purple-950/20 border border-purple-500/30 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-purple-950/20 border border-purple-200 rounded-xl">
                     <div>
                       <ExecutiveInput
                         label="Activo Vendido *"
@@ -2645,7 +2645,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 )}
 
                 {txNature === 'reconciliation_adj' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 bg-amber-950/20 border border-amber-200 rounded-xl">
                     <div>
                       <ExecutiveSelect
                         label="Cuenta Afectada *"
@@ -2693,7 +2693,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 )}
 
                 {txNature === 'financial_yield' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-200 rounded-xl">
                     <div>
                       <ExecutiveSelect
                         label="Cuenta Destino (Rendimiento) *"
@@ -2746,16 +2746,16 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 return (
                   <div
                     key={tx.id}
-                    className="p-4 bg-[#132337]/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-between gap-4 hover:border-white/30 transition-all"
+                    className="p-4 bg-white/80 backdrop-blur-md border border-slate-200 rounded-xl flex items-center justify-between gap-4 hover:border-white/30 transition-all"
                   >
                     <div className="flex items-start gap-3">
                       <div className={`p-2.5 rounded-xl border mt-0.5 ${
                         isIncome 
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-500/40' 
                           : tx.nature === 'internal_transfer'
                           ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                           : tx.nature === 'reconciliation_adj'
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
                           : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                       }`}>
                         {isIncome ? <ArrowUpRight className="w-5 h-5" /> : tx.nature === 'internal_transfer' ? <RefreshCw className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
@@ -2769,14 +2769,14 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                             {tx.nature.replace('_', ' ')}
                           </ExecutiveBadge>
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">
+                        <div className="text-xs text-slate-500 font-mono">
                           {tx.date} • {tx.time}
                         </div>
-                        <div className="text-[11px] text-slate-300 flex flex-wrap gap-2 pt-0.5">
+                        <div className="text-[11px] text-slate-700 flex flex-wrap gap-2 pt-0.5">
                           {tx.sourceName && <span>Origen: <strong className="text-white">{tx.sourceName}</strong></span>}
                           {tx.beneficiaryName && <span>Beneficiario: <strong className="text-white">{tx.beneficiaryName}</strong></span>}
                           {tx.assetName && <span>Activo: <strong className="text-white">{tx.assetName}</strong> ({tx.assetQuantity} u. @ {formatCurrency(tx.unitPrice || 0, tx.currency)})</span>}
-                          {tx.reconciliationReason && <span>Motivo: <strong className="text-amber-300">{tx.reconciliationReason}</strong> (por {tx.reconciliationUser})</span>}
+                          {tx.reconciliationReason && <span>Motivo: <strong className="text-amber-800">{tx.reconciliationReason}</strong> (por {tx.reconciliationUser})</span>}
                           {sourceAcc && <span>Desde: <strong className="text-slate-200">{sourceAcc.name}</strong></span>}
                           {destAcc && <span>Hacia: <strong className="text-slate-200">{destAcc.name}</strong></span>}
                         </div>
@@ -2784,17 +2784,17 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                         {/* BUDGET OR SPLIT TAG */}
                         {tx.splits && tx.splits.length > 0 ? (
                           <div className="mt-1 flex flex-wrap gap-1.5 items-center">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-bold flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-mono font-bold flex items-center gap-1">
                               <span>✂️</span> Gasto Dividido ({tx.splits.length}):
                             </span>
                             {tx.splits.map((s, idx) => {
                               const fund = (data.distributionPlan?.funds || []).find(f => f.id === s.budgetId);
                               const catName = s.categoryName || 'General';
                               return (
-                                <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-900 border border-white/10 text-[10px] font-mono text-slate-300 flex items-center gap-1">
+                                <span key={idx} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700 flex items-center gap-1">
                                   <span>{fund ? fund.emoji || '💼' : ''}</span>
                                   <span>{catName}:</span>
-                                  <strong className="text-emerald-300">{formatCurrency(s.amount, tx.currency)}</strong>
+                                  <strong className="text-emerald-800">{formatCurrency(s.amount, tx.currency)}</strong>
                                 </span>
                               );
                             })}
@@ -2815,13 +2815,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               const remaining = catBudget - catUsed;
 
                               return (
-                                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-mono font-medium flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-800 border border-emerald-200 text-[11px] font-mono font-medium flex items-center gap-1.5 flex-wrap">
                                   <span>{cat?.emoji || fund.emoji || '🏠'}</span>
                                   <span>
                                     {cat?.name ? `${cat.name} | ` : ''}Presupuesto: <strong>{fund.name}</strong>
                                   </span>
                                   <span className="text-slate-500">|</span>
-                                  <span className={remaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-300'}>
+                                  <span className={remaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}>
                                     Disponible restante: <strong>{formatCurrency(remaining, tx.currency)}</strong>
                                   </span>
                                 </span>
@@ -2841,7 +2841,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
                       <button
                         onClick={() => handleOpenEditTransaction(tx)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                         title="Editar movimiento"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -2852,7 +2852,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           FinancialStore.deleteTransaction(tx.id);
                           triggerToast('Movimiento eliminado', 'info');
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                         title="Eliminar movimiento"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -2879,10 +2879,10 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               (t.categoryId === selectedCategoryDetail?.name || t.description.toLowerCase().includes(selectedCategoryDetail?.name.toLowerCase() || ''))
             )
             .map(t => (
-              <div key={t.id} className="p-3 bg-slate-900/80 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+              <div key={t.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
                 <div>
                   <strong className="text-white block font-serif">{t.description}</strong>
-                  <span className="text-slate-400 font-mono text-[10px]">{t.date} • {t.time}</span>
+                  <span className="text-slate-500 font-mono text-[10px]">{t.date} • {t.time}</span>
                 </div>
                 <strong className={selectedCategoryDetail?.type === 'income' ? 'text-emerald-400 font-serif' : 'text-rose-400 font-serif'}>
                   {formatCurrency(t.amount, t.currency)}
@@ -2911,19 +2911,19 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             <div className="space-y-5">
               {/* HEADER INFO CARDS */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Saldo Calculado</span>
+                <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-200">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">Saldo Calculado</span>
                   <div className="text-2xl font-serif font-bold text-emerald-400">
                     {formatCurrency(stats.currentBalance, acc.currency)}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">Inicial: {formatCurrency(stats.initialBalance, acc.currency)}</span>
+                  <span className="text-[10px] text-slate-500 font-mono">Inicial: {formatCurrency(stats.initialBalance, acc.currency)}</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Entidad & Tipo</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Entidad & Tipo</span>
                     <strong className="text-sm font-bold text-white block">{acc.institution || 'Entidad no esp.'}</strong>
-                    <span className="text-xs text-slate-300 capitalize">{acc.type.replace('_', ' ')}</span>
+                    <span className="text-xs text-slate-700 capitalize">{acc.type.replace('_', ' ')}</span>
                   </div>
                   <div className="flex gap-2 mt-2">
                     <ExecutiveBadge variant="subtle" accentColor="emerald">{acc.currency}</ExecutiveBadge>
@@ -2935,22 +2935,22 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 flex flex-col justify-between text-xs space-y-1">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between text-xs space-y-1">
                   {acc.type === 'high_yield' && acc.annualInterestRate ? (
                     <div>
                       <span className="text-[10px] uppercase font-bold text-emerald-400 block">Rendimiento Alto Valor</span>
-                      <div className="text-base font-serif font-bold text-emerald-300">{acc.annualInterestRate}% TEA</div>
-                      <span className="text-[11px] text-slate-300 block">Est: +{formatCurrency(dailyYieldEst, acc.currency)}/día</span>
+                      <div className="text-base font-serif font-bold text-emerald-800">{acc.annualInterestRate}% TEA</div>
+                      <span className="text-[11px] text-slate-700 block">Est: +{formatCurrency(dailyYieldEst, acc.currency)}/día</span>
                     </div>
                   ) : (
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Movimientos del Mes</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Movimientos del Mes</span>
                       <div className="text-lg font-serif font-bold text-white">{stats.monthMovementsCount} registros</div>
-                      <span className="text-[11px] text-slate-400 block">Total en historial: {stats.accountTxs.length}</span>
+                      <span className="text-[11px] text-slate-500 block">Total en historial: {stats.accountTxs.length}</span>
                     </div>
                   )}
 
-                  <div className="text-[10px] text-slate-400 pt-1 border-t border-white/10 flex justify-between font-mono">
+                  <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-200 flex justify-between font-mono">
                     <span>Creada: {acc.createdAt || 'N/A'}</span>
                     <span>Mod: {acc.updatedAt || 'N/A'}</span>
                   </div>
@@ -2958,7 +2958,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               </div>
 
               {/* QUICK ACTION BUTTONS BAR */}
-              <div className="flex flex-wrap gap-2 p-2 rounded-2xl bg-slate-950/80 border border-white/10 items-center justify-between">
+              <div className="flex flex-wrap gap-2 p-2 rounded-2xl bg-slate-950/80 border border-slate-200 items-center justify-between">
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => { setQuickActionType('transfer'); setTxSourceAcc(acc.id); setTxNature('internal_transfer'); }}
@@ -2972,7 +2972,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <button
                     onClick={() => { setQuickActionType('income'); setTxDestAcc(acc.id); setTxNature('external_income'); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      quickActionType === 'income' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                      quickActionType === 'income' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-500/30'
                     }`}
                   >
                     <ArrowUpRight className="w-3.5 h-3.5" /> Ingreso
@@ -2999,7 +2999,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   <button
                     onClick={() => { setQuickActionType('edit'); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      quickActionType === 'edit' ? 'bg-slate-700 text-white shadow-lg' : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                      quickActionType === 'edit' ? 'bg-slate-700 text-white shadow-lg' : 'bg-white/10 text-slate-700 hover:bg-white/20'
                     }`}
                   >
                     <Edit2 className="w-3.5 h-3.5" /> Editar
@@ -3014,7 +3014,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                         setSelectedAccountForPanel({ ...acc, archived: false });
                         triggerToast(`Cuenta "${acc.name}" restaurada`, 'success');
                       }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 hover:bg-amber-500/30 transition-all flex items-center gap-1.5"
                     >
                       <RotateCcw className="w-3.5 h-3.5" /> Restaurar
                     </button>
@@ -3025,7 +3025,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                         setSelectedAccountForPanel({ ...acc, archived: true });
                         triggerToast(`Cuenta "${acc.name}" archivada`, 'info');
                       }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:text-amber-800 hover:bg-amber-50 transition-all flex items-center gap-1.5"
                     >
                       <Archive className="w-3.5 h-3.5" /> Archivar
                     </button>
@@ -3035,8 +3035,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
               {/* QUICK ACTION FORM (IF ANY SELECTED) */}
               {quickActionType && (
-                <div className="p-4 bg-slate-900/90 border border-white/20 rounded-2xl space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                <div className="p-4 bg-slate-50 border border-white/20 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                     <h4 className="font-serif font-bold text-white text-sm flex items-center gap-2">
                       <Plus className="w-4 h-4 text-emerald-400" />
                       {quickActionType === 'transfer' && 'Transferir Dinero a Otra Cuenta'}
@@ -3045,7 +3045,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       {quickActionType === 'yield' && 'Registrar Rendimiento Financiero Manual'}
                       {quickActionType === 'edit' && 'Editar Configuración de la Cuenta'}
                     </h4>
-                    <button onClick={() => setQuickActionType(null)} className="text-slate-400 hover:text-white">
+                    <button onClick={() => setQuickActionType(null)} className="text-slate-500 hover:text-slate-900">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -3324,13 +3324,13 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               )}
 
               {/* TABS SELECTOR IN MODAL */}
-              <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1">
+              <div className="flex border-b border-slate-200 space-x-1 overflow-x-auto pb-1">
                 <button
                   onClick={() => { setAccountPanelTab('stats'); setQuickActionType(null); }}
                   className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
                     accountPanelTab === 'stats' && !quickActionType
-                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                      : 'border-transparent text-slate-400 hover:text-white'
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   <BarChart3 className="w-3.5 h-3.5" /> Estadísticas & Métricas
@@ -3340,8 +3340,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   onClick={() => { setAccountPanelTab('chart'); setQuickActionType(null); }}
                   className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
                     accountPanelTab === 'chart' && !quickActionType
-                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                      : 'border-transparent text-slate-400 hover:text-white'
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   <LineChart className="w-3.5 h-3.5" /> Evolución del Saldo
@@ -3351,8 +3351,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   onClick={() => { setAccountPanelTab('obligations'); setQuickActionType(null); }}
                   className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
                     accountPanelTab === 'obligations' && !quickActionType
-                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                      : 'border-transparent text-slate-400 hover:text-white'
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" /> Obligaciones & Presupuesto
@@ -3362,8 +3362,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   onClick={() => { setAccountPanelTab('movements'); setQuickActionType(null); }}
                   className={`px-3 py-2 text-xs font-bold uppercase rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
                     accountPanelTab === 'movements' && !quickActionType
-                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                      : 'border-transparent text-slate-400 hover:text-white'
+                      ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   <Activity className="w-3.5 h-3.5" /> Historial de Movimientos ({stats.accountTxs.length})
@@ -3373,57 +3373,57 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               {/* TAB CONTENT AREAS */}
               {!quickActionType && accountPanelTab === 'stats' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Saldo Actual</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Saldo Actual</span>
                     <strong className="text-base font-serif font-bold text-emerald-400 block mt-0.5">
                       {formatCurrency(stats.currentBalance, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Saldo Inicial</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Saldo Inicial</span>
                     <strong className="text-base font-serif font-bold text-slate-200 block mt-0.5">
                       {formatCurrency(stats.initialBalance, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Ingresos Acumulados</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Ingresos Acumulados</span>
                     <strong className="text-base font-serif font-bold text-emerald-400 block mt-0.5">
                       +{formatCurrency(stats.totalIncomes, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Gastos Acumulados</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Gastos Acumulados</span>
                     <strong className="text-base font-serif font-bold text-rose-400 block mt-0.5">
                       -{formatCurrency(stats.totalExpenses, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Transf. Recibidas</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Transf. Recibidas</span>
                     <strong className="text-base font-serif font-bold text-blue-300 block mt-0.5">
                       +{formatCurrency(stats.transfersReceived, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Transf. Enviadas</span>
-                    <strong className="text-base font-serif font-bold text-amber-300 block mt-0.5">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Transf. Enviadas</span>
+                    <strong className="text-base font-serif font-bold text-amber-800 block mt-0.5">
                       -{formatCurrency(stats.transfersSent, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Rendimientos Totales</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Rendimientos Totales</span>
                     <strong className="text-base font-serif font-bold text-teal-300 block mt-0.5">
                       +{formatCurrency(stats.totalYields, acc.currency)}
                     </strong>
                   </div>
 
-                  <div className="p-3 bg-slate-900/80 rounded-xl border border-white/10">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Último Movimiento</span>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Último Movimiento</span>
                     <strong className="text-xs font-serif font-bold text-white block mt-0.5 truncate">
                       {stats.lastMovement ? `${stats.lastMovement.date}: ${stats.lastMovement.description}` : 'Sin movimientos'}
                     </strong>
@@ -3437,20 +3437,20 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
               {!quickActionType && accountPanelTab === 'obligations' && (
                 <div className="space-y-3">
-                  <h4 className="font-serif font-bold text-white text-xs uppercase tracking-wider text-slate-400">
+                  <h4 className="font-serif font-bold text-white text-xs uppercase tracking-wider text-slate-500">
                     Obligaciones Pendientes en {acc.currency}:
                   </h4>
                   {stats.associatedObligations.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic p-3 bg-slate-900/50 rounded-xl text-center">
+                    <p className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl text-center">
                       No hay obligaciones pendientes registradas en esta moneda.
                     </p>
                   ) : (
                     <div className="space-y-2">
                       {stats.associatedObligations.map(ob => (
-                        <div key={ob.id} className="p-3 bg-slate-900/80 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                        <div key={ob.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
                           <div>
                             <strong className="text-white block">{ob.title}</strong>
-                            <span className="text-slate-400 text-[11px]">Vence: {ob.dueDate} • {ob.category}</span>
+                            <span className="text-slate-500 text-[11px]">Vence: {ob.dueDate} • {ob.category}</span>
                           </div>
                           <strong className="text-rose-400 font-serif font-bold">{formatCurrency(ob.amount, ob.currency)}</strong>
                         </div>
@@ -3463,12 +3463,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               {!quickActionType && accountPanelTab === 'movements' && (
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                   {stats.accountTxs.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic p-4 text-center">No existen movimientos registrados para esta cuenta.</p>
+                    <p className="text-xs text-slate-500 italic p-4 text-center">No existen movimientos registrados para esta cuenta.</p>
                   ) : (
                     stats.accountTxs.map(tx => {
                       const isIncome = tx.destinationAccountId === acc.id;
                       return (
-                        <div key={tx.id} className="p-3 bg-slate-900/80 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                        <div key={tx.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
                           <div>
                             <div className="flex items-center gap-2">
                               <strong className="text-white font-serif">{tx.description}</strong>
@@ -3476,7 +3476,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                 {tx.nature.replace('_', ' ')}
                               </ExecutiveBadge>
                             </div>
-                            <span className="text-slate-400 font-mono text-[10px]">{tx.date} • {tx.time}</span>
+                            <span className="text-slate-500 font-mono text-[10px]">{tx.date} • {tx.time}</span>
                           </div>
                           <strong className={`font-serif font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {isIncome ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
@@ -3500,15 +3500,15 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
         accentColor="purple"
       >
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-200 flex items-center justify-between">
             <div>
               <h4 className="font-serif font-bold text-white text-base">Portafolio de Activos Financieros</h4>
-              <p className="text-xs text-slate-300">Gestión ejecutiva de Acciones, ETFs, Bonos, Criptomonedas y Fondos de Inversión.</p>
+              <p className="text-xs text-slate-700">Gestión ejecutiva de Acciones, ETFs, Bonos, Criptomonedas y Fondos de Inversión.</p>
             </div>
             <ExecutiveBadge variant="solid" accentColor="purple">Módulo de Activos</ExecutiveBadge>
           </div>
 
-          <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1">
+          <div className="flex border-b border-slate-200 space-x-1 overflow-x-auto pb-1">
             {(['stocks', 'etfs', 'bonds', 'crypto', 'funds'] as const).map(tab => (
               <button
                 key={tab}
@@ -3516,7 +3516,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                 className={`px-3 py-1.5 rounded-t-xl text-xs font-bold uppercase transition-all border-b-2 ${
                   investmentAssetTab === tab
                     ? 'border-purple-400 bg-purple-500/20 text-purple-300'
-                    : 'border-transparent text-slate-400 hover:text-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                 }`}
               >
                 {tab === 'stocks' && 'Acciones'}
@@ -3528,10 +3528,10 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             ))}
           </div>
 
-          <div className="p-6 text-center space-y-3 bg-slate-900/60 rounded-2xl border border-white/10">
+          <div className="p-6 text-center space-y-3 bg-slate-50 rounded-2xl border border-slate-200">
             <Briefcase className="w-10 h-10 text-purple-400 mx-auto" />
             <h5 className="font-serif font-bold text-white text-sm">Administración de {investmentAssetTab.toUpperCase()}</h5>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
               Todas las compras y ventas de estos activos se registran estrictamente como movimientos financieros de inversión para garantizar la trazabilidad patrimonial sin alterar saldos manualmente.
             </p>
 
@@ -3617,7 +3617,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               </div>
 
               {/* BUDGET RE-ASSIGNMENT */}
-              <div className="pt-3 border-t border-white/10 space-y-3">
+              <div className="pt-3 border-t border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-serif font-bold text-slate-200 flex items-center gap-1.5">
                     <PieChart className="w-4 h-4 text-emerald-400" />
@@ -3637,8 +3637,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     }}
                     className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
                       editIsSplitExpense
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                        : 'bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700 hover:text-white'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200 shadow-sm'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-700 hover:text-slate-900'
                     }`}
                   >
                     <span>✂️</span> {editIsSplitExpense ? 'Cancelar División' : 'Dividir Gasto'}
@@ -3674,12 +3674,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     />
                   </div>
                 ) : (
-                  <div className="p-3 bg-slate-900/90 rounded-xl border border-amber-500/30 space-y-3">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-amber-200 space-y-3">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-amber-300 font-bold flex items-center gap-1">
+                      <span className="text-amber-800 font-bold flex items-center gap-1">
                         <span>✂️</span> Divisiones de Gasto
                       </span>
-                      <span className="text-slate-300">
+                      <span className="text-slate-700">
                         Total: <strong className="text-emerald-400 font-bold">{formatCurrency(editSplits.reduce((s, x) => s + (Number(x.amount) || 0), 0), editingTx.currency)}</strong>
                       </span>
                     </div>
@@ -3688,7 +3688,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       {editSplits.map((split, idx) => {
                         const cats = getCategoryOptionsForBudget(split.budgetId);
                         return (
-                          <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-950/70 rounded-lg border border-white/10 text-xs">
+                          <div key={split.id || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 bg-slate-50 rounded-lg border border-slate-200 text-xs">
                             <div className="sm:col-span-4">
                               <select
                                 value={split.budgetId}
@@ -3696,7 +3696,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   const val = e.target.value;
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
                                 }}
-                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500"
                               >
                                 <option value="">-- Presupuesto --</option>
                                 {budgetOptions.map(b => (
@@ -3714,7 +3714,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
                                 }}
                                 disabled={!split.budgetId}
-                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                               >
                                 <option value="">-- Categoría --</option>
                                 {cats.map(c => (
@@ -3732,7 +3732,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   const val = Number(e.target.value) || 0;
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
                                 }}
-                                className="w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-white font-mono focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white font-mono focus:outline-none focus:border-emerald-500"
                               />
                             </div>
 
@@ -3740,7 +3740,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               <button
                                 type="button"
                                 onClick={() => setEditSplits(prev => prev.filter((_, i) => i !== idx))}
-                                className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800"
+                                className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-100"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -3753,7 +3753,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                     <button
                       type="button"
                       onClick={() => setEditSplits(prev => [...prev, { id: 'split_' + Date.now(), budgetId: '', budgetCategoryId: '', categoryName: '', amount: 0, description: '' }])}
-                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                      className="text-xs font-bold text-emerald-400 hover:text-emerald-800 flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" /> Agregar otra división
                     </button>

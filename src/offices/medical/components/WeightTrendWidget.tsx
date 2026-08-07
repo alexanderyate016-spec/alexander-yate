@@ -57,32 +57,32 @@ export const WeightTrendWidget: React.FC<Props> = ({ data, todayStr }) => {
           <div className="flex items-center gap-1 text-[11px] font-medium text-rose-200">
             {metrics.weightTrend === 'up' && <span className="text-amber-400 flex items-center gap-0.5"><TrendingUp className="w-3 h-3" /> Sube</span>}
             {metrics.weightTrend === 'down' && <span className="text-emerald-400 flex items-center gap-0.5"><TrendingDown className="w-3 h-3" /> Baja</span>}
-            {metrics.weightTrend === 'stable' && <span className="text-slate-300 flex items-center gap-0.5"><Minus className="w-3 h-3" /> Estabilizado</span>}
+            {metrics.weightTrend === 'stable' && <span className="text-slate-700 flex items-center gap-0.5"><Minus className="w-3 h-3" /> Estabilizado</span>}
           </div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/60 border border-slate-700/60 rounded-xl space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">Máximo</span>
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">Máximo</span>
           <p className="text-2xl font-bold font-mono text-white">
             {metrics.maxWeight !== null ? `${metrics.maxWeight} kg` : 'N/R'}
           </p>
-          <span className="text-[10px] text-slate-400">Pico más alto</span>
+          <span className="text-[10px] text-slate-500">Pico más alto</span>
         </div>
 
-        <div className="p-3.5 bg-slate-900/60 border border-slate-700/60 rounded-xl space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">Mínimo</span>
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">Mínimo</span>
           <p className="text-2xl font-bold font-mono text-white">
             {metrics.minWeight !== null ? `${metrics.minWeight} kg` : 'N/R'}
           </p>
-          <span className="text-[10px] text-slate-400">Mínimo registrado</span>
+          <span className="text-[10px] text-slate-500">Mínimo registrado</span>
         </div>
 
-        <div className="p-3.5 bg-slate-900/60 border border-slate-700/60 rounded-xl space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">Promedio</span>
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">Promedio</span>
           <p className="text-2xl font-bold font-mono text-white">
             {metrics.avgWeight !== null ? `${metrics.avgWeight} kg` : 'N/R'}
           </p>
-          <span className="text-[10px] text-slate-400">Promedio de registros</span>
+          <span className="text-[10px] text-slate-500">Promedio de registros</span>
         </div>
       </div>
 
@@ -106,13 +106,13 @@ export const WeightTrendWidget: React.FC<Props> = ({ data, todayStr }) => {
                   <span className="text-[10px] font-mono font-bold text-rose-300 opacity-0 group-hover:opacity-100 transition-opacity">
                     {r.weightKg}k
                   </span>
-                  <div className="w-full bg-slate-800 rounded-t-lg h-24 flex items-end overflow-hidden">
+                  <div className="w-full bg-slate-100 rounded-t-lg h-24 flex items-end overflow-hidden">
                     <div
                       style={{ height: `${pct}%` }}
                       className="w-full bg-gradient-to-t from-rose-600 to-rose-400 rounded-t-lg transition-all duration-500 group-hover:brightness-125"
                     />
                   </div>
-                  <span className="text-[9px] font-mono text-slate-400 truncate max-w-[40px]">
+                  <span className="text-[9px] font-mono text-slate-500 truncate max-w-[40px]">
                     {r.date.substring(5)}
                   </span>
                 </div>

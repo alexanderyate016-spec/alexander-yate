@@ -120,7 +120,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* 3. INTERACTIVE NAVIGATION TABS */}
-      <div className="flex border-b border-white/10 space-x-1 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex border-b border-slate-200 space-x-1 overflow-x-auto pb-1 scrollbar-none">
         {[
           { id: 'dashboard', label: 'Panel General', icon: <Heart className="w-4 h-4" />, badge: `${wellnessIndex.overallScore}%` },
           { id: 'hydration', label: 'Hidratación', icon: <Droplet className="w-4 h-4" />, badge: `${metrics.hydrationPct}%` },
@@ -137,14 +137,14 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
               activeTab === tab.id
                 ? 'border-rose-400 bg-rose-500/20 text-rose-200 shadow-lg'
-                : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
             }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
             {tab.badge !== undefined && tab.badge !== 0 && (
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                activeTab === tab.id ? 'bg-rose-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+                activeTab === tab.id ? 'bg-purple-600 text-white font-semibold' : 'bg-slate-100 text-slate-700'
               }`}>
                 {tab.badge}
               </span>
@@ -188,7 +188,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                   </span>
                   <span className="font-mono font-bold text-white">{metrics.hydrationPct}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: `${metrics.hydrationPct}%` }} className="bg-cyan-400 h-full rounded-full transition-all duration-500" />
                 </div>
                 <p className="text-[10px] text-cyan-200/80 font-mono">
@@ -203,7 +203,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                   </span>
                   <span className="font-mono font-bold text-white">{wellnessIndex.sleepPct}%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: `${wellnessIndex.sleepPct}%` }} className="bg-indigo-400 h-full rounded-full transition-all duration-500" />
                 </div>
                 <p className="text-[10px] text-indigo-200/80 font-mono">
@@ -218,7 +218,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                   </span>
                   <span className="font-mono font-bold text-white">100%</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: `100%` }} className="bg-emerald-400 h-full rounded-full" />
                 </div>
                 <p className="text-[10px] text-emerald-200/80 font-mono">
@@ -235,7 +235,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                     {wellnessIndex.isLogCompleted ? '100%' : '50%'}
                   </span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: wellnessIndex.isLogCompleted ? '100%' : '50%' }} className="bg-rose-400 h-full rounded-full" />
                 </div>
                 <p className="text-[10px] text-rose-200/80 font-mono">
@@ -256,7 +256,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="blue">{metrics.hydrationPct}%</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Hidratación</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Hidratación</span>
                 <p className="text-xl font-bold font-mono text-white">{metrics.hydrationLiters.toFixed(1)} L / {metrics.targetWater} L</p>
               </div>
               <div className="text-xs text-cyan-300 flex items-center justify-between pt-2 border-t border-cyan-500/20">
@@ -276,7 +276,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 </ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Descanso Anoche</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Descanso Anoche</span>
                 <p className="text-xl font-bold font-mono text-white">{metrics.sleep !== null ? `${metrics.sleep} hrs` : 'Sin registro'}</p>
               </div>
               <div className="text-xs text-indigo-300 flex items-center justify-between pt-2 border-t border-indigo-500/20">
@@ -296,7 +296,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 </ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Peso Corporal</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Peso Corporal</span>
                 <p className="text-xl font-bold font-mono text-white">{metrics.weight !== null ? `${metrics.weight} kg` : 'Sin registro'}</p>
               </div>
               <div className="text-xs text-rose-300 flex items-center justify-between pt-2 border-t border-rose-500/20">
@@ -314,7 +314,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="amber">{(data.immunizations || []).length} Vacunas</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Carnet Digital</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Carnet Digital</span>
                 <p className="text-xl font-bold text-white">Inmunización</p>
               </div>
               <div className="text-xs text-amber-300 flex items-center justify-between pt-2 border-t border-amber-500/20">
@@ -332,7 +332,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="emerald">{activeMedsCount} Activos</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Tratamientos</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Tratamientos</span>
                 <p className="text-xl font-bold text-white">Botiquín Médico</p>
               </div>
               <div className="text-xs text-emerald-300 flex items-center justify-between pt-2 border-t border-emerald-500/20">
@@ -350,7 +350,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="rose">{pendingAppointmentsCount} Pendientes</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Agenda Clínica</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Agenda Clínica</span>
                 <p className="text-xl font-bold text-white">Citas Médicas</p>
               </div>
               <div className="text-xs text-rose-300 flex items-center justify-between pt-2 border-t border-rose-500/20">
@@ -368,7 +368,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="emerald">Diario</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Nutrición</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Nutrición</span>
                 <p className="text-xl font-bold text-white">Alimentación</p>
               </div>
               <div className="text-xs text-emerald-300 flex items-center justify-between pt-2 border-t border-emerald-500/20">
@@ -386,7 +386,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                 <ExecutiveBadge accentColor="purple">{pendingExamsCount} En espera</ExecutiveBadge>
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-bold">Laboratorio</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Laboratorio</span>
                 <p className="text-xl font-bold text-white">Exámenes e Historial</p>
               </div>
               <div className="text-xs text-purple-300 flex items-center justify-between pt-2 border-t border-purple-500/20">

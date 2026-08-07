@@ -45,7 +45,7 @@ export const EVENT_TYPE_OPTIONS: Array<{
   { id: 'Almuerzo', label: 'Almuerzo', emoji: '🥗', color: 'from-teal-600/30 to-teal-700/20 border-teal-500/40 text-teal-200' },
   { id: 'Partido', label: 'Partido', emoji: '⚽', color: 'from-lime-600/30 to-lime-700/20 border-lime-500/40 text-lime-200' },
   { id: 'Celebración', label: 'Celebración', emoji: '🎊', color: 'from-fuchsia-600/30 to-fuchsia-700/20 border-fuchsia-500/40 text-fuchsia-200' },
-  { id: 'Otro', label: 'Otro Plan', emoji: '📌', color: 'from-slate-600/30 to-slate-700/20 border-slate-500/40 text-slate-200' }
+  { id: 'Otro', label: 'Otro Plan', emoji: '📌', color: 'from-slate-600/30 to-slate-700/20 border-slate-500/40 text-slate-800' }
 ];
 
 export const CreatePlanModal: React.FC<Props> = ({
@@ -149,12 +149,12 @@ export const CreatePlanModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-[#080d19] border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-white shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 my-auto">
+      <div className="bg-[#080d19] border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-slate-900 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 my-auto">
         
         {/* CLOSE BUTTON */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+          className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-700 hover:text-slate-900 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -167,8 +167,8 @@ export const CreatePlanModal: React.FC<Props> = ({
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-lg sm:text-xl text-white">Planificar Nuevo Momento Social</h3>
-                <p className="text-xs text-slate-400">Paso {step} de 3 — {step === 1 ? '¿Qué vas a hacer?' : step === 2 ? '¿Con quién?' : 'Fecha, Hora y Detalle'}</p>
+                <h3 className="font-serif font-bold text-lg sm:text-xl text-slate-900">Planificar Nuevo Momento Social</h3>
+                <p className="text-xs text-slate-500">Paso {step} de 3 — {step === 1 ? '¿Qué vas a hacer?' : step === 2 ? '¿Con quién?' : 'Fecha, Hora y Detalle'}</p>
               </div>
             </div>
           </div>
@@ -200,7 +200,7 @@ export const CreatePlanModal: React.FC<Props> = ({
                     className={`p-3.5 rounded-2xl border text-left flex flex-col items-center justify-center gap-2 transition-all active:scale-95 ${
                       isSelected
                         ? `bg-gradient-to-br ${opt.color} border-2 shadow-lg scale-[1.02]`
-                        : 'bg-white/5 border-white/10 hover:border-purple-400/40 text-slate-300 hover:text-white'
+                        : 'bg-slate-50 border-slate-200 hover:border-purple-400/40 text-slate-700 hover:text-slate-900'
                     }`}
                   >
                     <span className="text-3xl">{opt.emoji}</span>
@@ -211,7 +211,7 @@ export const CreatePlanModal: React.FC<Props> = ({
             </div>
 
             <div className="pt-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Título Personalizado (Opcional)
               </label>
               <input
@@ -219,7 +219,7 @@ export const CreatePlanModal: React.FC<Props> = ({
                 value={customTitle}
                 onChange={e => setCustomTitle(e.target.value)}
                 placeholder={`Ej. ${selectedType} de celebración de proyecto`}
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none transition-colors"
               />
             </div>
 
@@ -227,7 +227,7 @@ export const CreatePlanModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2"
+                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-slate-900 font-bold text-xs shadow-lg transition-all flex items-center gap-2"
               >
                 <span>Siguiente: ¿Con quién?</span>
                 <ChevronRight className="w-4 h-4" />
@@ -265,21 +265,21 @@ export const CreatePlanModal: React.FC<Props> = ({
                     onChange={e => setNewPersonName(e.target.value)}
                     placeholder="Nombre Completo *"
                     required
-                    className="bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none"
                   />
                   <input
                     type="text"
                     value={newPersonRelation}
                     onChange={e => setNewPersonRelation(e.target.value)}
                     placeholder="Relación (ej. Amigo, Prima)"
-                    className="bg-black/40 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                    className="bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none"
                   />
                 </div>
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsCreatingPersonInline(false)}
-                    className="px-3 py-1 text-xs text-slate-400 hover:text-white"
+                    className="px-3 py-1 text-xs text-slate-500 hover:text-slate-900"
                   >
                     Cancelar
                   </button>
@@ -295,13 +295,13 @@ export const CreatePlanModal: React.FC<Props> = ({
 
             {/* PEOPLE SELECTION GRID */}
             {people.length === 0 ? (
-              <div className="p-6 text-center border border-dashed border-white/20 rounded-2xl space-y-2">
-                <Users className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="text-xs text-slate-300 font-medium">Aún no tienes personas registradas en tu red de contactos.</p>
+              <div className="p-6 text-center border border-dashed border-slate-200 rounded-2xl space-y-2">
+                <Users className="w-8 h-8 text-slate-500 mx-auto" />
+                <p className="text-xs text-slate-700 font-medium">Aún no tienes personas registradas en tu red de contactos.</p>
                 <button
                   type="button"
                   onClick={() => setIsCreatingPersonInline(true)}
-                  className="px-4 py-1.5 bg-purple-600 text-white font-bold text-xs rounded-xl"
+                  className="px-4 py-1.5 bg-purple-600 text-slate-900 font-bold text-xs rounded-xl"
                 >
                   Crear Primera Persona
                 </button>
@@ -319,8 +319,8 @@ export const CreatePlanModal: React.FC<Props> = ({
                       onClick={() => handleTogglePerson(p.id)}
                       className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-left transition-all ${
                         isSelected
-                          ? 'bg-purple-900/50 border-purple-400 text-white shadow-md'
-                          : 'bg-white/5 border-white/10 hover:border-purple-400/30 text-slate-300'
+                          ? 'bg-purple-900/50 border-purple-400 text-slate-900 shadow-md'
+                          : 'bg-slate-50 border-slate-200 hover:border-purple-400/30 text-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -332,20 +332,20 @@ export const CreatePlanModal: React.FC<Props> = ({
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-400/40 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 border border-purple-400/40 flex items-center justify-center text-slate-900 font-bold text-xs shrink-0">
                             {initials}
                           </div>
                         )}
                         <div>
-                          <p className="text-xs font-bold text-white leading-snug">{p.name}</p>
-                          <p className="text-[10px] text-slate-400">{p.relationship || p.category}</p>
+                          <p className="text-xs font-bold text-slate-900 leading-snug">{p.name}</p>
+                          <p className="text-[10px] text-slate-500">{p.relationship || p.category}</p>
                         </div>
                       </div>
 
                       <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
                         isSelected
                           ? 'bg-purple-500 border-purple-400 text-slate-950'
-                          : 'border-white/20 bg-black/20'
+                          : 'border-slate-200 bg-slate-50'
                       }`}>
                         {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
@@ -355,11 +355,11 @@ export const CreatePlanModal: React.FC<Props> = ({
               </div>
             )}
 
-            <div className="flex justify-between pt-3 border-t border-white/10">
+            <div className="flex justify-between pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-300 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-700 transition-colors flex items-center gap-1.5"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Anterior</span>
@@ -368,7 +368,7 @@ export const CreatePlanModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setStep(3)}
-                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2"
+                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-slate-900 font-bold text-xs shadow-lg transition-all flex items-center gap-2"
               >
                 <span>Siguiente: Fecha y Horario</span>
                 <ChevronRight className="w-4 h-4" />
@@ -386,7 +386,7 @@ export const CreatePlanModal: React.FC<Props> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Fecha *
                 </label>
                 <input
@@ -394,12 +394,12 @@ export const CreatePlanModal: React.FC<Props> = ({
                   value={planDate}
                   onChange={e => setPlanDate(e.target.value)}
                   required
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Hora Inicio *
                 </label>
                 <input
@@ -407,12 +407,12 @@ export const CreatePlanModal: React.FC<Props> = ({
                   value={startTime}
                   onChange={e => setStartTime(e.target.value)}
                   required
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Hora Fin *
                 </label>
                 <input
@@ -420,13 +420,13 @@ export const CreatePlanModal: React.FC<Props> = ({
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
                   required
-                  className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Lugar / Ubicación (Opcional)
               </label>
               <input
@@ -434,12 +434,12 @@ export const CreatePlanModal: React.FC<Props> = ({
                 value={location}
                 onChange={e => setLocation(e.target.value)}
                 placeholder="Ej. Café Pergamino, Parque 93, Casa de Juan"
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Notas / Detalles del Plan (Opcional)
               </label>
               <textarea
@@ -447,15 +447,15 @@ export const CreatePlanModal: React.FC<Props> = ({
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Observaciones, recordatorios o qué llevar..."
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-colors resize-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none transition-colors resize-none"
               />
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-white/10">
+            <div className="flex justify-between items-center pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-300 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-700 transition-colors flex items-center gap-1.5"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Anterior</span>

@@ -43,7 +43,7 @@ export const AssignTimeModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-[#0A192F] text-white border-2 border-[#C5A059] max-w-md w-full p-6 shadow-2xl space-y-4 rounded-sm">
         {/* HEADER */}
         <div className="flex justify-between items-center border-b border-[#C5A059]/40 pb-3">
@@ -53,7 +53,7 @@ export const AssignTimeModal: React.FC<Props> = ({
               Asignar Horario Ejecutivo
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 text-white/60 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1 text-white/60 hover:text-slate-900 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -99,7 +99,7 @@ export const AssignTimeModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-transparent hover:bg-white/10 text-white/80 border border-white/20 text-xs font-bold uppercase tracking-wider"
+              className="px-4 py-2 bg-transparent hover:bg-slate-100 text-white/80 border border-slate-200 text-xs font-bold uppercase tracking-wider"
             >
               Cancelar
             </button>

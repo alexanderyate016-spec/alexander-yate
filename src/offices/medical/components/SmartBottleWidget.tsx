@@ -259,9 +259,9 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
           </div>
 
           <div className="mt-3 text-center">
-            <p className="text-xs text-slate-300 font-medium">Progreso de hoy ({todayStr})</p>
+            <p className="text-xs text-slate-700 font-medium">Progreso de hoy ({todayStr})</p>
             <p className="text-base font-bold text-cyan-200 font-mono">
-              {currentLiters.toFixed(2)} L <span className="text-slate-400 font-normal">/ {targetWater} L</span>
+              {currentLiters.toFixed(2)} L <span className="text-slate-500 font-normal">/ {targetWater} L</span>
             </p>
           </div>
         </div>
@@ -278,12 +278,12 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
               <p className="text-[11px] text-cyan-300/80 font-mono font-medium">{fillPct}% de la meta</p>
             </div>
 
-            <div className="p-3.5 bg-slate-900/60 border border-slate-700/60 rounded-xl space-y-1">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
               <span className="text-[11px] uppercase tracking-wider text-amber-300 font-bold block">Faltan</span>
               <p className="text-2xl font-bold font-mono text-white tracking-tight">
                 {remainingMl} <span className="text-xs text-amber-300 font-sans font-normal">ml</span>
               </p>
-              <p className="text-[11px] text-slate-400 font-mono">
+              <p className="text-[11px] text-slate-500 font-mono">
                 {remainingMl > 0 ? `~${Math.ceil(remainingMl / 250)} vasos restantes` : '¡Objetivo diario cumplido! 🎉'}
               </p>
             </div>
@@ -298,7 +298,7 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
               </label>
               <button
                 onClick={() => setShowAddBottle(!showAddBottle)}
-                className="text-[11px] font-bold text-cyan-300 hover:text-white flex items-center gap-1 transition-colors"
+                className="text-[11px] font-bold text-cyan-300 hover:text-slate-900 flex items-center gap-1 transition-colors"
               >
                 <Plus className="w-3 h-3" /> Configurar Botellas
               </button>
@@ -329,7 +329,7 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
                   <button
                     type="button"
                     onClick={() => setShowAddBottle(false)}
-                    className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                    className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-900"
                   >
                     Cancelar
                   </button>
@@ -412,7 +412,7 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
         </div>
 
         {todayWaterLogs.length === 0 ? (
-          <div className="p-4 bg-cyan-950/20 border border-cyan-500/10 rounded-xl text-center text-xs text-slate-400 italic">
+          <div className="p-4 bg-cyan-950/20 border border-cyan-500/10 rounded-xl text-center text-xs text-slate-500 italic">
             No se han registrado tomas de agua individuales para el día de hoy. Usa los botones rápidos o el formulario superior para añadir consumos.
           </div>
         ) : (
@@ -455,7 +455,7 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
                     <div className="flex justify-end gap-1.5 pt-1">
                       <button
                         onClick={() => setEditingLogId(null)}
-                        className="p-1 bg-slate-800 text-slate-300 hover:text-white rounded"
+                        className="p-1 bg-slate-100 text-slate-700 hover:text-slate-900 rounded"
                         title="Cancelar"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -495,7 +495,7 @@ export const SmartBottleWidget: React.FC<Props> = ({ data, todayStr }) => {
                   <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleStartEdit(log)}
-                      className="p-1.5 text-cyan-300 hover:text-white hover:bg-cyan-800/50 rounded-lg transition-colors"
+                      className="p-1.5 text-cyan-300 hover:text-slate-900 hover:bg-cyan-800/50 rounded-lg transition-colors"
                       title="Editar hora o cantidad"
                     >
                       <Edit2 className="w-3.5 h-3.5" />

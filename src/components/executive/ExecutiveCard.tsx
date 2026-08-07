@@ -13,29 +13,29 @@ export interface ExecutiveCardProps {
 }
 
 const borderHover: Record<AccentColor, string> = {
-  gold: 'hover:border-[#C5A059]/40 hover:shadow-[#C5A059]/5',
-  blue: 'hover:border-blue-400/40 hover:shadow-blue-500/5',
-  emerald: 'hover:border-emerald-400/40 hover:shadow-emerald-500/5',
-  rose: 'hover:border-rose-400/40 hover:shadow-rose-500/5',
-  amber: 'hover:border-amber-400/40 hover:shadow-amber-500/5',
-  purple: 'hover:border-purple-400/40 hover:shadow-purple-500/5',
-  indigo: 'hover:border-indigo-400/40 hover:shadow-indigo-500/5',
+  gold: 'hover:border-purple-300',
+  blue: 'hover:border-purple-300',
+  emerald: 'hover:border-emerald-300',
+  rose: 'hover:border-rose-300',
+  amber: 'hover:border-amber-300',
+  purple: 'hover:border-purple-300',
+  indigo: 'hover:border-indigo-300',
 };
 
 const topAccentBg: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]',
-  blue: 'bg-blue-400',
-  emerald: 'bg-emerald-400',
-  rose: 'bg-rose-400',
-  amber: 'bg-amber-400',
-  purple: 'bg-purple-400',
-  indigo: 'bg-indigo-400',
+  gold: 'bg-purple-600',
+  blue: 'bg-purple-600',
+  emerald: 'bg-emerald-600',
+  rose: 'bg-rose-600',
+  amber: 'bg-amber-600',
+  purple: 'bg-purple-600',
+  indigo: 'bg-indigo-600',
 };
 
 export const ExecutiveCard: React.FC<ExecutiveCardProps> = ({
   children,
   className = '',
-  accentColor = 'gold',
+  accentColor = 'purple',
   accentBorderLeft = false,
   hoverable = true,
   onClick,
@@ -45,21 +45,17 @@ export const ExecutiveCard: React.FC<ExecutiveCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-all duration-300 ease-out ${
-        hoverable ? `${borderHover[accentColor]} hover:shadow-2xl hover:-translate-y-0.5` : ''
+      className={`bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden transition-all duration-200 ease-out text-slate-900 ${
+        hoverable ? `${borderHover[accentColor] || 'hover:border-purple-300'} hover:shadow-sm` : ''
       } ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
-      {/* Top Glass Highlight */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-
-      {/* Subtle Top Accent Pill Indicator if requested */}
       {accentBorderLeft && (
-        <div className={`absolute top-0 left-6 w-12 h-0.5 ${topAccentBg[accentColor]} rounded-full pointer-events-none opacity-80`} />
+        <div className={`absolute top-0 left-6 w-12 h-1 ${topAccentBg[accentColor] || 'bg-purple-600'} rounded-full pointer-events-none`} />
       )}
 
-      {header && <div className="border-b border-white/10 pb-3 mb-4">{header}</div>}
-      <div className="text-slate-200">{children}</div>
-      {footer && <div className="border-t border-white/10 pt-3 mt-4">{footer}</div>}
+      {header && <div className="border-b border-slate-100 pb-3 mb-4">{header}</div>}
+      <div className="text-slate-800">{children}</div>
+      {footer && <div className="border-t border-slate-100 pt-3 mt-4">{footer}</div>}
     </div>
   );
 };

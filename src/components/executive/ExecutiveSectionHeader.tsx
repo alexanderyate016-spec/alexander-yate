@@ -16,30 +16,30 @@ export interface ExecutiveSectionHeaderProps {
 }
 
 const iconBg: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]/20 text-[#C5A059] border-[#C5A059]/40',
-  blue: 'bg-blue-600/20 text-blue-300 border-blue-500/40',
-  emerald: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40',
-  rose: 'bg-rose-600/20 text-rose-300 border-rose-500/40',
-  amber: 'bg-amber-600/20 text-amber-300 border-amber-500/40',
-  purple: 'bg-purple-600/20 text-purple-300 border-purple-500/40',
-  indigo: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40',
+  gold: 'bg-purple-50 text-purple-700 border-purple-200',
+  blue: 'bg-purple-50 text-purple-700 border-purple-200',
+  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rose: 'bg-rose-50 text-rose-700 border-rose-200',
+  amber: 'bg-amber-50 text-amber-700 border-amber-200',
+  purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 const badgeColors: Record<AccentColor, string> = {
-  gold: 'bg-[#C5A059]/20 text-[#C5A059] border-[#C5A059]/30',
-  blue: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
-  emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
-  rose: 'bg-rose-500/20 text-rose-300 border-rose-400/30',
-  amber: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-  purple: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
-  indigo: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30',
+  gold: 'bg-purple-50 text-purple-700 border-purple-200',
+  blue: 'bg-purple-50 text-purple-700 border-purple-200',
+  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rose: 'bg-rose-50 text-rose-700 border-rose-200',
+  amber: 'bg-amber-50 text-amber-700 border-amber-200',
+  purple: 'bg-purple-50 text-purple-700 border-purple-200',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 export const ExecutiveSectionHeader: React.FC<ExecutiveSectionHeaderProps> = ({
   title,
   subtitle,
   icon,
-  accentColor = 'gold',
+  accentColor = 'purple',
   badgeText,
   actions,
   searchQuery,
@@ -48,23 +48,23 @@ export const ExecutiveSectionHeader: React.FC<ExecutiveSectionHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0B1528]/90 backdrop-blur-md border border-white/10 p-4 sm:p-5 rounded-2xl ${className}`}>
+    <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-xs ${className}`}>
       <div className="flex items-center gap-3">
         {icon && (
-          <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-md ${iconBg[accentColor]}`}>
+          <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${iconBg[accentColor] || iconBg.purple}`}>
             {icon}
           </div>
         )}
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg sm:text-xl font-serif font-bold text-white tracking-tight">{title}</h2>
+            <h2 className="text-lg sm:text-xl font-sans font-bold text-slate-900 tracking-tight">{title}</h2>
             {badgeText && (
-              <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${badgeColors[accentColor]}`}>
+              <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${badgeColors[accentColor] || badgeColors.purple}`}>
                 {badgeText}
               </span>
             )}
           </div>
-          {subtitle && <p className="text-xs text-slate-300 font-sans">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-slate-500 font-sans">{subtitle}</p>}
         </div>
       </div>
 
@@ -77,7 +77,7 @@ export const ExecutiveSectionHeader: React.FC<ExecutiveSectionHeaderProps> = ({
               value={searchQuery || ''}
               onChange={e => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full bg-[#132337] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#C5A059]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:bg-white"
             />
           </div>
         )}

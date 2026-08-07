@@ -77,7 +77,7 @@ export const NutritionSection: React.FC<Props> = ({ data, todayStr }) => {
         <form onSubmit={handleAddMeal} className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-xl space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">Tiempo de Comida *</label>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Tiempo de Comida *</label>
               <select
                 value={mealType}
                 onChange={e => setMealType(e.target.value as any)}
@@ -162,24 +162,24 @@ export const NutritionSection: React.FC<Props> = ({ data, todayStr }) => {
                   </div>
                   <div>
                     <h5 className="font-serif font-bold text-white text-sm">{rec.mealType}</h5>
-                    <span className="text-[10px] text-slate-400 font-mono">{rec.date}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{rec.date}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => MedicalStore.deleteNutritionRecord(rec.id)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              <p className="text-xs text-slate-200 font-medium bg-[#081C13] p-2.5 rounded-xl border border-emerald-500/20">
+              <p className="text-xs text-slate-800 font-medium bg-[#081C13] p-2.5 rounded-xl border border-emerald-500/20">
                 {rec.description}
               </p>
 
               {rec.notes && (
-                <p className="text-[11px] text-slate-400 italic">
+                <p className="text-[11px] text-slate-500 italic">
                   Obs: {rec.notes}
                 </p>
               )}

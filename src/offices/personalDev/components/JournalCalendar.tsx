@@ -93,18 +93,18 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl space-y-4">
+    <div className="bg-white/70 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl space-y-4">
       {/* Calendar Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300">
             <CalendarIcon className="w-5 h-5 stroke-[1.75]" />
           </div>
           <div>
-            <h3 className="font-sans font-semibold text-white text-base tracking-tight flex items-center gap-2">
+            <h3 className="font-sans font-semibold text-slate-900 text-base tracking-tight flex items-center gap-2">
               {MONTH_NAMES[currentMonth]} {currentYear}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Visualizador emocional mensual de reflexiones
             </p>
           </div>
@@ -113,21 +113,21 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={handleToday}
-            className="px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs transition-all active:scale-95"
+            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-900 text-xs transition-all active:scale-95"
           >
             Hoy
           </button>
-          <div className="flex items-center bg-[#0B1528] rounded-xl border border-white/10 p-0.5">
+          <div className="flex items-center bg-slate-50 rounded-xl border border-slate-200 p-0.5">
             <button
               onClick={handlePrevMonth}
-              className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               title="Mes Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNextMonth}
-              className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               title="Mes Siguiente"
             >
               <ChevronRight className="w-4 h-4" />
@@ -137,7 +137,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
       </div>
 
       {/* Grid Header */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[11px] font-medium uppercase tracking-wider text-slate-400 pb-1">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[11px] font-medium uppercase tracking-wider text-slate-500 pb-1">
         {WEEKDAY_NAMES.map(day => (
           <div key={day} className="py-1">
             {day}
@@ -165,8 +165,8 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
                 isSelected
                   ? 'border-indigo-400 bg-indigo-500/20 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-400/50'
                   : entry
-                  ? 'border-white/15 bg-[#0B1528]/80 hover:border-white/30 hover:bg-white/10'
-                  : 'border-white/5 bg-[#0B1528]/40 hover:border-white/20 hover:bg-white/5'
+                  ? 'border-slate-200 bg-slate-50/80 hover:border-white/30 hover:bg-slate-100'
+                  : 'border-slate-100 bg-slate-50/40 hover:border-slate-200 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center justify-between w-full">
@@ -176,7 +176,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
                       ? 'bg-[#C5A059] text-slate-950 font-bold'
                       : isSelected
                       ? 'text-indigo-300'
-                      : 'text-slate-300'
+                      : 'text-slate-700'
                   }`}
                 >
                   {dayNumber}
@@ -195,7 +195,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({
                       {entry.wordOfTheDay}
                     </span>
                   ) : (
-                    <span className="inline-block text-[9px] text-slate-400 italic truncate">
+                    <span className="inline-block text-[9px] text-slate-500 italic truncate">
                       Reflexión✓
                     </span>
                   )}

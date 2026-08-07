@@ -63,29 +63,29 @@ export const ToastContainer: React.FC = () => {
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4">
       {toasts.map(toast => {
         const icons = {
-          success: <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />,
-          error: <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />,
-          info: <Info className="w-4 h-4 text-blue-400 shrink-0" />,
-          warning: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />,
+          success: <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />,
+          error: <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />,
+          info: <Info className="w-4 h-4 text-purple-600 shrink-0" />,
+          warning: <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />,
         };
 
         const borderStyles = {
-          success: 'border-emerald-500/30 bg-[#0B172A]/90 text-white shadow-emerald-950/40',
-          error: 'border-rose-500/30 bg-[#0B172A]/90 text-white shadow-rose-950/40',
-          info: 'border-blue-500/30 bg-[#0B172A]/90 text-white shadow-blue-950/40',
-          warning: 'border-amber-500/30 bg-[#0B172A]/90 text-white shadow-amber-950/40',
+          success: 'border-emerald-200 bg-white text-slate-900 shadow-md',
+          error: 'border-rose-200 bg-white text-slate-900 shadow-md',
+          info: 'border-purple-200 bg-white text-slate-900 shadow-md',
+          warning: 'border-amber-200 bg-white text-slate-900 shadow-md',
         };
 
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-2.5 rounded-full border backdrop-blur-2xl shadow-xl text-xs font-medium transition-all duration-300 transform animate-in fade-in slide-in-from-top-4 ${borderStyles[toast.type]}`}
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-2.5 rounded-full border shadow-md text-xs font-semibold transition-all duration-200 transform animate-in fade-in slide-in-from-top-4 ${borderStyles[toast.type]}`}
           >
             {icons[toast.type]}
             <span className="tracking-wide">{toast.message}</span>
             <button
               onClick={() => toastManager.dismiss(toast.id)}
-              className="ml-2 text-slate-400 hover:text-white transition-colors"
+              className="ml-2 text-slate-400 hover:text-slate-700 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>

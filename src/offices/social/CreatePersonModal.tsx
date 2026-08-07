@@ -46,10 +46,10 @@ export const CreatePersonModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-[#09111e] border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 text-white shadow-2xl relative my-auto">
+      <div className="bg-[#09111e] border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 text-slate-900 shadow-2xl relative my-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white"
+          className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-700 hover:text-slate-900"
         >
           <X className="w-5 h-5" />
         </button>
@@ -59,53 +59,53 @@ export const CreatePersonModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <UserPlus className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-lg text-white">Registrar Nueva Persona</h3>
-            <p className="text-xs text-slate-400">Añadir una persona importante a tu red de relaciones</p>
+            <h3 className="font-serif font-bold text-lg text-slate-900">Registrar Nueva Persona</h3>
+            <p className="text-xs text-slate-500">Añadir una persona importante a tu red de relaciones</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Nombre Completo *</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Completo *</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
                 placeholder="Ej. Laura Gómez"
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Apodo (Opcional)</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Apodo (Opcional)</label>
               <input
                 type="text"
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
                 placeholder="Ej. Lau"
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Relación Conmigo</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Relación Conmigo</label>
               <input
                 type="text"
                 value={relationship}
                 onChange={e => setRelationship(e.target.value)}
                 placeholder="Ej. Amiga de infancia, Prima"
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Categoría</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Categoría</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value as any)}
-                className="w-full bg-[#101d30] border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               >
                 <option value="Amigos">Amigos</option>
                 <option value="Familia">Familia</option>
@@ -117,11 +117,11 @@ export const CreatePersonModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Importancia</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Importancia</label>
               <select
                 value={importanceLevel}
                 onChange={e => setImportanceLevel(e.target.value as any)}
-                className="w-full bg-[#101d30] border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               >
                 <option value="Muy importante">⭐ Muy importante (Prioridad)</option>
                 <option value="Importante">🔹 Importante</option>
@@ -131,36 +131,36 @@ export const CreatePersonModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Cumpleaños</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Cumpleaños</label>
               <input
                 type="date"
                 value={birthday}
                 onChange={e => setBirthday(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Teléfono</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Teléfono</label>
               <input
                 type="text"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 placeholder="+57 300 000 0000"
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Fotografía (URL)</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Fotografía (URL)</label>
               <input
                 type="url"
                 value={photoUrl}
                 onChange={e => setPhotoUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full bg-white/5 border border-white/10 focus:border-purple-400 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-purple-600 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none"
               />
             </div>
           </div>
@@ -169,14 +169,14 @@ export const CreatePersonModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+              className="px-4 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-900"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+              className="px-5 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-slate-900 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Guardar Persona</span>

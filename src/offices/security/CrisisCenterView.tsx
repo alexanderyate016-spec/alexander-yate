@@ -13,58 +13,58 @@ export const CrisisCenterView: React.FC<Props> = ({ crisisData }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A192F] text-white flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-[#F9F7F2] text-[#1A1A1A] border border-[#D1C7B7] p-6 md:p-8 space-y-6 shadow-2xl relative">
-        <div className="flex items-center gap-3 border-b border-[#D1C7B7] pb-4">
-          <div className="p-2.5 bg-[#0A192F] border border-[#C5A059] text-rose-400">
-            <ShieldAlert className="w-7 h-7" />
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4 font-sans">
+      <div className="max-w-2xl w-full bg-white text-slate-900 border border-slate-200 p-6 sm:p-8 space-y-6 rounded-2xl shadow-xl relative">
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl">
+            <ShieldAlert className="w-6 h-6 stroke-[2]" />
           </div>
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[#0A192F]">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Centro de Gestión de Crisis
             </h1>
-            <p className="text-[10px] text-[#8B8378] uppercase tracking-[0.2em] font-sans font-bold">
+            <p className="text-xs text-rose-600 uppercase tracking-wider font-semibold">
               Protocolo de Emergencia Presidencial Nivel: {crisisData.crisisLevel || 'HIGH'}
             </p>
           </div>
         </div>
 
-        <div className="p-4 bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-2">
-          <div className="font-bold text-rose-900 flex items-center gap-2 uppercase tracking-wider text-[11px]">
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-950 space-y-2">
+          <div className="font-bold text-rose-900 flex items-center gap-2 uppercase tracking-wider text-xs">
             <AlertTriangle className="w-4 h-4 text-rose-700" />
             Estado de Excepción Activado
           </div>
-          <p className="text-xs">
+          <p className="text-xs text-rose-800 leading-relaxed">
             Todas las operaciones ordinarias han sido suspendidas temporalmente. Revisa tus planes de acción y contactos de emergencia.
           </p>
         </div>
 
-        <div className="space-y-3 font-sans">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#8B8378]">
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Contactos Principales de Emergencia
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {crisisData.emergencyContacts.length === 0 ? (
-              <div className="col-span-full p-4 bg-[#F4F1EA] border border-[#D1C7B7] text-center text-xs text-[#8B8378]">
+              <div className="col-span-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-500">
                 Sin contactos de emergencia registrados.
               </div>
             ) : (
               crisisData.emergencyContacts.map(c => (
-                <div key={c.id} className="p-3 bg-[#F4F1EA] border border-[#D1C7B7] text-xs space-y-1">
-                  <div className="font-bold text-[#0A192F]">{c.name} ({c.role})</div>
-                  <div className="text-[#8B8378] font-mono">📞 {c.phone}</div>
+                <div key={c.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                  <div className="font-semibold text-slate-900">{c.name} ({c.role})</div>
+                  <div className="text-slate-500 font-mono">📞 {c.phone}</div>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[#D1C7B7] flex justify-end">
+        <div className="pt-4 border-t border-slate-200 flex justify-end">
           <button
             onClick={handleDeactivate}
-            className="px-6 py-2.5 bg-[#0A192F] hover:bg-[#162A45] text-white font-bold text-xs uppercase tracking-widest border border-[#C5A059] transition-colors flex items-center gap-2"
+            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 active:scale-95"
           >
-            <CheckCircle className="w-4 h-4 text-[#C5A059]" /> Desactivar Modo de Crisis & Volver
+            <CheckCircle className="w-4 h-4 stroke-[2]" /> Desactivar Modo de Crisis & Volver
           </button>
         </div>
       </div>

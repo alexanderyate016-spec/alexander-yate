@@ -169,13 +169,13 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
   return (
     <div className="space-y-6">
       {/* Header & New Lesson Action */}
-      <div className="bg-[#0F1B2E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h3 className="font-sans font-semibold text-white text-base tracking-tight flex items-center gap-2">
+          <h3 className="font-sans font-semibold text-slate-900 text-base tracking-tight flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-indigo-400 stroke-[1.75]" />
             Lecciones de Vida & Sabiduría Acumulada
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Registro duradero de aprendizajes, errores superados, aciertos y consejos clave
           </p>
         </div>
@@ -191,16 +191,16 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
       </div>
 
       {/* Search & Filter Controls */}
-      <div className="bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-3">
+      <div className="bg-white/70 backdrop-blur-2xl border border-slate-200 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-3">
         {/* Text Search */}
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Buscar en lecciones por título, contenido o etiqueta..."
-            className="w-full bg-[#070D18] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-indigo-400/30 transition-all"
           />
         </div>
 
@@ -208,7 +208,7 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
         <select
           value={selectedType}
           onChange={e => setSelectedType(e.target.value)}
-          className="w-full md:w-48 bg-[#070D18] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-400 transition-all"
+          className="w-full md:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-600 transition-all"
         >
           <option value="all">Todos los tipos</option>
           <option value="aprendizaje">💡 Aprendizaje</option>
@@ -223,7 +223,7 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
           <select
             value={selectedTag}
             onChange={e => setSelectedTag(e.target.value)}
-            className="w-full md:w-48 bg-[#070D18] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-400 transition-all"
+            className="w-full md:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-purple-600 transition-all"
           >
             <option value="all">Todas las etiquetas</option>
             {allTags.map(tag => (
@@ -252,13 +252,13 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
             return (
               <div
                 key={lesson.id}
-                className="bg-[#0F1B2E]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-xl hover:border-indigo-500/40 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group"
+                className="bg-white/70 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 shadow-xl hover:border-purple-300 transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group"
               >
                 {/* Top reflection */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
 
                 <div>
-                  <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-white/10">
+                  <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-200">
                     <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border flex items-center gap-1.5 ${typeConf.badgeClass}`}>
                       {typeConf.icon}
                       <span>{typeConf.label}</span>
@@ -267,14 +267,14 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenEditModal(lesson)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                         title="Editar Lección"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setLessonToDelete(lesson)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         title="Eliminar Lección"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -282,26 +282,26 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
                     </div>
                   </div>
 
-                  <h4 className="font-sans font-semibold text-white text-sm sm:text-base tracking-tight pt-3 pb-1">
+                  <h4 className="font-sans font-semibold text-slate-900 text-sm sm:text-base tracking-tight pt-3 pb-1">
                     {lesson.title}
                   </h4>
 
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap">
+                  <p className="text-xs text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
                     {lesson.description}
                   </p>
                 </div>
 
                 {/* Footer tags and date */}
-                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+                <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
                   <div className="flex flex-wrap gap-1">
                     {lesson.tags && lesson.tags.map((t, idx) => (
-                      <span key={idx} className="bg-white/5 border border-white/10 text-slate-300 px-2 py-0.5 rounded-md text-[10px]">
+                      <span key={idx} className="bg-slate-50 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px]">
                         #{t}
                       </span>
                     ))}
                   </div>
 
-                  <span className="flex items-center gap-1 font-mono text-[10px] text-slate-400 shrink-0">
+                  <span className="flex items-center gap-1 font-mono text-[10px] text-slate-500 shrink-0">
                     <Calendar className="w-3 h-3 text-indigo-400" />
                     {lesson.date}
                   </span>
@@ -334,11 +334,11 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-slate-300 block">Tipo de Lección *</label>
+              <label className="text-[11px] font-medium text-slate-700 block">Tipo de Lección *</label>
               <select
                 value={type}
                 onChange={e => setType(e.target.value as LifeLessonType)}
-                className="w-full bg-[#070D18] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-600"
               >
                 <option value="aprendizaje">💡 Aprendizaje</option>
                 <option value="error">⚠️ Error Lección</option>
@@ -359,13 +359,13 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] font-medium text-slate-300 block">Descripción y Contexto *</label>
+            <label className="text-[11px] font-medium text-slate-700 block">Descripción y Contexto *</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={4}
               placeholder="Explica detalladamente la experiencia y la enseñanza práctica que dejó..."
-              className="w-full bg-[#070D18] border border-white/15 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-purple-600 transition-all"
               required
             />
           </div>
@@ -378,7 +378,7 @@ export const LifeLessonsModule: React.FC<LifeLessonsModuleProps> = ({ lessons })
             accentColor="indigo"
           />
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
             <ExecutiveButton
               type="button"
               variant="ghost"

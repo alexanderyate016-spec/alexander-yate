@@ -145,7 +145,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Dosis del Esquema *</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Dosis del Esquema *</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -154,7 +154,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
                     onChange={e => setDosesReceived(Number(e.target.value))}
                     className="w-1/2 p-2 bg-[#1A0E04] border border-amber-500/40 rounded-xl text-xs text-amber-200 font-bold"
                   />
-                  <span className="text-xs text-slate-400">de</span>
+                  <span className="text-xs text-slate-500">de</span>
                   <input
                     type="number"
                     min="1"
@@ -183,7 +183,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
               />
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">Frecuencia / Refuerzos</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Frecuencia / Refuerzos</label>
                 <select
                   value={frequency}
                   onChange={e => setFrequency(e.target.value as any)}
@@ -240,7 +240,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
               >
                 Cancelar
               </button>
@@ -288,7 +288,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
 
                     <button
                       onClick={() => MedicalStore.deleteImmunization(vac.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/10 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -298,40 +298,40 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
                 {/* DETAILS GRID */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-sans">
                   {vac.lastApplicationDate && (
-                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-mono">Última Aplicación</span>
+                        <span className="text-[10px] text-slate-500 block font-mono">Última Aplicación</span>
                         <span className="font-bold text-white">{vac.lastApplicationDate}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.locationApplied && (
-                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-mono">Lugar</span>
+                        <span className="text-[10px] text-slate-500 block font-mono">Lugar</span>
                         <span className="font-bold text-white truncate max-w-[120px] block">{vac.locationApplied}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.manufacturer && (
-                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Building className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-mono">Fabricante</span>
+                        <span className="text-[10px] text-slate-500 block font-mono">Fabricante</span>
                         <span className="font-bold text-white">{vac.manufacturer}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.batchNumber && (
-                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-mono">Lote</span>
+                        <span className="text-[10px] text-slate-500 block font-mono">Lote</span>
                         <span className="font-bold text-white font-mono">{vac.batchNumber}</span>
                       </div>
                     </div>
@@ -352,7 +352,7 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
                 )}
 
                 {vac.notes && (
-                  <p className="text-[11px] text-slate-400 italic pt-1 border-t border-amber-500/10">
+                  <p className="text-[11px] text-slate-500 italic pt-1 border-t border-amber-500/10">
                     Notas: {vac.notes}
                   </p>
                 )}

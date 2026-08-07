@@ -1,7 +1,7 @@
 import React from 'react';
 import { MasterState } from '../../types/store';
-import { OvalOfficeCalculations, ExecutiveNotice } from './OvalOfficeCalculations';
-import { Brain, AlertTriangle, AlertCircle, Info, ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { OvalOfficeCalculations } from './OvalOfficeCalculations';
+import { ArrowRight } from 'lucide-react';
 
 interface Props {
   state: MasterState;
@@ -14,129 +14,67 @@ export const CentroInteligenciaEjecutiva: React.FC<Props> = ({
   selectedDate,
   onNavigateToOffice
 }) => {
-  const notifications = OvalOfficeCalculations.getNotifications(state, selectedDate);
   const events = OvalOfficeCalculations.getUnifiedEventsForDate(state, selectedDate);
-  const conflicts = OvalOfficeCalculations.detectScheduleConflicts(events);
+  const tasks = state.offices.vidaDiaria?.tasks || [];
+  const habits = state.offices.vidaDiaria?.habits || [];
 
-  // Group and sort notifications by priority
-  const priorityOrder: Record<string, number> = { urgent: 1, high: 2, medium: 3, info: 4 };
-  const sortedNotifications = [...notifications].sort((a, b) => {
-    return (priorityOrder[a.type] || 5) - (priorityOrder[b.type] || 5);
-  });
-
-  const getPriorityBadge = (type: ExecutiveNotice['type'] | string) => {
-    switch (type) {
-      case 'urgent':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase font-mono flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-rose-400" /> Crítica
-          </span>
-        );
-      case 'high':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold uppercase font-mono flex items-center gap-1">
-            <AlertCircle className="w-3 h-3 text-amber-400" /> Alta
-          </span>
-        );
-      case 'medium':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full bg-yellow-950/80 text-yellow-300 border border-yellow-500/40 text-[10px] font-extrabold uppercase font-mono flex items-center gap-1">
-            <Info className="w-3 h-3 text-yellow-400" /> Media
-          </span>
-        );
-      case 'info':
-      default:
-        return (
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/40 text-[10px] font-extrabold uppercase font-mono flex items-center gap-1">
-            <Info className="w-3 h-3 text-blue-400" /> Informativa
-          </span>
-        );
-    }
-  };
+  const completedTasks = tasks.filter(t => t.date === selectedDate && t.status === 'completed').length;
+  const completedHabits = habits.filter(h => h.logs?.[selectedDate]).length;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#030712]/60 backdrop-blur-2xl border border-white/15 p-6 sm:p-7 text-white shadow-2xl space-y-4">
-      
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-purple-950/60 border border-purple-500/40 text-purple-300 shadow-inner">
-            <Brain className="w-5 h-5 text-purple-400 animate-pulse" />
-          </div>
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🧠</span>
           <div>
-            <h3 className="font-serif font-extrabold text-lg sm:text-xl text-white tracking-wide flex items-center gap-2">
-              CENTRO DE INTELIGENCIA EJECUTIVA
-              <span className="text-xs font-mono font-bold text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-400/30">
-                {sortedNotifications.length + conflicts.length} Observaciones
-              </span>
+            <h3 className="font-bold text-base text-slate-900 tracking-tight">
+              Inteligencia Ejecutiva
             </h3>
-            <p className="text-xs text-slate-300 font-sans">
-              Monitoreo objetivo cross-office, detección de riesgos y alertas operativas en tiempo real.
+            <p className="text-xs text-slate-500">
+              Resumen de métricas de desempeño y carga.
             </p>
           </div>
         </div>
       </div>
 
-      {/* SCHEDULE CONFLICTS WARNING IF ANY */}
-      {conflicts.length > 0 && (
-        <div className="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-extrabold text-rose-300 uppercase tracking-wider">
-            <ShieldAlert className="w-4 h-4 text-rose-400 animate-bounce" />
-            <span>Conflicto de Horario Detectado en Agenda ({conflicts.length})</span>
+      {/* METRICS GRID */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1">
+          <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wide">Compromisos</span>
+          <div className="text-xl font-mono font-bold text-slate-900">{events.length}</div>
+          <span className="text-[11px] text-purple-700 font-medium">Eventos agendados</span>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1">
+          <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wide">Tareas Listas</span>
+          <div className="text-xl font-mono font-bold text-slate-900">{completedTasks}</div>
+          <span className="text-[11px] text-emerald-700 font-medium">Completadas hoy</span>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1">
+          <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wide">Hábitos Logrados</span>
+          <div className="text-xl font-mono font-bold text-slate-900">{completedHabits}</div>
+          <span className="text-[11px] text-emerald-700 font-medium">Cumplidos hoy</span>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1">
+          <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wide">Seguridad</span>
+          <div className="text-sm font-bold text-emerald-700 flex items-center gap-1">
+            <span>🛡️</span> Activa
           </div>
-          {conflicts.map((conf, idx) => (
-            <div key={idx} className="text-xs text-slate-200 bg-black/40 p-2 rounded-xl border border-rose-500/30 font-mono">
-              ⚠️ <span className="font-bold text-white">{conf.eventA?.title || 'Evento'}</span> cruza con <span className="font-bold text-white">{conf.eventB?.title || 'Evento'}</span> entre {conf.eventA?.startTime || '00:00'} y {conf.eventA?.endTime || '00:00'}.
-            </div>
-          ))}
+          <span className="text-[11px] text-slate-500 font-medium">Cifrado local</span>
         </div>
-      )}
+      </div>
 
-      {/* NOTIFICATIONS & OBSERVATIONS LIST */}
-      {sortedNotifications.length === 0 && conflicts.length === 0 ? (
-        <div className="p-8 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl space-y-2">
-          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-          <p className="text-sm font-serif font-bold text-white">Sistema Operativo en Perfecto Equilibrio</p>
-          <p className="text-xs text-slate-300">
-            No existen conflictos de agenda ni alertas de riesgo activas para la fecha seleccionada.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-          {sortedNotifications.map((notif) => (
-            <div
-              key={notif.id}
-              className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/40 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {getPriorityBadge(notif.type)}
-                  <span className="text-[10px] font-mono font-bold text-slate-300 bg-black/40 px-2 py-0.5 rounded border border-white/10">
-                    Fuente: {notif.sourceOffice}
-                  </span>
-                </div>
-                <h4 className="font-serif font-bold text-white text-sm leading-tight">
-                  {notif.title}
-                </h4>
-                <p className="text-slate-300 text-xs font-sans">
-                  {notif.message}
-                </p>
-              </div>
-
-              {notif.sourceOffice && (
-                <button
-                  onClick={() => onNavigateToOffice(notif.sourceOffice)}
-                  className="px-3.5 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-400/40 text-purple-200 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 active:scale-95 self-end sm:self-center"
-                >
-                  <span>Ver en Oficina</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* QUICK ACCESS BUTTON */}
+      <button
+        onClick={() => onNavigateToOffice('desarrolloPersonal')}
+        className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5"
+      >
+        <span>Desarrollo Personal</span>
+        <ArrowRight className="w-3.5 h-3.5 text-purple-600" />
+      </button>
     </div>
   );
 };
