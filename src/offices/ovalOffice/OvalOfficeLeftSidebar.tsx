@@ -35,7 +35,7 @@ export const OvalOfficeLeftSidebar: React.FC<Props> = ({
   ];
 
   return (
-    <div className="w-56 sm:w-64 bg-white backdrop-blur-2xl border border-slate-200 rounded-2xl p-3.5 shadow-2xl flex flex-col justify-between text-white shrink-0">
+    <div className="w-56 sm:w-64 bg-white backdrop-blur-2xl border border-slate-200 rounded-2xl p-3.5 shadow-2xl flex flex-col justify-between text-slate-900 shrink-0">
       
       {/* SIDEBAR HEADER / PRESIDENTIAL SEAL EMBLEM */}
       <div>
@@ -49,7 +49,7 @@ export const OvalOfficeLeftSidebar: React.FC<Props> = ({
             </div>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-serif font-extrabold text-xs uppercase tracking-wider text-amber-200 group-hover:text-amber-100">
+            <span className="font-serif font-extrabold text-xs uppercase tracking-wider text-amber-700 group-hover:text-amber-800">
               OVAL OFFICE
             </span>
             <span className="text-[10px] text-slate-700 font-sans">

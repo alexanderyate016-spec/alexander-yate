@@ -990,7 +990,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                     placeholder="Buscar fecha o actividad..."
                     value={historySearch}
                     onChange={e => setHistorySearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
                   />
                 </div>
               </div>
@@ -1200,7 +1200,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 placeholder="Nombre del hábito (Ej. Meditar 15m, Leer 20 págs, Beber 2L agua)..."
                 value={newHabitName}
                 onChange={e => setNewHabitName(e.target.value)}
-                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
                 required
               />
               <ExecutiveButton variant="primary" accentColor="amber" type="submit">
@@ -1276,14 +1276,14 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 placeholder="Título del bloque (Ej. Estudio de Física, Almuerzo)..."
                 value={tplTitle}
                 onChange={e => setTplTitle(e.target.value)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600 sm:col-span-2"
+                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 sm:col-span-2"
                 required
               />
 
               <select
                 value={tplCategory}
                 onChange={e => setTplCategory(e.target.value as any)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
               >
                 <option value="study">📚 Estudio / Formación</option>
                 <option value="commute">🚗 Desplazamiento</option>
@@ -1298,7 +1298,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   type="time"
                   value={tplStart}
                   onChange={e => setTplStart(e.target.value)}
-                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600 font-mono"
+                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 font-mono"
                   required
                 />
                 <input
@@ -1306,7 +1306,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   placeholder="Minutos"
                   value={tplDuration}
                   onChange={e => setTplDuration(Number(e.target.value))}
-                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600 font-mono"
+                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 font-mono"
                   required
                 />
               </div>

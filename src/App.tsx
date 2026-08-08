@@ -10,6 +10,7 @@ import { FinancialView } from './offices/financial/FinancialView';
 import { SocialView } from './offices/social/SocialView';
 import { MedicalView } from './offices/medical/MedicalView';
 import { PersonalDevView } from './offices/personalDev/PersonalDevView';
+import { SettingsOfficeView } from './offices/settings/SettingsOfficeView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
 import { ToastContainer, showToast } from './components/executive';
 import {
@@ -128,10 +129,14 @@ export function App() {
     { key: 'vidaSocial', label: 'Vida Social', emoji: '💖' },
     { key: 'medica', label: 'Médica', emoji: '🩺' },
     { key: 'desarrolloPersonal', label: 'Desarrollo Personal', emoji: '🧭' },
+    { key: 'configuracion', label: 'Configuración', emoji: '⚙️' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 flex flex-col font-sans relative antialiased">
+    <div
+      className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 flex flex-col font-sans relative antialiased"
+      data-high-contrast={state.settings?.highContrast ? 'true' : 'false'}
+    >
       <ToastContainer />
 
       {/* 1. BARRA SUPERIOR ESTRUCTURADA Y LIMPIA */}
@@ -344,6 +349,9 @@ export function App() {
           )}
           {activeOffice === 'medica' && <MedicalView data={state.offices.medica} />}
           {activeOffice === 'desarrolloPersonal' && <PersonalDevView data={state.offices.desarrolloPersonal} />}
+          {(activeOffice === 'configuracion' || activeOffice === 'seguridad') && (
+            <SettingsOfficeView state={state} showToast={showToast} />
+          )}
         </div>
       </main>
 

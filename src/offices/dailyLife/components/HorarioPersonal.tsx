@@ -15,7 +15,9 @@ import {
   ExecutiveEmptyState,
   ExecutiveModal,
   ExecutiveInput,
-  ExecutiveSelect
+  ExecutiveSelect,
+  UniversalSchedule,
+  CalendarEvent
 } from '../../../components/executive';
 import {
   Clock,
@@ -106,6 +108,71 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
   const healthMetrics = useMemo(() => {
     return MedicalCalculations.getLatestHealthMetrics(fullState.offices.medica, currentDate);
   }, [fullState.offices.medica, currentDate]);
+
+  // Schedule View Mode for UniversalSchedule
+  const [scheduleViewMode, setScheduleViewMode] = useState<'week' | 'day'>('week');
+
+  const personalCalendarEvents: CalendarEvent[] = useMemo(() => {
+    const list: CalendarEvent[] = [];
+
+    // 1. Fixed Events
+    fixedEvents.forEach(fe => {
+      list.push({
+        id: `fe-${fe.id}`,
+        title: fe.title,
+        subtitle: fe.subtitle,
+        date: currentDate,
+        startTime: fe.startTime || '08:00',
+        endTime: fe.endTime || '09:00',
+        color: fe.color || '#3B82F6',
+        officeLabel: fe.officeLabel || 'Agenda Ejecutiva',
+        sourceOffice: fe.sourceOffice,
+        raw: fe
+      });
+    });
+
+    // 2. Personal Blocks
+    personalBlocks.forEach(pb => {
+      list.push({
+        id: pb.id,
+        title: pb.title,
+        subtitle: pb.category ? `Categoría: ${pb.category}` : undefined,
+        date: pb.date,
+        startTime: pb.startTime,
+        endTime: pb.endTime,
+        color: pb.color || '#8B5CF6',
+        officeLabel: 'Vida Diaria',
+        completed: pb.completed,
+        raw: pb
+      });
+    });
+
+    // 3. Scheduled Habits
+    scheduledHabits.forEach(habit => {
+      const isCompleted = Boolean(habit.logs?.[currentDate]);
+      const startMinutes = habit.scheduledTime ? (parseInt(habit.scheduledTime.split(':')[0], 10) * 60 + parseInt(habit.scheduledTime.split(':')[1], 10)) : 480;
+      const duration = habit.durationMinutes || 30;
+      const endM = startMinutes + duration;
+      const endH = Math.floor(endM / 60);
+      const endMin = endM % 60;
+      const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+
+      list.push({
+        id: `habit-${habit.id}`,
+        title: `🔥 ${habit.name}`,
+        subtitle: habit.description,
+        date: currentDate,
+        startTime: habit.scheduledTime || '08:00',
+        endTime: endTimeStr,
+        color: habit.color || '#F59E0B',
+        officeLabel: 'Hábito',
+        completed: isCompleted,
+        raw: habit
+      });
+    });
+
+    return list;
+  }, [fixedEvents, personalBlocks, scheduledHabits, currentDate]);
 
   // Form & Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -708,7 +775,33 @@ export const HorarioPersonal: React.FC<Props> = ({ selectedDateStr }) => {
         </div>
       </GlassPanel>
 
-      {/* 3. CRONOGRAMA UNIFICADO Y PLAN DE LA JORNADA */}
+      {/* 3. HORARIO UNIFICADO Y PLAN DE LA JORNADA */}
+      <UniversalSchedule
+        events={personalCalendarEvents}
+        selectedDate={currentDate}
+        onSelectDate={setCurrentDate}
+        viewMode={scheduleViewMode}
+        onChangeViewMode={setScheduleViewMode}
+        title="Horario Personal Semanal"
+        subtitle="Planificación unificada del tiempo libre, hábitos y compromisos"
+        onAddActivity={(dateStr, hourStr) => {
+          if (dateStr) setCurrentDate(dateStr);
+          if (hourStr) setStartTime(hourStr);
+          handleOpenNewBlock();
+        }}
+        onEditActivity={(calEvt) => {
+          if (calEvt.raw && calEvt.officeLabel === 'Vida Diaria') {
+            handleOpenEditBlock(calEvt.raw as TimePlan);
+          }
+        }}
+        onDeleteActivity={(evtId) => {
+          const block = personalBlocks.find(b => b.id === evtId);
+          if (block) {
+            handleDeleteBlock(block);
+          }
+        }}
+      />
+
       <GlassPanel accentColor="amber" padding="md">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">

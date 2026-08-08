@@ -16,6 +16,8 @@ export interface SystemSettings {
     start: string; // "07:00"
     end: string;   // "22:00"
   };
+  highContrast?: boolean;
+  fontSizeMultiplier?: 'normal' | 'large' | 'xlarge';
 }
 
 // -------------------------------------------------------------
@@ -86,6 +88,11 @@ export interface AcademicSubject {
   professor: string;
   color: string;
   classroom?: string;
+  group?: string;
+  credits?: number;
+  code?: string;
+  description?: string;
+  isActive?: boolean;
   scheduleSessions: AcademicSession[];
   cuts: AcademicCut[];
   academicActivities?: AcademicActivity[];

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AccentColor } from './GlassPanel';
-import { Clock, Calendar, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Clock, Calendar, ChevronLeft, ChevronRight, Eye, Plus, Edit2, Trash2, X, CheckCircle2 } from 'lucide-react';
 import { getWeekDaysForDate, getTodayDateString } from '../../utils/dates';
+import { useTimeService } from '../../hooks/useTimeService';
+import { DayPeriod } from '../../services/TimeService';
 
 export interface CalendarEvent {
   id: string;
@@ -11,10 +13,15 @@ export interface CalendarEvent {
   startTime: string; // HH:MM
   endTime: string; // HH:MM
   color?: string;
+  category?: string;
   officeLabel?: string;
   sourceOffice?: string;
   classroom?: string;
   professor?: string;
+  location?: string;
+  priority?: 'low' | 'medium' | 'high';
+  isHabit?: boolean;
+  completed?: boolean;
   raw?: any;
 }
 
@@ -25,16 +32,21 @@ export interface ExecutiveCalendarProps {
   viewMode: 'week' | 'day';
   onChangeViewMode: (mode: 'week' | 'day') => void;
   onSelectEvent?: (event: CalendarEvent) => void;
+  onAddActivity?: (dateStr?: string, hourStr?: string) => void;
+  onEditActivity?: (event: CalendarEvent) => void;
+  onDeleteActivity?: (eventId: string) => void;
   onNavigateToOffice?: (officeKey: string) => void;
   accentColor?: AccentColor;
   title?: string;
   subtitle?: string;
+  readOnly?: boolean;
+  customHeaderActions?: React.ReactNode;
 }
 
-const START_HOUR = 7; // 07:00
-const END_HOUR = 21; // 21:00
-const TOTAL_HOURS = END_HOUR - START_HOUR; // 14 hours
-const TOTAL_MINUTES = TOTAL_HOURS * 60; // 840 minutes
+const START_HOUR = 6; // 06:00
+const END_HOUR = 22; // 22:00
+const TOTAL_HOURS = END_HOUR - START_HOUR; // 16 hours
+const TOTAL_MINUTES = TOTAL_HOURS * 60; // 960 minutes
 
 const parseMinutes = (timeStr: string): number => {
   if (!timeStr) return 0;
@@ -44,6 +56,51 @@ const parseMinutes = (timeStr: string): number => {
   return h * 60 + m;
 };
 
+/**
+ * Universal Adaptive Color Engine
+ * hora del día + tema actual + color base = color final con contraste garantizado
+ */
+export function getAdaptiveActivityStyle(baseColor: string = '#3B82F6', period: DayPeriod = 'midday') {
+  const isDark = period === 'dusk' || period === 'night';
+  const isWarm = period === 'sunset' || period === 'dawn';
+
+  if (isDark) {
+    return {
+      bg: `${baseColor}28`,
+      border: baseColor,
+      text: '#FFFFFF',
+      titleColor: '#FFFFFF',
+      subtext: '#CBD5E1',
+      badgeBg: `${baseColor}40`,
+      badgeText: '#F8FAFC',
+      hoverShadow: `0 0 12px ${baseColor}50`
+    };
+  } else if (isWarm) {
+    return {
+      bg: `${baseColor}1E`,
+      border: baseColor,
+      text: '#290F02',
+      titleColor: '#451A03',
+      subtext: '#78350F',
+      badgeBg: `${baseColor}25`,
+      badgeText: '#451A03',
+      hoverShadow: `0 2px 10px ${baseColor}30`
+    };
+  } else {
+    // Light mode (morning, midday)
+    return {
+      bg: `${baseColor}14`,
+      border: baseColor,
+      text: '#0F172A',
+      titleColor: '#0F172A',
+      subtext: '#334155',
+      badgeBg: `${baseColor}20`,
+      badgeText: '#0F172A',
+      hoverShadow: `0 2px 8px ${baseColor}25`
+    };
+  }
+}
+
 export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
   events,
   selectedDate,
@@ -51,11 +108,20 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
   viewMode,
   onChangeViewMode,
   onSelectEvent,
+  onAddActivity,
+  onEditActivity,
+  onDeleteActivity,
   onNavigateToOffice,
-  accentColor = 'gold',
-  title = 'Horario Ejecutivo Unificado',
-  subtitle = 'Proyección cronológica integrada de bloques continuos',
+  title = 'Horario Semanal Unificado',
+  subtitle = 'Sistema de agenda integrada con sincronización en tiempo real',
+  readOnly = false,
+  customHeaderActions
 }) => {
+  const timeService = useTimeService();
+  const period = timeService.period;
+
+  const [activeEventModal, setActiveEventModal] = useState<CalendarEvent | null>(null);
+
   const weekDays = getWeekDaysForDate(selectedDate);
   const todayStr = getTodayDateString();
 
@@ -90,8 +156,8 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
 
   const dayEvents = eventsByDateMap.get(selectedDate) || [];
 
-  // Current Time Moving Indicator Line Calculation
-  const now = new Date();
+  // Current Time Line
+  const now = timeService.now;
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const nowTotalMinutes = (currentHour - START_HOUR) * 60 + currentMinute;
@@ -99,96 +165,122 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
   const currentTimeTopPercent = Math.max(0, Math.min(100, (nowTotalMinutes / TOTAL_MINUTES) * 100));
   const timeNowFormatted = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
 
+  const handleEventClick = (evt: CalendarEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveEventModal(evt);
+    if (onSelectEvent) {
+      onSelectEvent(evt);
+    }
+  };
+
   return (
-    <div className="bg-[#0B1528]/85 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl text-white">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm transition-all duration-300 text-slate-900">
       {/* HEADER CONTROLS */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-[#C5A059]/20 border border-[#C5A059]/40 text-[#C5A059] rounded-xl">
+          <div className="p-2.5 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-white text-base sm:text-lg tracking-wide">
+            <h3 className="font-serif font-bold text-slate-900 text-base sm:text-lg tracking-wide flex items-center gap-2">
               {title}
+              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-sans font-semibold">
+                {timeService.icon} {timeService.periodInfo.label}
+              </span>
             </h3>
-            <p className="text-xs text-slate-400 font-sans">
+            <p className="text-xs text-slate-500 font-sans">
               {subtitle}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
+          {customHeaderActions}
+
+          {!readOnly && onAddActivity && (
+            <button
+              onClick={() => onAddActivity(selectedDate)}
+              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all shadow-xs flex items-center gap-1 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Agregar Actividad</span>
+            </button>
+          )}
+
           <button
             onClick={() => onSelectDate(todayStr)}
-            className="px-3 py-1.5 bg-[#162A45] hover:bg-[#1E3B61] border border-[#C5A059]/40 text-[#C5A059] font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95"
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95"
           >
             Hoy
           </button>
-          <div className="flex items-center border border-white/10 bg-[#162A45] rounded-xl overflow-hidden">
+
+          <div className="flex items-center border border-slate-300 bg-slate-100 rounded-xl overflow-hidden">
             <button
               onClick={handlePrevWeek}
-              className="p-1.5 hover:bg-white/10 text-slate-300 transition-colors"
+              className="p-1.5 hover:bg-slate-200 text-slate-700 transition-colors"
               title="Semana anterior"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNextWeek}
-              className="p-1.5 hover:bg-white/10 text-slate-300 transition-colors"
+              className="p-1.5 hover:bg-slate-200 text-slate-700 transition-colors"
               title="Semana siguiente"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex items-center bg-[#132337] border border-white/10 p-1 rounded-xl">
+          <div className="flex items-center bg-slate-100 border border-slate-200 p-1 rounded-xl">
             <button
               onClick={() => onChangeViewMode('week')}
               className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${
-                viewMode === 'week' ? 'bg-[#C5A059] text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                viewMode === 'week' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Vista Semanal
+              Semanal
             </button>
             <button
               onClick={() => onChangeViewMode('day')}
               className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${
-                viewMode === 'day' ? 'bg-[#C5A059] text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                viewMode === 'day' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Vista Diaria
+              Diaria
             </button>
           </div>
         </div>
       </div>
 
-      {/* WEEKLY GRID WITH SINGLE CONTINUOUS EVENT BLOCKS */}
+      {/* WEEKLY GRID VIEW */}
       {viewMode === 'week' ? (
-        <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
-            {/* Days Header */}
-            <div className="grid grid-cols-8 border-b border-white/10 bg-[#132337]/90 text-center text-xs font-sans rounded-t-xl overflow-hidden">
-              <div className="p-2 text-slate-400 text-[10px] uppercase tracking-wider font-mono flex items-center justify-center border-r border-white/10">
-                HORA
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="min-w-[800px]">
+            {/* Days Header (Lunes a Domingo) */}
+            <div className="grid grid-cols-8 border-b border-slate-200 bg-slate-50 text-center text-xs font-sans overflow-hidden">
+              <div className="p-2.5 text-slate-500 text-[10px] uppercase tracking-wider font-mono flex items-center justify-center border-r border-slate-200 font-bold">
+                ⏰ HORA
               </div>
               {weekDays.map(day => (
                 <div
                   key={day.dateStr}
                   onClick={() => onSelectDate(day.dateStr)}
-                  className={`p-2.5 border-r border-white/10 cursor-pointer transition-colors ${
-                    day.dateStr === selectedDate ? 'bg-[#C5A059]/20 font-bold border-b-2 border-b-[#C5A059]' : 'hover:bg-white/5'
+                  className={`p-2.5 border-r border-slate-200 cursor-pointer transition-all ${
+                    day.dateStr === selectedDate
+                      ? 'bg-purple-50 font-bold border-b-2 border-b-purple-600 text-purple-900'
+                      : 'hover:bg-slate-100/80 text-slate-700'
                   }`}
                 >
-                  <div className="text-[10px] uppercase text-[#C5A059] tracking-widest">{day.dayShort}</div>
-                  <div className={`text-sm font-serif ${day.isToday ? 'text-amber-300 font-extrabold' : 'text-white'}`}>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold text-purple-700">{day.dayShort}</div>
+                  <div className={`text-sm font-serif ${day.isToday ? 'text-purple-700 font-extrabold underline' : 'text-slate-900'}`}>
                     {day.dayNumberStr}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Timeline Area (Absolute Continuous Block Layer) */}
-            <div className="relative grid grid-cols-8 border-b border-white/10 bg-[#0B1528]/50 min-h-[560px]">
+            {/* Timeline Area */}
+            <div className="relative grid grid-cols-8 bg-slate-50/40 min-h-[580px]">
               
               {/* CURRENT TIME MOVING INDICATOR LINE */}
               {showCurrentTimeLine && (
@@ -196,18 +288,18 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                   className="absolute left-0 right-0 z-30 pointer-events-none flex items-center transition-all duration-1000"
                   style={{ top: `${currentTimeTopPercent}%` }}
                 >
-                  <div className="bg-gradient-to-r from-rose-600 to-rose-500 text-white font-mono text-[9px] font-extrabold px-2 py-0.5 rounded-r shadow-lg border border-rose-300/60 transform -translate-y-1/2 shrink-0">
+                  <div className="bg-rose-600 text-white font-mono text-[9px] font-extrabold px-2 py-0.5 rounded-r shadow-md border border-rose-300 transform -translate-y-1/2 shrink-0">
                     AHORA ({timeNowFormatted})
                   </div>
-                  <div className="flex-1 h-[2px] bg-gradient-to-r from-rose-500 via-amber-400 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.9)]" />
-                  <div className="w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-[0_0_12px_rgba(244,63,94,1)] transform -translate-y-1/2 animate-pulse shrink-0" />
+                  <div className="flex-1 h-[2px] bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                  <div className="w-3 h-3 rounded-full bg-rose-600 border-2 border-white shadow-md transform -translate-y-1/2 animate-pulse shrink-0" />
                 </div>
               )}
 
-              {/* Left Hour Column Labels */}
-              <div className="border-r border-white/10 divide-y divide-white/5 bg-[#132337]/30">
+              {/* Hour Column */}
+              <div className="border-r border-slate-200 divide-y divide-slate-200 bg-slate-100/60 select-none">
                 {hoursArray.slice(0, -1).map(h => (
-                  <div key={h} className="h-10 text-[10px] font-mono text-slate-400 text-right pr-2 pt-1">
+                  <div key={h} className="h-10 text-[10px] font-mono text-slate-500 text-right pr-2 pt-1 font-semibold">
                     {String(h).padStart(2, '0')}:00
                   </div>
                 ))}
@@ -218,15 +310,23 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                 const dayEvts = eventsByDateMap.get(day.dateStr) || [];
 
                 return (
-                  <div key={day.dateStr} className={`relative border-r border-white/10 ${day.isToday ? 'bg-amber-950/10' : ''}`}>
-                    {/* Hour Background Guidelines */}
-                    <div className="absolute inset-0 divide-y divide-white/5 pointer-events-none">
-                      {hoursArray.slice(0, -1).map(h => (
-                        <div key={h} className="h-10" />
-                      ))}
+                  <div key={day.dateStr} className={`relative border-r border-slate-200 ${day.isToday ? 'bg-purple-50/20' : ''}`}>
+                    {/* Hour Guidelines with Click-to-Add capability */}
+                    <div className="absolute inset-0 divide-y divide-slate-200 pointer-events-auto">
+                      {hoursArray.slice(0, -1).map(h => {
+                        const timeStr = `${String(h).padStart(2, '0')}:00`;
+                        return (
+                          <div
+                            key={h}
+                            className="h-10 hover:bg-purple-100/30 cursor-pointer transition-colors"
+                            onClick={() => !readOnly && onAddActivity && onAddActivity(day.dateStr, timeStr)}
+                            title={`Haga clic para agregar actividad a las ${timeStr}`}
+                          />
+                        );
+                      })}
                     </div>
 
-                    {/* CONTINUOUS SINGLE BLOCK EVENT CARDS */}
+                    {/* CONTINUOUS ADAPTIVE EVENT BLOCKS */}
                     {dayEvts.map((evt, idx) => {
                       const startM = parseMinutes(evt.startTime);
                       const endM = parseMinutes(evt.endTime || evt.startTime);
@@ -236,33 +336,45 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                       const topPercent = Math.max(0, Math.min(100, ((startM - dayStartM) / TOTAL_MINUTES) * 100));
                       const heightPercent = Math.max(4, Math.min(100 - topPercent, ((safeEndM - startM) / TOTAL_MINUTES) * 100));
 
-                      const color = evt.color || '#3B82F6';
+                      const style = getAdaptiveActivityStyle(evt.color || '#3B82F6', period);
 
                       return (
                         <div
                           key={evt.id || idx}
-                          onClick={() => onSelectEvent && onSelectEvent(evt)}
-                          className="absolute left-1 right-1 rounded-lg p-2 text-xs border shadow-lg hover:z-20 hover:scale-[1.02] transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
+                          onClick={(e) => handleEventClick(evt, e)}
+                          className="absolute left-1 right-1 rounded-lg p-2 text-xs border shadow-xs hover:z-20 hover:scale-[1.02] transition-all cursor-pointer overflow-hidden flex flex-col justify-between"
                           style={{
                             top: `${topPercent}%`,
                             height: `${heightPercent}%`,
-                            backgroundColor: `${color}30`,
-                            borderColor: color,
-                            borderLeftWidth: '4px'
+                            backgroundColor: style.bg,
+                            borderColor: style.border,
+                            borderLeftWidth: '4px',
+                            color: style.text
                           }}
                         >
                           <div>
-                            <div className="font-bold text-white text-[11px] leading-tight truncate" style={{ color: color }}>
-                              {evt.title}
+                            <div className="font-bold text-[11px] leading-tight truncate flex items-center gap-1" style={{ color: style.titleColor }}>
+                              {evt.completed && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
+                              <span className="truncate">{evt.title}</span>
                             </div>
                             {evt.classroom && (
-                              <div className="text-[10px] text-slate-300 truncate mt-0.5">
+                              <div className="text-[10px] truncate mt-0.5 opacity-90" style={{ color: style.subtext }}>
                                 Aula: {evt.classroom}
                               </div>
                             )}
+                            {evt.subtitle && (
+                              <div className="text-[10px] truncate mt-0.5 opacity-85" style={{ color: style.subtext }}>
+                                {evt.subtitle}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[10px] text-slate-300 font-mono font-bold mt-1 opacity-90">
-                            {evt.startTime} – {evt.endTime}
+                          <div className="text-[10px] font-mono font-bold mt-1 opacity-90 flex justify-between items-center" style={{ color: style.subtext }}>
+                            <span>{evt.startTime} – {evt.endTime}</span>
+                            {evt.officeLabel && (
+                              <span className="text-[9px] px-1 rounded uppercase font-sans tracking-tight" style={{ backgroundColor: style.badgeBg, color: style.badgeText }}>
+                                {evt.officeLabel}
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -276,74 +388,94 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
           </div>
         </div>
       ) : (
-        /* DAILY CONTINUOUS TIMELINE VIEW */
+        /* DAILY VIEW */
         <div className="space-y-3 pt-2">
-          <div className="text-xs text-[#C5A059] font-serif italic border-b border-white/10 pb-2 flex justify-between items-center">
-            <span>Programación detallada del {selectedDate}</span>
-            <span className="font-mono text-slate-400">{dayEvents.length} bloques programados</span>
+          <div className="text-xs font-serif text-slate-700 border-b border-slate-200 pb-2 flex justify-between items-center">
+            <span className="font-bold">Programación del día {selectedDate}</span>
+            <span className="font-mono text-slate-500">{dayEvents.length} actividades programadas</span>
           </div>
 
           {dayEvents.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 bg-[#132337]/40 rounded-xl border border-dashed border-white/10 space-y-2">
-              <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
-              <p className="text-sm font-medium text-slate-300">No hay bloques de horario para esta fecha.</p>
-              <p className="text-xs text-slate-500">Selecciona otro día o añade una sesión de clase / evento.</p>
+            <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-300 space-y-3">
+              <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
+              <p className="text-sm font-medium text-slate-700">No hay actividades agendadas para esta fecha.</p>
+              {!readOnly && onAddActivity && (
+                <button
+                  onClick={() => onAddActivity(selectedDate)}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1 shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Crear nueva actividad
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {dayEvents.map((evt, idx) => (
-                <div
-                  key={evt.id || idx}
-                  onClick={() => onSelectEvent && onSelectEvent(evt)}
-                  className="p-4 bg-[#132337]/80 rounded-xl border border-white/10 hover:border-[#C5A059]/60 cursor-pointer transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-md"
-                  style={{ borderLeftWidth: '5px', borderLeftColor: evt.color || '#3B82F6' }}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {evt.officeLabel && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                          {evt.officeLabel}
-                        </span>
-                      )}
-                      {evt.classroom && (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                          Aula: {evt.classroom}
-                        </span>
+            <div className="space-y-2.5">
+              {dayEvents.map((evt, idx) => {
+                const style = getAdaptiveActivityStyle(evt.color || '#3B82F6', period);
+
+                return (
+                  <div
+                    key={evt.id || idx}
+                    onClick={(e) => handleEventClick(evt, e)}
+                    className="p-4 rounded-xl border hover:border-purple-400 cursor-pointer transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs"
+                    style={{
+                      backgroundColor: style.bg,
+                      borderColor: style.border,
+                      borderLeftWidth: '5px'
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {evt.officeLabel && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                            {evt.officeLabel}
+                          </span>
+                        )}
+                        {evt.classroom && (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-semibold">
+                            Aula: {evt.classroom}
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-serif font-bold text-base text-slate-900 flex items-center gap-2">
+                        {evt.completed && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                        {evt.title}
+                      </div>
+                      {evt.professor && <div className="text-xs text-slate-700">👤 Profesor: {evt.professor}</div>}
+                      {evt.subtitle && <div className="text-xs text-slate-600">{evt.subtitle}</div>}
+                    </div>
+
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                      <div className="px-3 py-1.5 bg-white rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 shadow-2xs">
+                        {evt.startTime} – {evt.endTime}
+                      </div>
+
+                      {evt.sourceOffice && onNavigateToOffice && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigateToOffice(evt.sourceOffice!);
+                          }}
+                          className="p-2 bg-white hover:bg-slate-100 rounded-xl text-xs text-purple-700 border border-purple-200 flex items-center gap-1 transition-colors"
+                          title="Ir a Oficina de origen"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
-                    <div className="font-serif font-bold text-white text-base">{evt.title}</div>
-                    {evt.professor && <div className="text-xs text-slate-300">👤 Profesor: {evt.professor}</div>}
-                    {evt.subtitle && <div className="text-xs text-slate-400">{evt.subtitle}</div>}
                   </div>
-
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-white/10">
-                    <div className="px-3 py-1.5 bg-[#0B1528] rounded-xl border border-white/10 text-xs font-mono font-bold text-[#C5A059] shrink-0">
-                      {evt.startTime} – {evt.endTime}
-                    </div>
-
-                    {evt.sourceOffice && onNavigateToOffice && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigateToOffice(evt.sourceOffice!);
-                        }}
-                        className="p-2 bg-[#0B1528] hover:bg-white/10 rounded-xl text-xs text-[#C5A059] border border-[#C5A059]/30 flex items-center gap-1 transition-colors"
-                        title="Ir a Oficina"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* FOOTER OFFICE LEGEND */}
-      <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-white/10 font-sans">
-        <span className="font-bold text-[#C5A059] uppercase tracking-wider">Convenio Institucional de Colores:</span>
+      {/* FOOTER LEGEND & COLOR SYSTEM */}
+      <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 pt-3 border-t border-slate-200 font-sans gap-2">
+        <span className="font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
+          🎨 Sistema de Color Adaptativo ({timeService.periodInfo.label}):
+        </span>
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Académica</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Financiera</span>
@@ -353,6 +485,97 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Desarrollo</span>
         </div>
       </div>
+
+      {/* EVENT DETAIL & INTERACTION MODAL */}
+      {activeEventModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150" onClick={() => setActiveEventModal(null)}>
+          <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden p-6 space-y-4 text-slate-900 animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                  {activeEventModal.officeLabel || 'Actividad'}
+                </span>
+                <h3 className="font-serif font-bold text-lg text-slate-900 mt-1">{activeEventModal.title}</h3>
+              </div>
+              <button onClick={() => setActiveEventModal(null)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-700">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-purple-600" />
+                <span className="font-mono font-bold text-slate-900">{activeEventModal.date}</span>
+                <span>({activeEventModal.startTime} – {activeEventModal.endTime})</span>
+              </div>
+
+              {activeEventModal.classroom && (
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">Lugar / Aula:</span>
+                  <span>{activeEventModal.classroom}</span>
+                </div>
+              )}
+
+              {activeEventModal.professor && (
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">Profesor:</span>
+                  <span>{activeEventModal.professor}</span>
+                </div>
+              )}
+
+              {activeEventModal.subtitle && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-sans">
+                  {activeEventModal.subtitle}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              {!readOnly && onDeleteActivity && (
+                <button
+                  onClick={() => {
+                    const evId = activeEventModal.id;
+                    setActiveEventModal(null);
+                    onDeleteActivity(evId);
+                  }}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                </button>
+              )}
+
+              {!readOnly && onEditActivity && (
+                <button
+                  onClick={() => {
+                    const evt = activeEventModal;
+                    setActiveEventModal(null);
+                    onEditActivity(evt);
+                  }}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 transition-colors shadow-xs"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Editar
+                </button>
+              )}
+
+              {activeEventModal.sourceOffice && onNavigateToOffice && (
+                <button
+                  onClick={() => {
+                    const officeKey = activeEventModal.sourceOffice!;
+                    setActiveEventModal(null);
+                    onNavigateToOffice(officeKey);
+                  }}
+                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Ir a Oficina
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// Universal Export alias for full compliance across all module usages
+export const UniversalSchedule = ExecutiveCalendar;

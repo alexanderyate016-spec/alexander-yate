@@ -26,23 +26,23 @@ export const OvalOfficeDock: React.FC<Props> = ({
   ];
 
   return (
-    <div className="w-full bg-white backdrop-blur-2xl border border-slate-200 rounded-2xl p-3 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-white font-sans">
+    <div className="w-full bg-white backdrop-blur-2xl border border-slate-200 rounded-2xl p-3 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-900 font-sans">
       
       {/* LEFT: WEATHER WIDGET */}
       <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
         <Sun className="w-5 h-5 text-amber-800 animate-spin-slow" />
         <div className="flex flex-col text-left leading-tight">
-          <span className="font-bold text-amber-200">22°C • Soleado</span>
+          <span className="font-bold text-amber-900">22°C • Soleado</span>
           <span className="text-[10px] text-slate-700">Washington, D.C.</span>
         </div>
       </div>
 
       {/* CENTER: MOTTO / QUOTE */}
       <div className="text-center">
-        <p className="font-serif italic text-xs sm:text-sm text-amber-200 font-medium tracking-wide flex items-center justify-center gap-2">
-          <span className="text-amber-400">★</span>
+        <p className="font-serif italic text-xs sm:text-sm text-amber-900 font-medium tracking-wide flex items-center justify-center gap-2">
+          <span className="text-amber-600">★</span>
           Planifica hoy los mejores recuerdos de mañana
-          <span className="text-amber-400">★</span>
+          <span className="text-amber-600">★</span>
         </p>
       </div>
 
