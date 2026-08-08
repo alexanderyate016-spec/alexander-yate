@@ -173,6 +173,34 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
       decisions: []
     },
     offices: {
+      jefaturaGabinete: {
+        config: {
+          wakeUpTime: '06:30',
+          sleepTime: '23:00',
+          breakfastTime: '07:30',
+          lunchTime: '12:30',
+          dinnerTime: '19:30',
+          commuteRoutes: [
+            {
+              id: 'commute_uni',
+              name: 'Casa → Universidad',
+              origin: 'Casa',
+              destination: 'Universidad',
+              durationMinutes: 30
+            },
+            {
+              id: 'commute_home',
+              name: 'Universidad → Casa',
+              origin: 'Universidad',
+              destination: 'Casa',
+              durationMinutes: 25
+            }
+          ]
+        },
+        events: [],
+        resolvedConflicts: [],
+        instructionHistory: []
+      },
       academica: {
         semesters: [
           {

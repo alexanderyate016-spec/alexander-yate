@@ -56,6 +56,19 @@ class CasaBlancaStore {
       crisis: crisisData,
       crisisCenter: crisisData,
       offices: {
+        jefaturaGabinete: {
+          config: {
+            wakeUpTime: parsed?.offices?.jefaturaGabinete?.config?.wakeUpTime || initial.offices.jefaturaGabinete.config.wakeUpTime,
+            sleepTime: parsed?.offices?.jefaturaGabinete?.config?.sleepTime || initial.offices.jefaturaGabinete.config.sleepTime,
+            breakfastTime: parsed?.offices?.jefaturaGabinete?.config?.breakfastTime || initial.offices.jefaturaGabinete.config.breakfastTime,
+            lunchTime: parsed?.offices?.jefaturaGabinete?.config?.lunchTime || initial.offices.jefaturaGabinete.config.lunchTime,
+            dinnerTime: parsed?.offices?.jefaturaGabinete?.config?.dinnerTime || initial.offices.jefaturaGabinete.config.dinnerTime,
+            commuteRoutes: parsed?.offices?.jefaturaGabinete?.config?.commuteRoutes || initial.offices.jefaturaGabinete.config.commuteRoutes || []
+          },
+          events: parsed?.offices?.jefaturaGabinete?.events || [],
+          resolvedConflicts: parsed?.offices?.jefaturaGabinete?.resolvedConflicts || [],
+          instructionHistory: parsed?.offices?.jefaturaGabinete?.instructionHistory || []
+        },
         academica: {
           semesters: parsed?.offices?.academica?.semesters || initial.offices.academica.semesters || [],
           subjects: parsed?.offices?.academica?.subjects || initial.offices.academica.subjects || []

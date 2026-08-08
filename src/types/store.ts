@@ -865,7 +865,7 @@ export interface ConflictResolutionRecord {
 // -------------------------------------------------------------
 export interface UnifiedExecutiveEvent {
   id: string;
-  sourceOffice: 'academica' | 'vidaDiaria' | 'financiera' | 'vidaSocial' | 'medica';
+  sourceOffice: 'academica' | 'vidaDiaria' | 'financiera' | 'vidaSocial' | 'medica' | 'jefatura' | 'desarrolloPersonal';
   officeLabel: string;
   color: string;
   title: string;
@@ -881,6 +881,80 @@ export interface UnifiedExecutiveEvent {
   absenceNote?: string;
   status?: string;
   classRelation?: 'replaces' | 'complements' | 'independent';
+  location?: string;
+  travelTimeMinutes?: number;
+  prepTimeMinutes?: number;
+}
+
+// -------------------------------------------------------------
+// OFICINA DE JEFATURA DE GABINETE (SECRETARÍA EJECUTIVA)
+// -------------------------------------------------------------
+export interface CommuteRoute {
+  id: string;
+  name: string; // e.g. "Casa → Universidad"
+  origin: string;
+  destination: string;
+  durationMinutes: number; // e.g. 30
+}
+
+export interface PersonalScheduleConfig {
+  wakeUpTime: string; // "06:30"
+  sleepTime: string;  // "23:00"
+  breakfastTime: string; // "07:30"
+  lunchTime: string;    // "12:30"
+  dinnerTime: string;   // "19:30"
+  commuteRoutes: CommuteRoute[];
+}
+
+export interface ChiefOfStaffEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+  sourceOffice: 'jefatura' | 'academica' | 'medica' | 'financiera' | 'vidaSocial' | 'vidaDiaria';
+  location?: string;
+  travelTimeMinutes?: number;
+  prepTimeMinutes?: number;
+  priority: 'low' | 'medium' | 'high';
+  status: 'active' | 'completed' | 'rescheduled' | 'cancelled';
+  isRecurring?: boolean;
+  recurrenceRule?: {
+    type: 'daily' | 'weekly' | 'period' | 'single';
+    daysOfWeek?: number[]; // 1-7
+    startDate?: string;
+    endDate?: string;
+  };
+  linkedOfficeId?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface CabinetConflictResolution {
+  id: string;
+  eventAId: string;
+  eventATitle: string;
+  eventBId: string;
+  eventBTitle: string;
+  date: string;
+  decisionText: string;
+  actionTaken: string;
+  resolvedAt: string;
+}
+
+export interface CabinetInstructionLog {
+  id: string;
+  timestamp: string;
+  inputText: string;
+  actionSummary: string;
+}
+
+export interface ChiefOfStaffOfficeData {
+  config: PersonalScheduleConfig;
+  events: ChiefOfStaffEvent[];
+  resolvedConflicts?: CabinetConflictResolution[];
+  instructionHistory?: CabinetInstructionLog[];
 }
 
 // -------------------------------------------------------------
@@ -893,6 +967,7 @@ export interface CasaBlancaStoreData {
   crisis: CrisisCenterData;
   crisisCenter: CrisisCenterData;
   offices: {
+    jefaturaGabinete: ChiefOfStaffOfficeData;
     academica: AcademicOfficeData;
     vidaDiaria: DailyLifeOfficeData;
     financiera: FinancialOfficeData;

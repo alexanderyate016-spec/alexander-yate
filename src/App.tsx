@@ -12,6 +12,7 @@ import { MedicalView } from './offices/medical/MedicalView';
 import { PersonalDevView } from './offices/personalDev/PersonalDevView';
 import { SettingsOfficeView } from './offices/settings/SettingsOfficeView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
+import { ChiefOfStaffView } from './offices/chiefOfStaff/ChiefOfStaffView';
 import { ToastContainer, showToast } from './components/executive';
 import {
   Download,
@@ -123,6 +124,7 @@ export function App() {
 
   const navItems = [
     { key: 'ovalOffice', label: 'Despacho Oval', emoji: '🏛️' },
+    { key: 'jefaturaGabinete', label: 'Jefatura de Gabinete', emoji: '💼' },
     { key: 'academica', label: 'Académica', emoji: '🎓' },
     { key: 'vidaDiaria', label: 'Vida Diaria', emoji: '📅' },
     { key: 'financiera', label: 'Financiera', emoji: '💰' },
@@ -338,6 +340,7 @@ export function App() {
               onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
             />
           )}
+          {activeOffice === 'jefaturaGabinete' && <ChiefOfStaffView state={state} />}
           {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}
           {activeOffice === 'vidaDiaria' && <DailyLifeView data={state.offices.vidaDiaria} />}
           {activeOffice === 'financiera' && <FinancialView data={state.offices.financiera} />}

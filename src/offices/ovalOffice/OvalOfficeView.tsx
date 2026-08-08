@@ -14,6 +14,7 @@ import { SuggestionsPanel } from './SuggestionsPanel';
 import { QuickAddTaskModal } from './QuickAddTaskModal';
 import { QuickJournalModal } from './QuickJournalModal';
 import { QuickSleepModal } from './QuickSleepModal';
+import { CentroInformacionPresidencial } from './CentroInformacionPresidencial';
 import { ExecutiveStore } from './ExecutiveStore';
 
 interface Props {
@@ -53,7 +54,14 @@ export const OvalOfficeView: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 relative">
+      {/* CENTRO DE INFORMACIÓN PRESIDENCIAL (CIP) LIQUID GLASS SIDEBAR */}
+      <CentroInformacionPresidencial
+        state={state}
+        selectedDate={selectedDate}
+        onNavigateToOffice={onNavigateToOffice}
+      />
+
       {/* 1. VENTANAL CASA BLANCA (PANORAMA Y VISTA ATMOSFÉRICA) */}
       <CasaBlancaWindow
         state={state}
