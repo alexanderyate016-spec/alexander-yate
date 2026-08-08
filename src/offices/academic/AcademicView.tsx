@@ -8,7 +8,10 @@ import {
   AcademicEvaluationActivity,
   AcademicActivity,
   AcademicActivityType,
-  AcademicActivityStatus
+  AcademicActivityStatus,
+  SubjectProfessor,
+  SubjectScheduleRule,
+  AcademicScheduleType
 } from '../../types/store';
 import { AcademicStore } from './AcademicStore';
 import { AcademicCalculations } from './AcademicCalculations';
@@ -45,7 +48,17 @@ import {
   BookMarked,
   Layers3,
   CalendarDays,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Users,
+  UserCheck,
+  UserPlus,
+  ShieldAlert,
+  Info,
+  ChevronRight,
+  ShieldCheck,
+  Building2,
+  Mail,
+  Phone
 } from 'lucide-react';
 
 interface Props {
@@ -187,6 +200,8 @@ const ActivitiesDistributionBar: React.FC<{
 };
 
 export const AcademicView: React.FC<Props> = ({ data }) => {
+  const todayStr = getTodayDateString();
+
   // Main Navigation Tabs
   const [activeTab, setActiveTab] = useState<'subjects' | 'schedule' | 'evaluations' | 'activities' | 'semesters'>('subjects');
 
@@ -198,7 +213,36 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
   // Expanded Subject for Dedicated Subject Space View
   const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
-  const [subjectSubTab, setSubjectSubTab] = useState<'info' | 'cuts' | 'evaluations' | 'activities'>('info');
+  const [subjectSubTab, setSubjectSubTab] = useState<'info' | 'professors' | 'schedules' | 'cuts' | 'evaluations' | 'activities'>('info');
+
+  // Professor Modal State
+  const [showProfessorModal, setShowProfessorModal] = useState(false);
+  const [editingProfessor, setEditingProfessor] = useState<SubjectProfessor | null>(null);
+  const [profSubjectId, setProfSubjectId] = useState('');
+  const [profName, setProfName] = useState('');
+  const [profTitle, setProfTitle] = useState('Dr.');
+  const [profEmail, setProfEmail] = useState('');
+  const [profPhone, setProfPhone] = useState('');
+  const [profDepartment, setProfDepartment] = useState('');
+  const [profNotes, setProfNotes] = useState('');
+
+  // Schedule Rule Modal State
+  const [showScheduleRuleModal, setShowScheduleRuleModal] = useState(false);
+  const [editingScheduleRule, setEditingScheduleRule] = useState<SubjectScheduleRule | null>(null);
+  const [ruleSubjectId, setRuleSubjectId] = useState('');
+  const [ruleType, setRuleType] = useState<AcademicScheduleType>('recurring');
+  const [ruleProfessorId, setRuleProfessorId] = useState('');
+  const [ruleDaysOfWeek, setRuleDaysOfWeek] = useState<number[]>([1]);
+  const [ruleStartTime, setRuleStartTime] = useState('08:00');
+  const [ruleEndTime, setRuleEndTime] = useState('10:00');
+  const [ruleClassroom, setRuleClassroom] = useState('');
+  const [ruleModality, setRuleModality] = useState<'presencial' | 'virtual' | 'híbrido'>('presencial');
+  const [ruleStartDate, setRuleStartDate] = useState(todayStr);
+  const [ruleEndDate, setRuleEndDate] = useState('');
+  const [ruleDate, setRuleDate] = useState(todayStr);
+  const [ruleNotes, setRuleNotes] = useState('');
+  const [ruleApplyToScheduleId, setRuleApplyToScheduleId] = useState('');
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
 
   // Universal Schedule State
   const [scheduleSelectedDate] = useState<string>(getTodayDateString());
@@ -317,8 +361,6 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [acadActStatus, setAcadActStatus] = useState<AcademicActivityStatus>('Pendiente');
   const [acadActClassRelation, setAcadActClassRelation] = useState<'replaces' | 'complements' | 'independent'>('replaces');
 
-  const todayStr = getTodayDateString();
-
   // Semesters & Subjects Data
   const semesters = data?.semesters || [];
   const subjects = data?.subjects || [];
@@ -383,26 +425,203 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     const events: CalendarEvent[] = [];
     const weekDays = getWeekDaysForDate(scheduleSelectedDate);
     
-    activeSubjects.forEach(sub => {
-      sub.scheduleSessions?.forEach(ses => {
-        const matchingDay = weekDays.find(d => d.dayNum === ses.day);
-        const eventDate = matchingDay ? matchingDay.dateStr : todayStr;
-        
+    weekDays.forEach(day => {
+      const resolvedSessions = AcademicCalculations.getAllSessionsForDate(activeSubjects, day.dateStr);
+      resolvedSessions.forEach(ses => {
         events.push({
-          id: `ses_${sub.id}_${ses.id}_${eventDate}`,
-          title: sub.name,
-          subtitle: `Prof: ${sub.professor}${ses.classroom || sub.classroom ? ` • ${ses.classroom || sub.classroom}` : ''}`,
-          date: eventDate,
+          id: ses.id,
+          title: ses.subjectName,
+          subtitle: `Prof: ${ses.professorTitle ? ses.professorTitle + ' ' : ''}${ses.professorName}${ses.classroom ? ` • ${ses.classroom}` : ''}`,
+          date: day.dateStr,
           startTime: ses.startTime,
           endTime: ses.endTime,
-          location: ses.classroom || sub.classroom,
-          color: sub.color || '#3B82F6',
+          location: ses.classroom,
+          color: ses.subjectColor || '#3B82F6',
           sourceOffice: 'academica'
         });
       });
     });
+
     return events;
-  }, [activeSubjects, scheduleSelectedDate, todayStr]);
+  }, [activeSubjects, scheduleSelectedDate]);
+
+  // Professor Handlers
+  const handleOpenProfessorModal = (subjectId: string, prof?: SubjectProfessor) => {
+    setProfSubjectId(subjectId);
+    if (prof) {
+      setEditingProfessor(prof);
+      setProfName(prof.name);
+      setProfTitle(prof.title || 'Dr.');
+      setProfEmail(prof.email || '');
+      setProfPhone(prof.phone || '');
+      setProfDepartment(prof.department || '');
+      setProfNotes(prof.notes || '');
+    } else {
+      setEditingProfessor(null);
+      setProfName('');
+      setProfTitle('Dr.');
+      setProfEmail('');
+      setProfPhone('');
+      setProfDepartment('');
+      setProfNotes('');
+    }
+    setShowProfessorModal(true);
+  };
+
+  const handleSaveProfessor = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profName.trim() || !profSubjectId) {
+      showToast('Por favor ingrese el nombre del profesor', 'warning');
+      return;
+    }
+
+    if (editingProfessor) {
+      AcademicStore.updateProfessor(profSubjectId, editingProfessor.id, {
+        name: profName.trim(),
+        title: profTitle.trim(),
+        email: profEmail.trim(),
+        phone: profPhone.trim(),
+        department: profDepartment.trim(),
+        notes: profNotes.trim()
+      });
+      showToast('Información del profesor actualizada correctamente');
+    } else {
+      AcademicStore.addProfessor(profSubjectId, {
+        name: profName.trim(),
+        title: profTitle.trim(),
+        email: profEmail.trim(),
+        phone: profPhone.trim(),
+        department: profDepartment.trim(),
+        notes: profNotes.trim()
+      });
+      showToast('Profesor registrado correctamente');
+    }
+
+    setShowProfessorModal(false);
+  };
+
+  const handleDeleteProfessor = (subjectId: string, profId: string) => {
+    openConfirm({
+      title: 'Eliminar Profesor',
+      message: '¿Está seguro de eliminar este profesor de la materia? Si tiene programaciones asignadas, conserve actualizado el historial.',
+      confirmText: 'Sí, eliminar',
+      isDanger: true,
+      onConfirm: () => {
+        AcademicStore.deleteProfessor(subjectId, profId);
+        showToast('Profesor eliminado de la materia', 'warning');
+      }
+    });
+  };
+
+  // Schedule Rule Handlers
+  const handleOpenScheduleRuleModal = (subjectId: string, rule?: SubjectScheduleRule) => {
+    setRuleSubjectId(subjectId);
+    setConflictWarning(null);
+
+    const sub = subjects.find(s => s.id === subjectId);
+    const activeSem = activeSemester;
+    const defaultStart = activeSem?.startDate || todayStr;
+    const defaultEnd = activeSem?.endDate || '';
+
+    if (rule) {
+      setEditingScheduleRule(rule);
+      setRuleType(rule.type);
+      setRuleProfessorId(rule.professorId);
+      setRuleDaysOfWeek(rule.daysOfWeek || [1]);
+      setRuleStartTime(rule.startTime || '08:00');
+      setRuleEndTime(rule.endTime || '10:00');
+      setRuleClassroom(rule.classroom || sub?.classroom || '');
+      setRuleModality(rule.modality || 'presencial');
+      setRuleStartDate(rule.startDate || defaultStart);
+      setRuleEndDate(rule.endDate || defaultEnd);
+      setRuleDate(rule.date || rule.startDate || todayStr);
+      setRuleApplyToScheduleId(rule.applyToScheduleId || '');
+      setRuleNotes(rule.notes || '');
+    } else {
+      setEditingScheduleRule(null);
+      setRuleType('recurring');
+      const firstProf = sub?.professors && sub.professors.length > 0 ? sub.professors[0].id : '';
+      setRuleProfessorId(firstProf);
+      setRuleDaysOfWeek([1]);
+      setRuleStartTime('08:00');
+      setRuleEndTime('10:00');
+      setRuleClassroom(sub?.classroom || '');
+      setRuleModality('presencial');
+      setRuleStartDate(defaultStart);
+      setRuleEndDate(defaultEnd);
+      setRuleDate(todayStr);
+      setRuleApplyToScheduleId('');
+      setRuleNotes('');
+    }
+    setShowScheduleRuleModal(true);
+  };
+
+  const handleSaveScheduleRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ruleSubjectId) return;
+
+    const sub = subjects.find(s => s.id === ruleSubjectId);
+    if (!sub) return;
+
+    if (!ruleProfessorId) {
+      showToast('Por favor seleccione el profesor asignado a este horario', 'warning');
+      return;
+    }
+
+    const selectedProf = sub.professors?.find(p => p.id === ruleProfessorId);
+    const profName = selectedProf ? `${selectedProf.title ? selectedProf.title + ' ' : ''}${selectedProf.name}` : sub.professor;
+
+    const ruleData: Omit<SubjectScheduleRule, 'id' | 'subjectId'> = {
+      type: ruleType,
+      professorId: ruleProfessorId,
+      professorName: profName,
+      startTime: ruleStartTime,
+      endTime: ruleEndTime,
+      classroom: ruleClassroom.trim() || sub.classroom,
+      modality: ruleModality,
+      startDate: ruleType === 'single_date' ? ruleDate : ruleStartDate,
+      endDate: ruleType === 'single_date' ? ruleDate : ruleEndDate,
+      date: ruleType === 'single_date' ? ruleDate : undefined,
+      daysOfWeek: ruleType === 'recurring' ? ruleDaysOfWeek : undefined,
+      applyToScheduleId: ruleType === 'period_override' ? ruleApplyToScheduleId : undefined,
+      notes: ruleNotes.trim()
+    };
+
+    // Conflict detection check
+    const conflictResult = AcademicCalculations.checkScheduleConflicts(
+      sub,
+      { ...ruleData, id: editingScheduleRule?.id },
+      subjects
+    );
+
+    if (conflictResult.hasConflict) {
+      setConflictWarning(conflictResult.message || 'Existe un conflicto de horario o período');
+      return;
+    }
+
+    if (editingScheduleRule) {
+      AcademicStore.updateScheduleRule(ruleSubjectId, editingScheduleRule.id, ruleData);
+      showToast('Programación de clase actualizada correctamente');
+    } else {
+      AcademicStore.addScheduleRule(ruleSubjectId, ruleData);
+      showToast('Nueva programación de clase registrada');
+    }
+
+    setShowScheduleRuleModal(false);
+  };
+
+  const handleDeleteScheduleRule = (subjectId: string, ruleId: string) => {
+    openConfirm({
+      title: 'Eliminar Programación',
+      message: '¿Está seguro de eliminar esta regla de programación? Las clases anteriores permanecerán intactas.',
+      confirmText: 'Sí, eliminar',
+      isDanger: true,
+      onConfirm: () => {
+        AcademicStore.deleteScheduleRule(subjectId, ruleId);
+        showToast('Regla de programación eliminada', 'warning');
+      }
+    });
+  };
 
   // Handlers for Modals
   const handleOpenSemesterModal = (sem?: AcademicSemester) => {
@@ -1040,6 +1259,28 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   General & Horarios
                 </button>
                 <button
+                  onClick={() => setSubjectSubTab('professors')}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    subjectSubTab === 'professors'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 text-purple-600" />
+                  Profesores ({currentExpandedSubject.professors?.length || 0})
+                </button>
+                <button
+                  onClick={() => setSubjectSubTab('schedules')}
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    subjectSubTab === 'schedules'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                  Programación ({currentExpandedSubject.schedules?.length || 0})
+                </button>
+                <button
                   onClick={() => setSubjectSubTab('cuts')}
                   className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
                     subjectSubTab === 'cuts'
@@ -1272,6 +1513,329 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 )}
               </div>
 
+            </div>
+          )}
+
+          {/* Sub Tab Content: Profesores */}
+          {subjectSubTab === 'professors' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-purple-700" />
+                      Profesores de la Materia ({currentExpandedSubject.professors?.length || 0})
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Registra a uno o múltiples docentes y conoce su asignación temporal o por período.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenProfessorModal(currentExpandedSubject.id)}
+                    className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-1.5 shadow-sm self-start sm:self-auto shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Registrar Profesor
+                  </button>
+                </div>
+
+                {(() => {
+                  const profList = AcademicCalculations.getProfessorsForSubject(currentExpandedSubject, todayStr);
+                  
+                  if (!profList || profList.length === 0) {
+                    return (
+                      <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                        <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs font-semibold text-slate-700">No hay profesores registrados para esta materia</p>
+                        <p className="text-[11px] text-slate-500 mt-1 max-w-md mx-auto">
+                          Una asignatura puede tener varios profesores asignados de forma simultánea o en distintos períodos.
+                        </p>
+                        <button
+                          onClick={() => handleOpenProfessorModal(currentExpandedSubject.id)}
+                          className="mt-3 px-3.5 py-1.5 text-xs font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200"
+                        >
+                          + Registrar primer profesor
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {profList.map(({ professor: prof, status, schedules: profScheds }) => {
+                        return (
+                          <div key={prof.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative hover:border-slate-300 transition-all">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-100 border border-purple-200 text-purple-900 font-bold flex items-center justify-center text-sm shrink-0">
+                                  {prof.title ? prof.title.substring(0, 3) : 'Prof'}
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                                    {prof.title ? `${prof.title} ` : ''}{prof.name}
+                                  </h4>
+                                  {prof.department && (
+                                    <span className="text-[11px] text-slate-500 font-medium block">
+                                      {prof.department}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => handleOpenProfessorModal(currentExpandedSubject.id, prof)}
+                                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg"
+                                  title="Editar profesor"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProfessor(currentExpandedSubject.id, prof.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-200 rounded-lg"
+                                  title="Eliminar profesor"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
+                              {status === 'active' && (
+                                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                                  <UserCheck className="w-3 h-3 text-emerald-600" />
+                                  Activo Actualmente
+                                </span>
+                              )}
+                              {status === 'previous' && (
+                                <span className="px-2.5 py-1 bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                                  <UserMinus className="w-3 h-3 text-slate-600" />
+                                  Profesor Anterior (Historial)
+                                </span>
+                              )}
+                              {status === 'upcoming' && (
+                                <span className="px-2.5 py-1 bg-purple-50 text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                                  <UserPlus className="w-3 h-3 text-purple-600" />
+                                  Próximo Profesor
+                                </span>
+                              )}
+                              {status === 'unassigned' && (
+                                <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                                  <Info className="w-3 h-3 text-amber-600" />
+                                  Sin Fechas Definidas
+                                </span>
+                              )}
+
+                              <span className="text-[11px] text-slate-500 font-medium ml-auto">
+                                {profScheds.length} {profScheds.length === 1 ? 'programación' : 'programaciones'}
+                              </span>
+                            </div>
+
+                            {/* Contact info & Notes */}
+                            <div className="space-y-1.5 text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100">
+                              {prof.email && (
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <a href={`mailto:${prof.email}`} className="text-purple-700 font-medium hover:underline truncate">
+                                    {prof.email}
+                                  </a>
+                                </div>
+                              )}
+                              {prof.phone && (
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{prof.phone}</span>
+                                </div>
+                              )}
+                              {prof.notes && (
+                                <p className="text-[11px] text-slate-600 italic mt-1 leading-relaxed border-t border-slate-100 pt-1">
+                                  "{prof.notes}"
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Sub Tab Content: Programación de Clases */}
+          {subjectSubTab === 'schedules' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-700" />
+                      Programación de Clases y Profesores ({currentExpandedSubject.schedules?.length || 0})
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Define reglas de recurrencia semanal, reemplazos temporales por período o clases especiales.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenScheduleRuleModal(currentExpandedSubject.id)}
+                    className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-1.5 shadow-sm self-start sm:self-auto shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Nueva Programación
+                  </button>
+                </div>
+
+                {(!currentExpandedSubject.schedules || currentExpandedSubject.schedules.length === 0) ? (
+                  <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-2">
+                    <Clock className="w-10 h-10 text-slate-300 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-700">No hay reglas de programación configuradas</p>
+                    <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                      Puedes separar conceptualmente a los profesores del calendario. Agrega una clase recurrente o asigna un profesor a un período específico.
+                    </p>
+                    <button
+                      onClick={() => handleOpenScheduleRuleModal(currentExpandedSubject.id)}
+                      className="mt-2 px-3.5 py-1.5 text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200"
+                    >
+                      + Configurar primera programación
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* List Schedule Rules */}
+                    <div className="grid grid-cols-1 gap-3">
+                      {currentExpandedSubject.schedules.map(rule => {
+                        const prof = currentExpandedSubject.professors?.find(p => p.id === rule.professorId);
+                        const displayProf = prof ? `${prof.title ? prof.title + ' ' : ''}${prof.name}` : rule.professorName || currentExpandedSubject.professor;
+
+                        return (
+                          <div key={rule.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-all">
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {rule.type === 'recurring' && (
+                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-900 font-bold rounded-md text-[11px]">
+                                    Recurrente Semanal
+                                  </span>
+                                )}
+                                {rule.type === 'period_override' && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-900 font-bold rounded-md text-[11px]">
+                                    Asignación por Período
+                                  </span>
+                                )}
+                                {rule.type === 'single_date' && (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold rounded-md text-[11px]">
+                                    Fecha Específica
+                                  </span>
+                                )}
+
+                                <span className="font-bold text-slate-900 flex items-center gap-1">
+                                  <User className="w-3.5 h-3.5 text-purple-600" /> Profesor: {displayProf}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-3 text-slate-700 flex-wrap pt-1 font-medium">
+                                {rule.type === 'recurring' && rule.daysOfWeek && (
+                                  <span>
+                                    <strong>Días:</strong> {rule.daysOfWeek.map(d => getDayOfWeekName(d)).join(', ')}
+                                  </span>
+                                )}
+                                {rule.type === 'single_date' && (
+                                  <span>
+                                    <strong>Fecha:</strong> {rule.date || rule.startDate}
+                                  </span>
+                                )}
+                                {(rule.type === 'recurring' || rule.type === 'single_date') && rule.startTime && (
+                                  <span className="font-mono text-purple-800 font-bold">
+                                    ⏰ {rule.startTime} - {rule.endTime}
+                                  </span>
+                                )}
+                                {rule.classroom && (
+                                  <span className="flex items-center gap-1 text-slate-600">
+                                    <MapPin className="w-3 h-3 text-slate-400" /> {rule.classroom}
+                                  </span>
+                                )}
+                                {rule.modality && (
+                                  <span className="px-2 py-0.2 bg-slate-200 text-slate-800 rounded font-semibold text-[10px] capitalize">
+                                    {rule.modality}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-[11px] text-slate-500 pt-0.5">
+                                📅 <strong>Vigencia:</strong> {rule.startDate} al {rule.endDate}
+                                {rule.notes && <span className="ml-2 text-slate-600 italic">• "{rule.notes}"</span>}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 self-end sm:self-center shrink-0">
+                              <button
+                                onClick={() => handleOpenScheduleRuleModal(currentExpandedSubject.id, rule)}
+                                className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg"
+                                title="Editar regla"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteScheduleRule(currentExpandedSubject.id, rule.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-200 rounded-lg"
+                                title="Eliminar regla"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Resolved Schedule Preview for Current Week */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Sparkles className="w-4 h-4 text-[#C5A059]" />
+                  Vista Previa de Clases Proyectadas para la Semana Actual
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {getWeekDaysForDate(todayStr).slice(0, 5).map(day => {
+                    const sessions = AcademicCalculations.getSessionsForSubjectAndDate(currentExpandedSubject, day.dateStr);
+
+                    return (
+                      <div key={day.dateStr} className={`p-3 rounded-xl border ${day.isToday ? 'bg-purple-50/50 border-purple-300' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="text-xs font-bold text-slate-900 flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+                          <span>{day.dayName}</span>
+                          <span className="font-mono text-[10px] text-slate-500">{day.dateStr.split('-').slice(1).join('/')}</span>
+                        </div>
+
+                        {sessions.length === 0 ? (
+                          <div className="text-[11px] text-slate-400 italic py-3 text-center">Sin clase</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {sessions.map(ses => (
+                              <div key={ses.id} className="p-2 bg-white rounded-lg border border-slate-200 shadow-2xs text-xs space-y-1">
+                                <div className="font-mono text-[11px] font-bold text-purple-900">
+                                  ⏰ {ses.startTime} - {ses.endTime}
+                                </div>
+                                <div className="font-bold text-slate-900 flex items-center gap-1 text-[11px]">
+                                  <User className="w-3 h-3 text-purple-600 shrink-0" />
+                                  <span className="truncate">{ses.professorTitle ? `${ses.professorTitle} ` : ''}{ses.professorName}</span>
+                                </div>
+                                {ses.classroom && (
+                                  <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                                    <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                                    <span>{ses.classroom}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -2377,6 +2941,361 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md"
                 >
                   Guardar Horario
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REGISTRAR / EDITAR PROFESOR */}
+      {showProfessorModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-700" />
+                {editingProfessor ? 'Editar Profesor' : 'Registrar Nuevo Profesor'}
+              </h3>
+              <button onClick={() => setShowProfessorModal(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfessor} className="space-y-4 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Título</label>
+                  <select
+                    value={profTitle}
+                    onChange={e => setProfTitle(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  >
+                    <option value="Dr.">Dr.</option>
+                    <option value="Dra.">Dra.</option>
+                    <option value="MSc.">MSc.</option>
+                    <option value="Ing.">Ing.</option>
+                    <option value="Lic.">Lic.</option>
+                    <option value="Prof.">Prof.</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Carlos Pérez"
+                    value={profName}
+                    onChange={e => setProfName(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    placeholder="docente@universidad.edu"
+                    value={profEmail}
+                    onChange={e => setProfEmail(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                  <input
+                    type="text"
+                    placeholder="+57 300 000 0000"
+                    value={profPhone}
+                    onChange={e => setProfPhone(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Departamento / Cátedra</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Departamento de Morfología"
+                  value={profDepartment}
+                  onChange={e => setProfDepartment(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Notas / Especialidad / Observaciones</label>
+                <textarea
+                  rows={2}
+                  placeholder="Especialidad, horario de atención o detalles del profesor..."
+                  value={profNotes}
+                  onChange={e => setProfNotes(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowProfessorModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md"
+                >
+                  Guardar Profesor
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REGISTRAR / EDITAR REGLA DE PROGRAMACIÓN DE CLASE */}
+      {showScheduleRuleModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-700" />
+                {editingScheduleRule ? 'Editar Programación' : 'Nueva Programación de Clase'}
+              </h3>
+              <button onClick={() => setShowScheduleRuleModal(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Conflict Warning Banner */}
+            {conflictWarning && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-start gap-2.5">
+                <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-bold">Conflicto Detectado:</strong>
+                  <span>{conflictWarning}</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveScheduleRule} className="space-y-4 text-xs">
+              {/* Rule Type Selector */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Tipo de Programación</label>
+                <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => { setRuleType('recurring'); setConflictWarning(null); }}
+                    className={`py-2 px-2 text-[11px] font-bold rounded-lg text-center transition-all ${
+                      ruleType === 'recurring' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Recurrente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRuleType('period_override'); setConflictWarning(null); }}
+                    className={`py-2 px-2 text-[11px] font-bold rounded-lg text-center transition-all ${
+                      ruleType === 'period_override' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Por Período
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRuleType('single_date'); setConflictWarning(null); }}
+                    className={`py-2 px-2 text-[11px] font-bold rounded-lg text-center transition-all ${
+                      ruleType === 'single_date' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Fecha Única
+                  </button>
+                </div>
+              </div>
+
+              {/* Professor Selection */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Profesor Asignado a esta Clase *</label>
+                <select
+                  value={ruleProfessorId}
+                  onChange={e => { setRuleProfessorId(e.target.value); setConflictWarning(null); }}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
+                  required
+                >
+                  <option value="">-- Selecciona Profesor --</option>
+                  {subjects.find(s => s.id === ruleSubjectId)?.professors?.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.title ? `${p.title} ` : ''}{p.name} {p.department ? `(${p.department})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {(!subjects.find(s => s.id === ruleSubjectId)?.professors || subjects.find(s => s.id === ruleSubjectId)?.professors?.length === 0) && (
+                  <p className="text-[11px] text-amber-700 mt-1">
+                    ⚠️ Esta materia no tiene profesores registrados. Primero registra los profesores en la pestaña "Profesores".
+                  </p>
+                )}
+              </div>
+
+              {/* Day of Week selection for Recurring */}
+              {ruleType === 'recurring' && (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1.5">Días de la Semana</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { num: 1, label: 'Lun' },
+                      { num: 2, label: 'Mar' },
+                      { num: 3, label: 'Mié' },
+                      { num: 4, label: 'Jue' },
+                      { num: 5, label: 'Vie' },
+                      { num: 6, label: 'Sáb' },
+                      { num: 7, label: 'Dom' },
+                    ].map(d => {
+                      const selected = ruleDaysOfWeek.includes(d.num);
+                      return (
+                        <button
+                          key={d.num}
+                          type="button"
+                          onClick={() => {
+                            setConflictWarning(null);
+                            if (selected) {
+                              if (ruleDaysOfWeek.length > 1) {
+                                setRuleDaysOfWeek(ruleDaysOfWeek.filter(x => x !== d.num));
+                              }
+                            } else {
+                              setRuleDaysOfWeek([...ruleDaysOfWeek, d.num]);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${
+                            selected
+                              ? 'bg-purple-900 text-white shadow-sm'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Date selection for Single Date */}
+              {ruleType === 'single_date' && (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Fecha Específica *</label>
+                  <input
+                    type="date"
+                    required
+                    value={ruleDate}
+                    onChange={e => { setRuleDate(e.target.value); setConflictWarning(null); }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                  />
+                </div>
+              )}
+
+              {/* Start & End Date Validity Period */}
+              {ruleType !== 'single_date' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Fecha Inicio Vigencia</label>
+                    <input
+                      type="date"
+                      value={ruleStartDate}
+                      onChange={e => { setRuleStartDate(e.target.value); setConflictWarning(null); }}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Fecha Fin Vigencia</label>
+                    <input
+                      type="date"
+                      value={ruleEndDate}
+                      onChange={e => { setRuleEndDate(e.target.value); setConflictWarning(null); }}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Hours */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Hora Inicio *</label>
+                  <input
+                    type="time"
+                    required
+                    value={ruleStartTime}
+                    onChange={e => { setRuleStartTime(e.target.value); setConflictWarning(null); }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Hora Fin *</label>
+                  <input
+                    type="time"
+                    required
+                    value={ruleEndTime}
+                    onChange={e => { setRuleEndTime(e.target.value); setConflictWarning(null); }}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Classroom & Modality */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Aula / Salón</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Aula 402, Lab 3"
+                    value={ruleClassroom}
+                    onChange={e => setRuleClassroom(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Modalidad</label>
+                  <select
+                    value={ruleModality}
+                    onChange={e => setRuleModality(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  >
+                    <option value="presencial">Presencial</option>
+                    <option value="virtual">Virtual</option>
+                    <option value="híbrido">Híbrido</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Observaciones / Motivo de Reemplazo</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Módulo de Embriología, Reemplazo por comisión médica..."
+                  value={ruleNotes}
+                  onChange={e => setRuleNotes(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleRuleModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md"
+                >
+                  Guardar Programación
                 </button>
               </div>
             </form>

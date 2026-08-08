@@ -285,12 +285,12 @@ export const AppointmentsSection: React.FC<Props> = ({ data, todayStr }) => {
             <ExecutiveCard key={apt.id} accentColor="rose" className="space-y-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-rose-500/20 rounded-xl text-rose-300 shrink-0">
+                  <div className="p-2 bg-rose-100 rounded-xl text-rose-700 shrink-0">
                     <Stethoscope className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-serif font-bold text-white text-base">{apt.title}</h4>
-                    <p className="text-xs text-rose-300 font-medium">Especialidad: {apt.specialty}</p>
+                    <h4 className="font-serif font-bold text-slate-900 text-base">{apt.title}</h4>
+                    <p className="text-xs text-rose-700 font-medium">Especialidad: {apt.specialty}</p>
                   </div>
                 </div>
 

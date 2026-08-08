@@ -134,12 +134,12 @@ export const NutritionSection: React.FC<Props> = ({ data, todayStr }) => {
 
       {/* SUMMARY BAR & MEAL LIST */}
       <div className="flex justify-between items-center text-xs px-1">
-        <h4 className="font-serif font-bold text-white text-sm uppercase tracking-wider">
+        <h4 className="font-serif font-bold text-slate-900 text-sm uppercase tracking-wider">
           Comidas de {selectedDate === todayStr ? 'Hoy' : selectedDate} ({records.length})
         </h4>
         {totalCalories > 0 && (
-          <span className="font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-full flex items-center gap-1">
-            <Flame className="w-3.5 h-3.5 text-orange-400" /> Total estimadas: {totalCalories} kcal
+          <span className="font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1">
+            <Flame className="w-3.5 h-3.5 text-orange-600" /> Total estimadas: {totalCalories} kcal
           </span>
         )}
       </div>
@@ -157,11 +157,11 @@ export const NutritionSection: React.FC<Props> = ({ data, todayStr }) => {
             <ExecutiveCard key={rec.id} accentColor="rose" className="space-y-2">
               <div className="flex justify-between items-start gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-emerald-500/20 rounded-lg">
+                  <div className="p-1.5 bg-emerald-100 rounded-lg">
                     {getMealIcon(rec.mealType)}
                   </div>
                   <div>
-                    <h5 className="font-serif font-bold text-white text-sm">{rec.mealType}</h5>
+                    <h5 className="font-serif font-bold text-slate-900 text-sm">{rec.mealType}</h5>
                     <span className="text-[10px] text-slate-500 font-mono">{rec.date}</span>
                   </div>
                 </div>

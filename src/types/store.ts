@@ -23,12 +23,56 @@ export interface SystemSettings {
 // -------------------------------------------------------------
 // OFICINA ACADÉMICA
 // -------------------------------------------------------------
+export interface SubjectProfessor {
+  id: string;
+  name: string;
+  title?: string; // e.g. "Dr.", "Dra.", "MSc.", "Prof."
+  email?: string;
+  phone?: string;
+  department?: string;
+  notes?: string;
+}
+
+export type AcademicScheduleType = 'recurring' | 'period_override' | 'single_date';
+
+export interface SubjectScheduleRule {
+  id: string;
+  subjectId: string;
+  professorId: string; // References SubjectProfessor.id or professor name
+  professorName?: string; // Cached display name
+  type: AcademicScheduleType;
+  
+  // For 'recurring'
+  daysOfWeek?: number[]; // 1 = Lunes, 2 = Martes, ..., 7 = Domingo
+  
+  // For 'recurring' and 'single_date'
+  startTime?: string; // "08:00"
+  endTime?: string;   // "10:00"
+  classroom?: string;
+  modality?: 'presencial' | 'virtual' | 'híbrido';
+  
+  // Date boundaries
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  
+  // For 'single_date'
+  date?: string; // YYYY-MM-DD
+  
+  // For 'period_override'
+  applyToScheduleId?: string; // Optional: specific rule ID to override, or empty/null for all schedules
+  
+  notes?: string;
+  createdAt?: string;
+}
+
 export interface AcademicSession {
   id: string;
   day: number; // 1 = Lunes, 7 = Domingo
   startTime: string; // "08:00"
   endTime: string;   // "10:00"
   classroom?: string;
+  professorId?: string;
+  professorName?: string;
 }
 
 export interface AcademicEvaluationActivity {
@@ -85,7 +129,7 @@ export interface AcademicSubject {
   id: string;
   semesterId: string;
   name: string;
-  professor: string;
+  professor: string; // Summary string e.g. "Dr. Pérez, Dra. Gómez"
   color: string;
   classroom?: string;
   group?: string;
@@ -93,6 +137,10 @@ export interface AcademicSubject {
   code?: string;
   description?: string;
   isActive?: boolean;
+  
+  professors?: SubjectProfessor[]; // Registered professors list
+  schedules?: SubjectScheduleRule[]; // Class schedule rules (recurring, period_override, single_date)
+  
   scheduleSessions: AcademicSession[];
   cuts: AcademicCut[];
   academicActivities?: AcademicActivity[];

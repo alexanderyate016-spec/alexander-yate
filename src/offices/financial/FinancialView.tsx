@@ -2438,7 +2438,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         const val = e.target.value;
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
                                       }}
-                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 focus:outline-none focus:border-emerald-500"
                                     >
                                       <option value="">-- Presupuesto --</option>
                                       {budgetOptions.map(b => (
@@ -2456,7 +2456,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
                                       }}
                                       disabled={!split.budgetId}
-                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                                     >
                                       <option value="">-- Categoría --</option>
                                       {cats.map(c => (
@@ -2474,7 +2474,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                         const val = Number(e.target.value) || 0;
                                         setTxSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
                                       }}
-                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
                                     />
                                   </div>
 
@@ -3696,7 +3696,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   const val = e.target.value;
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetId: val, budgetCategoryId: '' } : s));
                                 }}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 focus:outline-none focus:border-emerald-500"
                               >
                                 <option value="">-- Presupuesto --</option>
                                 {budgetOptions.map(b => (
@@ -3714,7 +3714,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, budgetCategoryId: catId, categoryName: catObj ? catObj.name : '' } : s));
                                 }}
                                 disabled={!split.budgetId}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                               >
                                 <option value="">-- Categoría --</option>
                                 {cats.map(c => (
@@ -3732,7 +3732,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                                   const val = Number(e.target.value) || 0;
                                   setEditSplits(prev => prev.map((s, i) => i === idx ? { ...s, amount: val } : s));
                                 }}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-white font-mono focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
                               />
                             </div>
 

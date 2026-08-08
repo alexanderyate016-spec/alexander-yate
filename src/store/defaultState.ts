@@ -174,8 +174,99 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
     },
     offices: {
       academica: {
-        semesters: [],
-        subjects: []
+        semesters: [
+          {
+            id: 'sem_2026_2',
+            name: 'Semestre 2026-II',
+            startDate: '2026-08-01',
+            endDate: '2026-11-30',
+            isActive: true
+          }
+        ],
+        subjects: [
+          {
+            id: 'sub_anat_01',
+            semesterId: 'sem_2026_2',
+            name: 'Anatomía Humana',
+            professor: 'Dr. Pérez, Dra. Gómez, Dr. Rodríguez',
+            color: '#8B5CF6',
+            classroom: 'Aula 201',
+            group: 'G1',
+            credits: 4,
+            code: 'MED-101',
+            description: 'Estudio de la estructura macroscópica del cuerpo humano.',
+            isActive: true,
+            professors: [
+              { id: 'prof_perez', name: 'Dr. Carlos Pérez', title: 'Dr.', email: 'cperez@univ.edu.co', department: 'Anatomía', notes: 'Especialista en sistema locomotor' },
+              { id: 'prof_gomez', name: 'Dra. María Gómez', title: 'Dra.', email: 'mgomez@univ.edu.co', department: 'Anatomía', notes: 'Especialista en neuroanatomía' },
+              { id: 'prof_rodriguez', name: 'Dr. Roberto Rodríguez', title: 'Dr.', email: 'rrodriguez@univ.edu.co', department: 'Anatomía', notes: 'Docente titular práctico' }
+            ],
+            schedules: [
+              {
+                id: 'sched_anat_wed',
+                subjectId: 'sub_anat_01',
+                professorId: 'prof_rodriguez',
+                professorName: 'Dr. Roberto Rodríguez',
+                type: 'recurring',
+                daysOfWeek: [3], // Miércoles
+                startTime: '08:00',
+                endTime: '10:00',
+                classroom: 'Aula 201',
+                modality: 'presencial',
+                startDate: '2026-08-12',
+                endDate: '2026-11-30',
+                notes: 'Clase magistral semanal'
+              },
+              {
+                id: 'sched_anat_mod1',
+                subjectId: 'sub_anat_01',
+                professorId: 'prof_perez',
+                professorName: 'Dr. Carlos Pérez',
+                type: 'period_override',
+                startDate: '2026-08-08',
+                endDate: '2026-08-29',
+                notes: 'Asume todas las clases del Módulo 1 (Sistema Locomotor)'
+              },
+              {
+                id: 'sched_anat_mod2',
+                subjectId: 'sub_anat_01',
+                professorId: 'prof_gomez',
+                professorName: 'Dra. María Gómez',
+                type: 'period_override',
+                startDate: '2026-08-30',
+                endDate: '2026-09-20',
+                notes: 'Asume todas las clases del Módulo 2 (Neuroanatomía)'
+              },
+              {
+                id: 'sched_anat_spec',
+                subjectId: 'sub_anat_01',
+                professorId: 'prof_perez',
+                professorName: 'Dr. Carlos Pérez',
+                type: 'single_date',
+                date: '2026-08-15',
+                startTime: '08:00',
+                endTime: '10:00',
+                classroom: 'Anfiteatro Central',
+                modality: 'presencial',
+                startDate: '2026-08-15',
+                endDate: '2026-08-15',
+                notes: 'Práctica especial de disección'
+              }
+            ],
+            scheduleSessions: [],
+            cuts: [
+              {
+                id: 'cut_anat_1',
+                cutName: 'Primer Corte (35%)',
+                cutWeightPercent: 35,
+                activities: [
+                  { id: 'act_parcial1', name: 'Parcial Locomotor', type: 'Parcial', date: '2026-08-28', time: '08:00', weightPercent: 60, status: 'pending' },
+                  { id: 'act_lab1', name: 'Laboratorio Disección', type: 'Laboratorio', date: '2026-08-21', time: '08:00', weightPercent: 40, status: 'pending' }
+                ]
+              }
+            ]
+          }
+        ]
       },
       vidaDiaria: {
         habits: [],

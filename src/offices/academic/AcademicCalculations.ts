@@ -1,4 +1,4 @@
-import { AcademicSubject, AcademicSemester, AcademicCut, AcademicEvaluationActivity } from '../../types/store';
+import { AcademicSubject, AcademicSemester, AcademicCut, AcademicEvaluationActivity, SubjectProfessor, SubjectScheduleRule } from '../../types/store';
 import { getDayOfWeekNumber } from '../../utils/dates';
 import { formatGrade } from '../../utils/formatters';
 
@@ -16,6 +16,24 @@ export interface EvaluationItem {
   grade?: number;
   status: 'pending' | 'graded' | 'cancelled';
   daysDiff: number; // 0 = today, 1 = tomorrow, etc.
+}
+
+export interface ResolvedAcademicSession {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  subjectColor: string;
+  classroom?: string;
+  modality?: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // "08:00"
+  endTime: string;   // "10:00"
+  professorId: string;
+  professorName: string;
+  professorTitle?: string;
+  scheduleId: string;
+  scheduleType: 'recurring' | 'period_override' | 'single_date' | 'legacy';
+  notes?: string;
 }
 
 export interface DistributionMetric {
@@ -411,20 +429,285 @@ export const AcademicCalculations = {
     return Math.min(100, Math.max(0, Math.round(progress)));
   },
 
-  getTodayClasses(subjects: AcademicSubject[], dateStr: string) {
+  /**
+   * Resolves sessions for a specific subject on a specific date (YYYY-MM-DD),
+   * taking into account recurring rules, period overrides, and single-date sessions.
+   */
+  getSessionsForSubjectAndDate(subject: AcademicSubject, dateStr: string): ResolvedAcademicSession[] {
     const dayNum = getDayOfWeekNumber(dateStr);
-    const result: Array<{ subject: AcademicSubject; session: any }> = [];
+    const schedules = subject.schedules || [];
+    const professors = subject.professors || [];
 
-    subjects.forEach(sub => {
-      sub.scheduleSessions?.forEach(ses => {
-        if (ses.day === dayNum) {
-          result.push({ subject: sub, session: ses });
+    // Helper to get professor info
+    const getProfInfo = (profId?: string, fallbackName?: string) => {
+      if (profId) {
+        const found = professors.find(p => p.id === profId || p.name === profId);
+        if (found) {
+          return {
+            id: found.id,
+            name: found.name,
+            title: found.title || ''
+          };
         }
+      }
+      return {
+        id: profId || 'prof_default',
+        name: fallbackName || subject.professor || 'Profesor por asignar',
+        title: ''
+      };
+    };
+
+    // 1. Find active period overrides for this subject on dateStr
+    const periodOverrides = schedules.filter(
+      s => s.type === 'period_override' && s.startDate <= dateStr && dateStr <= s.endDate
+    );
+    // Active period override if exists
+    const activeOverride = periodOverrides.length > 0 ? periodOverrides[periodOverrides.length - 1] : null;
+
+    const resolved: ResolvedAcademicSession[] = [];
+
+    // 2. Candidate rules for dateStr
+    // A) Single date rules on dateStr
+    const singleDateRules = schedules.filter(
+      s => s.type === 'single_date' && (s.date === dateStr || s.startDate === dateStr)
+    );
+
+    // B) Recurring rules covering dateStr and matching dayNum
+    const recurringRules = schedules.filter(
+      s => s.type === 'recurring' &&
+           s.startDate <= dateStr &&
+           dateStr <= s.endDate &&
+           s.daysOfWeek?.includes(dayNum)
+    );
+
+    // Process single date rules
+    singleDateRules.forEach(rule => {
+      const activeProf = activeOverride
+        ? getProfInfo(activeOverride.professorId, activeOverride.professorName)
+        : getProfInfo(rule.professorId, rule.professorName);
+
+      resolved.push({
+        id: `ses_sd_${subject.id}_${rule.id}_${dateStr}`,
+        subjectId: subject.id,
+        subjectName: subject.name,
+        subjectColor: subject.color || '#3B82F6',
+        classroom: rule.classroom || subject.classroom,
+        modality: rule.modality || 'presencial',
+        date: dateStr,
+        startTime: rule.startTime || '08:00',
+        endTime: rule.endTime || '10:00',
+        professorId: activeProf.id,
+        professorName: activeProf.name,
+        professorTitle: activeProf.title,
+        scheduleId: rule.id,
+        scheduleType: 'single_date',
+        notes: rule.notes
       });
     });
 
-    result.sort((a, b) => a.session.startTime.localeCompare(b.session.startTime));
-    return result;
+    // Process recurring rules
+    recurringRules.forEach(rule => {
+      // Check if active override applies specifically to this rule or all
+      const overrideForThisRule = activeOverride && (!activeOverride.applyToScheduleId || activeOverride.applyToScheduleId === rule.id)
+        ? activeOverride
+        : null;
+
+      const activeProf = overrideForThisRule
+        ? getProfInfo(overrideForThisRule.professorId, overrideForThisRule.professorName)
+        : getProfInfo(rule.professorId, rule.professorName);
+
+      resolved.push({
+        id: `ses_rec_${subject.id}_${rule.id}_${dateStr}`,
+        subjectId: subject.id,
+        subjectName: subject.name,
+        subjectColor: subject.color || '#3B82F6',
+        classroom: rule.classroom || subject.classroom,
+        modality: rule.modality || 'presencial',
+        date: dateStr,
+        startTime: rule.startTime || '08:00',
+        endTime: rule.endTime || '10:00',
+        professorId: activeProf.id,
+        professorName: activeProf.name,
+        professorTitle: activeProf.title,
+        scheduleId: rule.id,
+        scheduleType: activeOverride ? 'period_override' : 'recurring',
+        notes: rule.notes
+      });
+    });
+
+    // Fallback: If no schedules are defined in subject.schedules, check legacy scheduleSessions
+    if (schedules.length === 0 && subject.scheduleSessions && subject.scheduleSessions.length > 0) {
+      subject.scheduleSessions.forEach(ses => {
+        if (ses.day === dayNum) {
+          const profInfo = getProfInfo(ses.professorId, ses.professorName || subject.professor);
+          resolved.push({
+            id: `ses_leg_${subject.id}_${ses.id}_${dateStr}`,
+            subjectId: subject.id,
+            subjectName: subject.name,
+            subjectColor: subject.color || '#3B82F6',
+            classroom: ses.classroom || subject.classroom,
+            modality: 'presencial',
+            date: dateStr,
+            startTime: ses.startTime,
+            endTime: ses.endTime,
+            professorId: profInfo.id,
+            professorName: profInfo.name,
+            professorTitle: profInfo.title,
+            scheduleId: ses.id,
+            scheduleType: 'legacy'
+          });
+        }
+      });
+    }
+
+    return resolved;
+  },
+
+  /**
+   * Resolves all sessions across all subjects for a given date.
+   */
+  getAllSessionsForDate(subjects: AcademicSubject[], dateStr: string): ResolvedAcademicSession[] {
+    const allSessions: ResolvedAcademicSession[] = [];
+    (subjects || []).forEach(sub => {
+      const sessions = this.getSessionsForSubjectAndDate(sub, dateStr);
+      allSessions.push(...sessions);
+    });
+
+    allSessions.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return allSessions;
+  },
+
+  /**
+   * Categorizes professors for a subject into active, previous, and upcoming based on schedule rules and date ranges.
+   */
+  getProfessorsForSubject(subject: AcademicSubject, todayStr: string = new Date().toISOString().split('T')[0]) {
+    const professors = subject.professors || [];
+    const schedules = subject.schedules || [];
+
+    return professors.map(prof => {
+      const profSchedules = schedules.filter(s => s.professorId === prof.id || s.professorName === prof.name);
+
+      const isActive = profSchedules.some(s => {
+        if (s.type === 'single_date') return (s.date || s.startDate) === todayStr;
+        return s.startDate <= todayStr && todayStr <= s.endDate;
+      });
+
+      const isPast = profSchedules.length > 0 && profSchedules.every(s => {
+        if (s.type === 'single_date') return (s.date || s.startDate || '') < todayStr;
+        return s.endDate < todayStr;
+      });
+
+      const isUpcoming = profSchedules.length > 0 && profSchedules.some(s => {
+        if (s.type === 'single_date') return (s.date || s.startDate || '') > todayStr;
+        return s.startDate > todayStr;
+      });
+
+      let status: 'active' | 'previous' | 'upcoming' | 'unassigned' = 'unassigned';
+      if (isActive) status = 'active';
+      else if (isPast) status = 'previous';
+      else if (isUpcoming) status = 'upcoming';
+
+      return {
+        professor: prof,
+        status,
+        schedules: profSchedules
+      };
+    });
+  },
+
+  /**
+   * Checks for conflicts before adding/editing a schedule rule.
+   */
+  checkScheduleConflicts(
+    subject: AcademicSubject,
+    newRule: Partial<SubjectScheduleRule>,
+    allSubjects: AcademicSubject[] = []
+  ): { hasConflict: boolean; message?: string } {
+    const profId = newRule.professorId;
+    const profName = newRule.professorName || 'El profesor';
+
+    if (!profId) return { hasConflict: false };
+
+    // Check 1: Overlapping period_override in same subject
+    if (newRule.type === 'period_override' && newRule.startDate && newRule.endDate) {
+      const existingOverrides = (subject.schedules || []).filter(
+        s => s.id !== newRule.id && s.type === 'period_override'
+      );
+      for (const ex of existingOverrides) {
+        if (newRule.startDate <= ex.endDate && newRule.endDate >= ex.startDate) {
+          return {
+            hasConflict: true,
+            message: `Ya existe un reemplazo por período en esta materia que se superpone con las fechas seleccionadas (${ex.startDate} a ${ex.endDate}).`
+          };
+        }
+      }
+    }
+
+    // Check 2: Time slot overlap for recurring or single_date rules for same professor
+    if ((newRule.type === 'recurring' || newRule.type === 'single_date') && newRule.startTime && newRule.endTime) {
+      for (const sub of allSubjects) {
+        for (const s of (sub.schedules || [])) {
+          if (s.id === newRule.id) continue;
+          if (s.professorId !== profId) continue;
+          if (s.type === 'period_override') continue;
+
+          // Check date overlap
+          const datesOverlap = newRule.type === 'single_date' && s.type === 'single_date'
+            ? (newRule.date || newRule.startDate) === (s.date || s.startDate)
+            : ((newRule.startDate || '') <= s.endDate && (newRule.endDate || '') >= s.startDate);
+
+          if (!datesOverlap) continue;
+
+          // Check day of week overlap
+          let daysOverlap = false;
+          if (newRule.type === 'single_date' && s.type === 'single_date') {
+            daysOverlap = true;
+          } else if (newRule.daysOfWeek && s.daysOfWeek) {
+            daysOverlap = newRule.daysOfWeek.some(d => s.daysOfWeek!.includes(d));
+          }
+
+          if (!daysOverlap) continue;
+
+          // Check time overlap
+          if (s.startTime && s.endTime) {
+            if (newRule.startTime < s.endTime && newRule.endTime > s.startTime) {
+              return {
+                hasConflict: true,
+                message: `Conflicto de horario: ${profName} ya tiene una clase asignada en "${sub.name}" los mismos días de ${s.startTime} a ${s.endTime}.`
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return { hasConflict: false };
+  },
+
+  getTodayClasses(subjects: AcademicSubject[], dateStr: string) {
+    const resolvedSessions = this.getAllSessionsForDate(subjects, dateStr);
+    return resolvedSessions.map(ses => {
+      const subject = subjects.find(s => s.id === ses.subjectId) || {
+        id: ses.subjectId,
+        name: ses.subjectName,
+        color: ses.subjectColor,
+        professor: ses.professorName,
+        classroom: ses.classroom
+      } as AcademicSubject;
+
+      return {
+        subject,
+        session: {
+          id: ses.id,
+          day: getDayOfWeekNumber(dateStr),
+          startTime: ses.startTime,
+          endTime: ses.endTime,
+          classroom: ses.classroom,
+          professorId: ses.professorId,
+          professorName: ses.professorName
+        }
+      };
+    });
   },
 
   getUpcomingEvaluations(subjects: AcademicSubject[], limit: number = 5) {

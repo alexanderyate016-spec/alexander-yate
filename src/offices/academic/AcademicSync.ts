@@ -1,9 +1,9 @@
 import { AcademicOfficeData, UnifiedExecutiveEvent } from '../../types/store';
-import { getDayOfWeekNumber } from '../../utils/dates';
 import { checkColombianHoliday } from '../../utils/colombianHolidays';
+import { AcademicCalculations } from './AcademicCalculations';
 
 export const AcademicSync = {
-  // Horario = Actividades recurrentes (Clases semanales)
+  // Horario = Actividades recurrentes y programadas (Clases con profesor correspondiente)
   projectHorarioEvents(data: AcademicOfficeData, targetDateStr: string): UnifiedExecutiveEvent[] {
     // Check if targetDateStr is a national holiday
     if (checkColombianHoliday(targetDateStr).isHoliday) {
@@ -11,25 +11,21 @@ export const AcademicSync = {
     }
 
     const events: UnifiedExecutiveEvent[] = [];
-    const dayNum = getDayOfWeekNumber(targetDateStr);
+    const resolvedSessions = AcademicCalculations.getAllSessionsForDate(data?.subjects || [], targetDateStr);
 
-    (data?.subjects || []).forEach(sub => {
-      (sub?.scheduleSessions || []).forEach(ses => {
-        if (ses.day === dayNum) {
-          events.push({
-            id: `acad_cls_${sub.id}_${ses.id}_${targetDateStr}`,
-            sourceOffice: 'academica',
-            officeLabel: 'Oficina Académica',
-            color: sub.color || '#3B82F6',
-            title: `Clase: ${sub.name}`,
-            subtitle: `Prof: ${sub.professor} ${ses.classroom ? '| Aula: ' + ses.classroom : ''}`,
-            date: targetDateStr,
-            startTime: ses.startTime,
-            endTime: ses.endTime,
-            type: 'class',
-            rawObject: { subject: sub, session: ses }
-          });
-        }
+    resolvedSessions.forEach(ses => {
+      events.push({
+        id: `acad_cls_${ses.subjectId}_${ses.scheduleId}_${targetDateStr}_${ses.startTime}`,
+        sourceOffice: 'academica',
+        officeLabel: 'Oficina Académica',
+        color: ses.subjectColor || '#3B82F6',
+        title: `Clase: ${ses.subjectName}`,
+        subtitle: `Prof: ${ses.professorTitle ? ses.professorTitle + ' ' : ''}${ses.professorName}${ses.classroom ? ' | Aula: ' + ses.classroom : ''}${ses.modality ? ' (' + ses.modality + ')' : ''}`,
+        date: targetDateStr,
+        startTime: ses.startTime,
+        endTime: ses.endTime,
+        type: 'class',
+        rawObject: { subject: { id: ses.subjectId, name: ses.subjectName, color: ses.subjectColor, professor: ses.professorName, classroom: ses.classroom }, session: ses }
       });
     });
 

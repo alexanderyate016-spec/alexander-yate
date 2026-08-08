@@ -1,5 +1,5 @@
 import { storeInstance } from '../../store/CasaBlancaStore';
-import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession, AcademicActivity } from '../../types/store';
+import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession, AcademicActivity, SubjectProfessor, SubjectScheduleRule } from '../../types/store';
 
 export const AcademicStore = {
   getData(): AcademicOfficeData {
@@ -49,7 +49,14 @@ export const AcademicStore = {
   addSubject(subject: Omit<AcademicSubject, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-      draft.offices.academica.subjects.push({ ...subject, id });
+      draft.offices.academica.subjects.push({
+        professors: [],
+        schedules: [],
+        scheduleSessions: [],
+        cuts: [],
+        ...subject,
+        id
+      });
     });
   },
 
@@ -65,6 +72,84 @@ export const AcademicStore = {
   deleteSubject(subjectId: string) {
     storeInstance.updateState(draft => {
       draft.offices.academica.subjects = draft.offices.academica.subjects.filter(s => s.id !== subjectId);
+    });
+  },
+
+  // PROFESSORS FOR A SUBJECT
+  addProfessor(subjectId: string, professor: Omit<SubjectProfessor, 'id'>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub) {
+        if (!sub.professors) sub.professors = [];
+        const id = 'prof_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        sub.professors.push({ ...professor, id });
+        // Update professor summary string
+        sub.professor = sub.professors.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(', ');
+      }
+    });
+  },
+
+  updateProfessor(subjectId: string, professorId: string, updates: Partial<SubjectProfessor>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.professors) {
+        const idx = sub.professors.findIndex(p => p.id === professorId);
+        if (idx !== -1) {
+          sub.professors[idx] = { ...sub.professors[idx], ...updates };
+          sub.professor = sub.professors.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(', ');
+        }
+      }
+    });
+  },
+
+  deleteProfessor(subjectId: string, professorId: string) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.professors) {
+        sub.professors = sub.professors.filter(p => p.id !== professorId);
+        sub.professor = sub.professors.length > 0
+          ? sub.professors.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(', ')
+          : 'Por asignar';
+      }
+    });
+  },
+
+  // SCHEDULE RULES FOR A SUBJECT
+  addScheduleRule(subjectId: string, rule: Omit<SubjectScheduleRule, 'id' | 'subjectId'>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub) {
+        if (!sub.schedules) sub.schedules = [];
+        const id = 'sched_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        const newRule: SubjectScheduleRule = {
+          ...rule,
+          id,
+          subjectId,
+          createdAt: new Date().toISOString()
+        };
+        sub.schedules.push(newRule);
+      }
+    });
+  },
+
+  updateScheduleRule(subjectId: string, ruleId: string, updates: Partial<SubjectScheduleRule>) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.schedules) {
+        const idx = sub.schedules.findIndex(r => r.id === ruleId);
+        if (idx !== -1) {
+          sub.schedules[idx] = { ...sub.schedules[idx], ...updates };
+        }
+      }
+    });
+  },
+
+  deleteScheduleRule(subjectId: string, ruleId: string) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.schedules) {
+        sub.schedules = sub.schedules.filter(r => r.id !== ruleId);
+      }
     });
   },
 

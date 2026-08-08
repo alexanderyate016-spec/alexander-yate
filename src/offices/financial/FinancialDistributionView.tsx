@@ -394,7 +394,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 FinancialStore.setDistributionIncomeBaseMode(newMode);
                 triggerToast(`Origen de base cambiado a: ${newMode === 'manual' ? 'Manual' : 'Calculado desde movimientos'}`, 'info');
               }}
-              className="w-full bg-white text-xs font-semibold text-white p-2 rounded-lg border border-slate-200 focus:border-emerald-400 focus:outline-none"
+              className="w-full bg-white text-xs font-semibold text-slate-900 p-2 rounded-lg border border-slate-200 focus:border-emerald-400 focus:outline-none"
             >
               <option value="calculated">Calculada automáticamente desde movimientos</option>
               <option value="manual">Manual (Ingresar o modificar cifra)</option>
@@ -403,7 +403,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
             {mode === 'manual' ? (
               <div className="pt-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-amber-400">$</span>
+                  <span className="text-sm font-bold text-amber-600">$</span>
                   <input
                     type="number"
                     value={plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : ''}
@@ -411,7 +411,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       const val = e.target.value === '' ? undefined : Number(e.target.value);
                       FinancialStore.setDistributionBaseIncome(val);
                     }}
-                    className="w-full bg-transparent text-white font-serif font-bold text-base focus:outline-none border-b border-amber-200 focus:border-amber-400"
+                    className="w-full bg-transparent text-slate-900 font-serif font-bold text-base focus:outline-none border-b border-amber-300 focus:border-amber-500"
                     placeholder="Ingresa tu base de ingresos..."
                   />
                   {plan.monthlyBaseIncome !== undefined && (

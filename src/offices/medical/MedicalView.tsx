@@ -203,7 +203,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                   </span>
                   <span className="font-mono font-bold text-white">{wellnessIndex.sleepPct}%</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: `${wellnessIndex.sleepPct}%` }} className="bg-indigo-400 h-full rounded-full transition-all duration-500" />
                 </div>
                 <p className="text-[10px] text-indigo-200/80 font-mono">
@@ -218,7 +218,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                   </span>
                   <span className="font-mono font-bold text-white">100%</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: `100%` }} className="bg-emerald-400 h-full rounded-full" />
                 </div>
                 <p className="text-[10px] text-emerald-200/80 font-mono">
@@ -235,7 +235,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
                     {wellnessIndex.isLogCompleted ? '100%' : '50%'}
                   </span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden">
                   <div style={{ width: wellnessIndex.isLogCompleted ? '100%' : '50%' }} className="bg-rose-400 h-full rounded-full" />
                 </div>
                 <p className="text-[10px] text-rose-200/80 font-mono">
@@ -250,16 +250,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 1: HIDRATACIÓN BOTELLA */}
             <ExecutiveCard accentColor="blue" className="space-y-3 cursor-pointer hover:border-cyan-400 transition-all" onClick={() => setActiveTab('hydration')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-cyan-500/20 rounded-xl text-cyan-300">
+                <div className="p-2.5 bg-cyan-100 rounded-xl text-cyan-700">
                   <Droplet className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="blue">{metrics.hydrationPct}%</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Hidratación</span>
-                <p className="text-xl font-bold font-mono text-white">{metrics.hydrationLiters.toFixed(1)} L / {metrics.targetWater} L</p>
+                <p className="text-xl font-bold font-mono text-slate-900">{metrics.hydrationLiters.toFixed(1)} L / {metrics.targetWater} L</p>
               </div>
-              <div className="text-xs text-cyan-300 flex items-center justify-between pt-2 border-t border-cyan-500/20">
+              <div className="text-xs text-cyan-700 font-medium flex items-center justify-between pt-2 border-t border-cyan-100">
                 <span>Botella Inteligente</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -268,7 +268,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 2: SUEÑO */}
             <ExecutiveCard accentColor="indigo" className="space-y-3 cursor-pointer hover:border-indigo-400 transition-all" onClick={() => setActiveTab('sleep_weight')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-300">
+                <div className="p-2.5 bg-indigo-100 rounded-xl text-indigo-700">
                   <Moon className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="indigo">
@@ -277,9 +277,9 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Descanso Anoche</span>
-                <p className="text-xl font-bold font-mono text-white">{metrics.sleep !== null ? `${metrics.sleep} hrs` : 'Sin registro'}</p>
+                <p className="text-xl font-bold font-mono text-slate-900">{metrics.sleep !== null ? `${metrics.sleep} hrs` : 'Sin registro'}</p>
               </div>
-              <div className="text-xs text-indigo-300 flex items-center justify-between pt-2 border-t border-indigo-500/20">
+              <div className="text-xs text-indigo-700 font-medium flex items-center justify-between pt-2 border-t border-indigo-100">
                 <span>Promedio Semanal & Mensual</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -288,7 +288,7 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 3: PESO */}
             <ExecutiveCard accentColor="rose" className="space-y-3 cursor-pointer hover:border-rose-400 transition-all" onClick={() => setActiveTab('sleep_weight')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-rose-500/20 rounded-xl text-rose-300">
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-700">
                   <Scale className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="rose">
@@ -297,9 +297,9 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Peso Corporal</span>
-                <p className="text-xl font-bold font-mono text-white">{metrics.weight !== null ? `${metrics.weight} kg` : 'Sin registro'}</p>
+                <p className="text-xl font-bold font-mono text-slate-900">{metrics.weight !== null ? `${metrics.weight} kg` : 'Sin registro'}</p>
               </div>
-              <div className="text-xs text-rose-300 flex items-center justify-between pt-2 border-t border-rose-500/20">
+              <div className="text-xs text-rose-700 font-medium flex items-center justify-between pt-2 border-t border-rose-100">
                 <span>Evolución & Tendencia</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -308,16 +308,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 4: CARNET VACUNAS */}
             <ExecutiveCard accentColor="amber" className="space-y-3 cursor-pointer hover:border-amber-400 transition-all" onClick={() => setActiveTab('vaccines')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-300">
+                <div className="p-2.5 bg-amber-100 rounded-xl text-amber-700">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="amber">{(data.immunizations || []).length} Vacunas</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Carnet Digital</span>
-                <p className="text-xl font-bold text-white">Inmunización</p>
+                <p className="text-xl font-bold text-slate-900">Inmunización</p>
               </div>
-              <div className="text-xs text-amber-300 flex items-center justify-between pt-2 border-t border-amber-500/20">
+              <div className="text-xs text-amber-700 font-medium flex items-center justify-between pt-2 border-t border-amber-100">
                 <span>Ver Carnet & Refuerzos</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -326,16 +326,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 5: BOTIQUÍN / MEDICAMENTOS */}
             <ExecutiveCard accentColor="emerald" className="space-y-3 cursor-pointer hover:border-emerald-400 transition-all" onClick={() => setActiveTab('medications')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-300">
+                <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-700">
                   <Pill className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="emerald">{activeMedsCount} Activos</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Tratamientos</span>
-                <p className="text-xl font-bold text-white">Botiquín Médico</p>
+                <p className="text-xl font-bold text-slate-900">Botiquín Médico</p>
               </div>
-              <div className="text-xs text-emerald-300 flex items-center justify-between pt-2 border-t border-emerald-500/20">
+              <div className="text-xs text-emerald-700 font-medium flex items-center justify-between pt-2 border-t border-emerald-100">
                 <span>Gestionar Tomas</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -344,16 +344,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 6: CITAS MÉRICA */}
             <ExecutiveCard accentColor="rose" className="space-y-3 cursor-pointer hover:border-rose-400 transition-all" onClick={() => setActiveTab('appointments')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-rose-500/20 rounded-xl text-rose-300">
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-700">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="rose">{pendingAppointmentsCount} Pendientes</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Agenda Clínica</span>
-                <p className="text-xl font-bold text-white">Citas Médicas</p>
+                <p className="text-xl font-bold text-slate-900">Citas Médicas</p>
               </div>
-              <div className="text-xs text-rose-300 flex items-center justify-between pt-2 border-t border-rose-500/20">
+              <div className="text-xs text-rose-700 font-medium flex items-center justify-between pt-2 border-t border-rose-100">
                 <span>Agendar Citas</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -362,16 +362,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 7: NUTRITION */}
             <ExecutiveCard accentColor="emerald" className="space-y-3 cursor-pointer hover:border-emerald-400 transition-all" onClick={() => setActiveTab('nutrition')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-300">
+                <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-700">
                   <Utensils className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="emerald">Diario</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Nutrición</span>
-                <p className="text-xl font-bold text-white">Alimentación</p>
+                <p className="text-xl font-bold text-slate-900">Alimentación</p>
               </div>
-              <div className="text-xs text-emerald-300 flex items-center justify-between pt-2 border-t border-emerald-500/20">
+              <div className="text-xs text-emerald-700 font-medium flex items-center justify-between pt-2 border-t border-emerald-100">
                 <span>Registro de Comidas</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -380,16 +380,16 @@ export const MedicalView: React.FC<Props> = ({ data }) => {
             {/* CARD 8: EXÁMENES */}
             <ExecutiveCard accentColor="purple" className="space-y-3 cursor-pointer hover:border-purple-400 transition-all" onClick={() => setActiveTab('exams')}>
               <div className="flex justify-between items-start">
-                <div className="p-2.5 bg-purple-500/20 rounded-xl text-purple-300">
+                <div className="p-2.5 bg-purple-100 rounded-xl text-purple-700">
                   <FileText className="w-5 h-5" />
                 </div>
                 <ExecutiveBadge accentColor="purple">{pendingExamsCount} En espera</ExecutiveBadge>
               </div>
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-mono font-bold">Laboratorio</span>
-                <p className="text-xl font-bold text-white">Exámenes e Historial</p>
+                <p className="text-xl font-bold text-slate-900">Exámenes e Historial</p>
               </div>
-              <div className="text-xs text-purple-300 flex items-center justify-between pt-2 border-t border-purple-500/20">
+              <div className="text-xs text-purple-700 font-medium flex items-center justify-between pt-2 border-t border-purple-100">
                 <span>Informes & Enfermedades</span>
                 <ChevronRight className="w-4 h-4" />
               </div>

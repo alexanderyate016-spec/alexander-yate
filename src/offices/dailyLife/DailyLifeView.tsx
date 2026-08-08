@@ -892,7 +892,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                               <Check className="w-4 h-4 stroke-[3]" />
                             </button>
                             <div>
-                              <span className={`text-xs font-bold block ${isCheckedToday ? 'line-through text-slate-500' : 'text-white'}`}>
+                              <span className={`text-xs font-bold block ${isCheckedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                                 {h.name}
                               </span>
                               <span className="text-[10px] text-slate-500">Diario</span>
@@ -909,7 +909,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
               {/* OBJETIVOS RÁPIDOS */}
               <GlassPanel accentColor="amber" padding="md">
-                <h3 className="text-base font-serif font-bold text-white mb-3 flex items-center gap-2">
+                <h3 className="text-base font-serif font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <Target className="w-5 h-5 text-amber-400" />
                   Objetivos Rápidos del Día
                 </h3>
@@ -920,7 +920,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   ) : (
                     data.objectives.map(o => (
                       <div key={o.id} className="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                        <span className={`text-xs font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-white'}`}>
+                        <span className={`text-xs font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                           {o.title}
                         </span>
                         <button
@@ -956,7 +956,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   </ExecutiveBadge>
                   <span className="text-xs font-mono text-slate-500">{unifiedHistory.length} días almacenados</span>
                 </div>
-                <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+                <h3 className="text-xl font-serif font-bold text-slate-900 flex items-center gap-2">
                   <History className="w-6 h-6 text-amber-400" />
                   Historial Diario de Desempeño
                 </h3>
@@ -1043,7 +1043,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-base font-bold text-white capitalize">{record.dayOfWeek}</span>
+                            <span className="text-base font-bold text-slate-900 capitalize">{record.dayOfWeek}</span>
                             {isTodayRecord && (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/30">
                                 Hoy
@@ -1065,28 +1065,28 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
                           <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
                             <span className="text-[9px] uppercase text-slate-500 block font-bold">Hábitos</span>
-                            <span className="text-xs font-mono font-bold text-amber-300">
+                            <span className="text-xs font-mono font-bold text-amber-700">
                               {record.habitsCount.percent}% ({record.habitsCount.completed}/{record.habitsCount.total})
                             </span>
                           </div>
 
                           <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
                             <span className="text-[9px] uppercase text-slate-500 block font-bold">Objetivos</span>
-                            <span className="text-xs font-mono font-bold text-purple-300">
+                            <span className="text-xs font-mono font-bold text-purple-700">
                               {record.objectivesCount.percent}% ({record.objectivesCount.completed}/{record.objectivesCount.total})
                             </span>
                           </div>
 
                           <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
                             <span className="text-[9px] uppercase text-slate-500 block font-bold">Tareas</span>
-                            <span className="text-xs font-mono font-bold text-emerald-300">
+                            <span className="text-xs font-mono font-bold text-emerald-700">
                               {record.tasksCount.percent}% ({record.tasksCount.completed}/{record.tasksCount.total})
                             </span>
                           </div>
 
                           <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
                             <span className="text-[9px] uppercase text-slate-500 block font-bold">T. Productivo</span>
-                            <span className="text-xs font-mono font-bold text-blue-300">{formattedProdTime}</span>
+                            <span className="text-xs font-mono font-bold text-blue-700">{formattedProdTime}</span>
                           </div>
                         </div>
 
@@ -1123,7 +1123,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                     <GlassPanel key={group.key} accentColor="amber" padding="md" className="space-y-4">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-3 border-b border-slate-200">
                         <div>
-                          <h4 className="text-lg font-serif font-bold text-white flex items-center gap-2">
+                          <h4 className="text-lg font-serif font-bold text-slate-900 flex items-center gap-2">
                             <CalendarDays className="w-5 h-5 text-amber-400" />
                             {group.title}
                           </h4>
@@ -1158,7 +1158,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                             className="p-3 bg-white/70 border border-slate-100 rounded-xl flex items-center justify-between hover:border-purple-300/30 transition-all"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-white">{rec.dayOfWeek}</span>
+                              <span className="text-xs font-bold text-slate-900">{rec.dayOfWeek}</span>
                               <span className="text-xs font-mono text-slate-500">({rec.date})</span>
                             </div>
 
@@ -1229,7 +1229,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                         <Check className="w-5 h-5 stroke-[3]" />
                       </button>
                       <div>
-                        <h4 className={`text-sm font-bold ${isCheckedToday ? 'line-through text-slate-500' : 'text-white'}`}>
+                        <h4 className={`text-sm font-bold ${isCheckedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                           {h.name}
                         </h4>
                         <span className="text-[10px] text-slate-500 font-mono">Frecuencia: Diaria</span>
@@ -1265,8 +1265,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       {activeTab === 'timePlan' && (
         <div className="space-y-6">
           <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
               Programar Bloque de Tiempo
             </h3>
 
@@ -1324,12 +1324,12 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
               <GlassPanel key={p.id} accentColor="amber" padding="md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-500/20 rounded-xl border border-amber-400/30 text-amber-300">
+                    <div className="p-2 bg-amber-500/20 rounded-xl border border-amber-400/30 text-amber-700">
                       <Clock className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">{p.title}</h4>
-                      <span className="text-xs font-mono text-amber-400">
+                      <h4 className="text-sm font-bold text-slate-900">{p.title}</h4>
+                      <span className="text-xs font-mono text-amber-700">
                         {p.startTime} - {p.endTime} ({p.durationMinutes} min) • Categoría: {p.category}
                       </span>
                     </div>
@@ -1352,8 +1352,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       {activeTab === 'tasks' && (
         <div className="space-y-6">
           <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <CheckSquare className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-amber-500" />
               Nueva Tarea Cotidiana
             </h3>
 
@@ -1363,14 +1363,14 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 placeholder="Nombre de la tarea cotidiana..."
                 value={newTaskName}
                 onChange={e => setNewTaskName(e.target.value)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600 sm:col-span-2"
+                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600 sm:col-span-2"
                 required
               />
 
               <select
                 value={newTaskPriority}
                 onChange={e => setNewTaskPriority(e.target.value as any)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
               >
                 <option value="low">Prioridad Baja</option>
                 <option value="medium">Prioridad Media</option>
@@ -1401,7 +1401,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                       <Check className="w-4 h-4 stroke-[3]" />
                     </button>
                     <div>
-                      <h4 className={`text-sm font-bold ${t.status === 'completed' ? 'line-through text-slate-500' : 'text-white'}`}>
+                      <h4 className={`text-sm font-bold ${t.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                         {t.name}
                       </h4>
                       <span className="text-[10px] text-slate-500 font-mono">Prioridad: {t.priority}</span>
@@ -1425,8 +1425,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       {activeTab === 'objectives' && (
         <div className="space-y-6">
           <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5 text-amber-500" />
               Fijar Nuevo Objetivo para Hoy
             </h3>
 
@@ -1436,7 +1436,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 placeholder="Título del objetivo del día (Ej. Entregar reporte, Estudiar tema 4)..."
                 value={objTitle}
                 onChange={e => setObjTitle(e.target.value)}
-                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
                 required
               />
               <ExecutiveButton variant="primary" accentColor="amber" type="submit">
@@ -1461,7 +1461,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                       <Check className="w-4 h-4 stroke-[3]" />
                     </button>
                     <div>
-                      <h4 className={`text-sm font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-white'}`}>
+                      <h4 className={`text-sm font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                         {o.title}
                       </h4>
                       <span className="text-[10px] text-slate-500 font-mono">Estado: {o.status === 'completed' ? 'Completado' : 'Pendiente'}</span>
@@ -1485,8 +1485,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       {activeTab === 'routines' && (
         <div className="space-y-6">
           <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-500" />
               Crear Nueva Rutina
             </h3>
 
@@ -1497,13 +1497,13 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   placeholder="Nombre de la rutina (Ej. Rutina Mañanera)..."
                   value={rtnTitle}
                   onChange={e => setRtnTitle(e.target.value)}
-                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
                   required
                 />
                 <select
                   value={rtnTimeOfDay}
                   onChange={e => setRtnTimeOfDay(e.target.value as any)}
-                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
                 >
                   <option value="morning">🌅 Mañana</option>
                   <option value="afternoon">☀️ Tarde</option>
@@ -1517,7 +1517,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   placeholder="Agregar un paso (Ej. Estiramiento, Ducha)..."
                   value={rtnStepInput}
                   onChange={e => setRtnStepInput(e.target.value)}
-                  className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-white focus:outline-none focus:border-purple-600"
+                  className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
                 />
                 <ExecutiveButton
                   variant="outline"
@@ -1537,12 +1537,12 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
               {rtnSteps.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {rtnSteps.map((step, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-xs font-mono border border-amber-400/30 flex items-center gap-1.5">
+                    <span key={idx} className="px-2.5 py-1 bg-amber-500/20 text-amber-800 rounded-lg text-xs font-mono border border-amber-400/30 flex items-center gap-1.5">
                       {step}
                       <button
                         type="button"
                         onClick={() => setRtnSteps(prev => prev.filter((_, i) => i !== idx))}
-                        className="text-amber-400 hover:text-slate-900"
+                        className="text-amber-800 hover:text-slate-900"
                       >
                         ×
                       </button>
@@ -1563,8 +1563,8 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
             {data.routines.map(r => (
               <GlassPanel key={r.id} accentColor="amber" padding="md">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-500" />
                     {r.name} <span className="text-xs font-mono text-slate-500">({r.timeOfDay})</span>
                   </h4>
                   <button
@@ -1578,7 +1578,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 <div className="space-y-2">
                   {(r.steps || []).map(step => (
                     <div key={step.id} className="p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                      <span className={`text-xs ${step.completedToday ? 'line-through text-slate-500' : 'text-white'}`}>
+                      <span className={`text-xs ${step.completedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
                         {step.title}
                       </span>
                       <button
@@ -1606,22 +1606,22 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
           title={`Detalle Histórico: ${selectedHistoryRecord.dayOfWeek}`}
           accentColor="amber"
         >
-          <div className="space-y-6 py-2 text-slate-100">
+          <div className="space-y-6 py-2 text-slate-900">
             <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700">Fecha del Registro:</span>
-                <span className="text-xs font-mono text-amber-400 font-bold">{selectedHistoryRecord.date}</span>
+                <span className="text-xs font-mono text-amber-700 font-bold">{selectedHistoryRecord.date}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700">Cumplimiento General:</span>
-                <span className="text-sm font-mono font-bold text-emerald-400">{selectedHistoryRecord.overallCompliancePercent}%</span>
+                <span className="text-sm font-mono font-bold text-emerald-700">{selectedHistoryRecord.overallCompliancePercent}%</span>
               </div>
               <AnimatedProgressBar percent={selectedHistoryRecord.overallCompliancePercent} color="emerald" height="h-3" />
             </div>
 
             {/* SECCIÓN HÁBITOS DEL DÍA */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-2">
                 <Flame className="w-4 h-4" />
                 Hábitos en este día ({selectedHistoryRecord.habitsCount.completed}/{selectedHistoryRecord.habitsCount.total})
               </h4>
@@ -1631,15 +1631,15 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 <div className="space-y-1.5">
                   {selectedHistoryRecord.habitsDetail.map(h => (
                     <div key={h.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
-                      <span className={`text-xs font-bold ${h.completed ? 'text-white' : 'text-slate-500 line-through'}`}>
+                      <span className={`text-xs font-bold ${h.completed ? 'text-slate-900' : 'text-slate-500 line-through'}`}>
                         {h.name}
                       </span>
                       {h.completed ? (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Completado
                         </span>
                       ) : (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                           <XCircle className="w-3 h-3" /> Pendiente
                         </span>
                       )}
@@ -1651,7 +1651,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
             {/* SECCIÓN TAREAS DEL DÍA */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-2">
                 <CheckSquare className="w-4 h-4" />
                 Tareas en este día ({selectedHistoryRecord.tasksCount.completed}/{selectedHistoryRecord.tasksCount.total})
               </h4>
@@ -1662,7 +1662,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                   {selectedHistoryRecord.tasksDetail.map(t => (
                     <div key={t.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
                       <div>
-                        <span className={`text-xs font-bold ${t.completed ? 'text-white' : 'text-slate-500'}`}>{t.name}</span>
+                        <span className={`text-xs font-bold ${t.completed ? 'text-slate-900' : 'text-slate-500'}`}>{t.name}</span>
                         {t.category && <span className="text-[10px] text-slate-500 block font-mono">{t.category}</span>}
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
@@ -1678,7 +1678,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
             {/* SECCIÓN OBJETIVOS DEL DÍA */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-2">
                 <Target className="w-4 h-4" />
                 Objetivos del día ({selectedHistoryRecord.objectivesCount.completed}/{selectedHistoryRecord.objectivesCount.total})
               </h4>
@@ -1688,7 +1688,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 <div className="space-y-1.5">
                   {selectedHistoryRecord.objectivesDetail.map(o => (
                     <div key={o.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{o.name}</span>
+                      <span className="text-xs font-bold text-slate-900">{o.name}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
                         o.completed ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-500'
                       }`}>
@@ -1719,15 +1719,15 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
         >
           <div className="space-y-4 py-2">
             <p className="text-xs text-slate-700 leading-relaxed">
-              Detectamos un espacio de <strong className="text-amber-400">{selectedFreeGap.durationMinutes} minutos libre</strong> ({selectedFreeGap.startTime} - {selectedFreeGap.endTime}). ¿Cómo deseas optimizar este tiempo?
+              Detectamos un espacio de <strong className="text-amber-700">{selectedFreeGap.durationMinutes} minutos libre</strong> ({selectedFreeGap.startTime} - {selectedFreeGap.endTime}). ¿Cómo deseas optimizar este tiempo?
             </p>
 
             <div className="space-y-2">
               <button
                 onClick={() => handleConfirmFreeGapAction('study')}
-                className="w-full p-3.5 bg-white hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-left text-xs text-white font-bold flex items-center gap-3 transition-all cursor-pointer"
+                className="w-full p-3.5 bg-white hover:bg-amber-50/80 border border-amber-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
               >
-                <BookOpen className="w-5 h-5 text-amber-400 shrink-0" />
+                <BookOpen className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>
                   <span className="block text-sm">📚 Programar Sesión de Estudio / Lectura</span>
                   <span className="text-[11px] text-slate-500 font-normal">Crear bloque de estudio intensivo de {Math.min(selectedFreeGap.durationMinutes, 60)}m</span>
@@ -1736,9 +1736,9 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
               <button
                 onClick={() => handleConfirmFreeGapAction('task')}
-                className="w-full p-3.5 bg-white hover:bg-purple-500/20 border border-purple-500/30 rounded-xl text-left text-xs text-white font-bold flex items-center gap-3 transition-all cursor-pointer"
+                className="w-full p-3.5 bg-white hover:bg-purple-50/80 border border-purple-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
               >
-                <CheckSquare className="w-5 h-5 text-purple-400 shrink-0" />
+                <CheckSquare className="w-5 h-5 text-purple-600 shrink-0" />
                 <div>
                   <span className="block text-sm">✅ Completar Tarea Pendiente</span>
                   <span className="text-[11px] text-slate-500 font-normal">Asignar este bloque a la primera tarea pendiente de tu lista</span>
@@ -1747,9 +1747,9 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
               <button
                 onClick={() => handleConfirmFreeGapAction('rest')}
-                className="w-full p-3.5 bg-white hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-left text-xs text-white font-bold flex items-center gap-3 transition-all cursor-pointer"
+                className="w-full p-3.5 bg-white hover:bg-emerald-50/80 border border-emerald-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
               >
-                <Coffee className="w-5 h-5 text-emerald-400 shrink-0" />
+                <Coffee className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
                   <span className="block text-sm">☕ Pausa de Descanso y Recuperación</span>
                   <span className="text-[11px] text-slate-500 font-normal">Programar descanso estructurado de {selectedFreeGap.durationMinutes}m</span>

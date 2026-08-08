@@ -298,40 +298,40 @@ export const VaccinePassportSection: React.FC<Props> = ({ data, todayStr }) => {
                 {/* DETAILS GRID */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-sans">
                   {vac.lastApplicationDate && (
-                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-500 block font-mono">Última Aplicación</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">Última Aplicación</span>
                         <span className="font-bold text-white">{vac.lastApplicationDate}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.locationApplied && (
-                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-500 block font-mono">Lugar</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">Lugar</span>
                         <span className="font-bold text-white truncate max-w-[120px] block">{vac.locationApplied}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.manufacturer && (
-                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Building className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-500 block font-mono">Fabricante</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">Fabricante</span>
                         <span className="font-bold text-white">{vac.manufacturer}</span>
                       </div>
                     </div>
                   )}
 
                   {vac.batchNumber && (
-                    <div className="flex items-center gap-1.5 text-slate-700 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
+                    <div className="flex items-center gap-1.5 text-slate-300 bg-[#0F0803] p-2 rounded-lg border border-amber-500/15">
                       <Tag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <div>
-                        <span className="text-[10px] text-slate-500 block font-mono">Lote</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">Lote</span>
                         <span className="font-bold text-white font-mono">{vac.batchNumber}</span>
                       </div>
                     </div>
