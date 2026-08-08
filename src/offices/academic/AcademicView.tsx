@@ -52,6 +52,7 @@ import {
   Users,
   UserCheck,
   UserPlus,
+  UserMinus,
   ShieldAlert,
   Info,
   ChevronRight,
@@ -519,7 +520,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     setConflictWarning(null);
 
     const sub = subjects.find(s => s.id === subjectId);
-    const activeSem = activeSemester;
+    const activeSem = currentSemester;
     const defaultStart = activeSem?.startDate || todayStr;
     const defaultEnd = activeSem?.endDate || '';
 
@@ -1804,7 +1805,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     return (
                       <div key={day.dateStr} className={`p-3 rounded-xl border ${day.isToday ? 'bg-purple-50/50 border-purple-300' : 'bg-slate-50 border-slate-200'}`}>
                         <div className="text-xs font-bold text-slate-900 flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
-                          <span>{day.dayName}</span>
+                          <span>{day.dayShort}</span>
                           <span className="font-mono text-[10px] text-slate-500">{day.dateStr.split('-').slice(1).join('/')}</span>
                         </div>
 
