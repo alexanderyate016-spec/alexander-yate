@@ -233,6 +233,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [ruleSubjectId, setRuleSubjectId] = useState('');
   const [ruleType, setRuleType] = useState<AcademicScheduleType>('recurring');
   const [ruleProfessorId, setRuleProfessorId] = useState('');
+  const [ruleProfessorIds, setRuleProfessorIds] = useState<string[]>([]);
   const [ruleDaysOfWeek, setRuleDaysOfWeek] = useState<number[]>([1]);
   const [ruleStartTime, setRuleStartTime] = useState('08:00');
   const [ruleEndTime, setRuleEndTime] = useState('10:00');
@@ -528,6 +529,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setEditingScheduleRule(rule);
       setRuleType(rule.type);
       setRuleProfessorId(rule.professorId);
+      const profIds = rule.professorIds && rule.professorIds.length > 0
+        ? rule.professorIds
+        : (rule.professorId ? [rule.professorId] : []);
+      setRuleProfessorIds(profIds);
       setRuleDaysOfWeek(rule.daysOfWeek || [1]);
       setRuleStartTime(rule.startTime || '08:00');
       setRuleEndTime(rule.endTime || '10:00');
@@ -543,6 +548,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setRuleType('recurring');
       const firstProf = sub?.professors && sub.professors.length > 0 ? sub.professors[0].id : '';
       setRuleProfessorId(firstProf);
+      setRuleProfessorIds(firstProf ? [firstProf] : []);
       setRuleDaysOfWeek([1]);
       setRuleStartTime('08:00');
       setRuleEndTime('10:00');
@@ -564,18 +570,25 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     const sub = subjects.find(s => s.id === ruleSubjectId);
     if (!sub) return;
 
-    if (!ruleProfessorId) {
-      showToast('Por favor seleccione el profesor asignado a este horario', 'warning');
+    if (ruleProfessorIds.length === 0 && !ruleProfessorId) {
+      showToast('Por favor seleccione al menos un profesor para esta clase', 'warning');
       return;
     }
 
-    const selectedProf = sub.professors?.find(p => p.id === ruleProfessorId);
-    const profName = selectedProf ? `${selectedProf.title ? selectedProf.title + ' ' : ''}${selectedProf.name}` : sub.professor;
+    const selectedProfs = sub.professors?.filter(p => ruleProfessorIds.includes(p.id)) || [];
+    const primaryProfId = ruleProfessorIds[0] || ruleProfessorId;
+    const primaryProf = sub.professors?.find(p => p.id === primaryProfId);
+
+    const profNames = selectedProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`);
+    const primaryProfName = primaryProf ? `${primaryProf.title ? primaryProf.title + ' ' : ''}${primaryProf.name}` : sub.professor;
+    const combinedProfName = profNames.length > 0 ? profNames.join(' + ') : primaryProfName;
 
     const ruleData: Omit<SubjectScheduleRule, 'id' | 'subjectId'> = {
       type: ruleType,
-      professorId: ruleProfessorId,
-      professorName: profName,
+      professorId: primaryProfId,
+      professorName: combinedProfName,
+      professorIds: ruleProfessorIds.length > 0 ? ruleProfessorIds : [primaryProfId],
+      professorNames: profNames,
       startTime: ruleStartTime,
       endTime: ruleEndTime,
       classroom: ruleClassroom.trim() || sub.classroom,
@@ -1818,9 +1831,20 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                 <div className="font-mono text-[11px] font-bold text-purple-900">
                                   ⏰ {ses.startTime} - {ses.endTime}
                                 </div>
-                                <div className="font-bold text-slate-900 flex items-center gap-1 text-[11px]">
-                                  <User className="w-3 h-3 text-purple-600 shrink-0" />
-                                  <span className="truncate">{ses.professorTitle ? `${ses.professorTitle} ` : ''}{ses.professorName}</span>
+                                <div className="space-y-0.5 pt-0.5">
+                                  {ses.professors && ses.professors.length > 0 ? (
+                                    ses.professors.map(p => (
+                                      <div key={p.id} className="font-bold text-slate-900 flex items-center gap-1 text-[11px]">
+                                        <User className="w-3 h-3 text-purple-600 shrink-0" />
+                                        <span className="truncate">{p.title ? `${p.title} ` : ''}{p.name}</span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="font-bold text-slate-900 flex items-center gap-1 text-[11px]">
+                                      <User className="w-3 h-3 text-purple-600 shrink-0" />
+                                      <span className="truncate">{ses.professorTitle ? `${ses.professorTitle} ` : ''}{ses.professorName}</span>
+                                    </div>
+                                  )}
                                 </div>
                                 {ses.classroom && (
                                   <div className="text-[10px] text-slate-500 flex items-center gap-1">
@@ -3263,25 +3287,60 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               {/* Professor Selection */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Profesor Asignado a esta Clase *</label>
-                <select
-                  value={ruleProfessorId}
-                  onChange={e => { setRuleProfessorId(e.target.value); setConflictWarning(null); }}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold"
-                  required
-                >
-                  <option value="">-- Selecciona Profesor --</option>
-                  {subjects.find(s => s.id === ruleSubjectId)?.professors?.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.title ? `${p.title} ` : ''}{p.name} {p.department ? `(${p.department})` : ''}
-                    </option>
-                  ))}
-                </select>
-                {(!subjects.find(s => s.id === ruleSubjectId)?.professors || subjects.find(s => s.id === ruleSubjectId)?.professors?.length === 0) && (
-                  <p className="text-[11px] text-amber-700 mt-1">
-                    ⚠️ Esta materia no tiene profesores registrados. Primero registra los profesores en la pestaña "Profesores".
-                  </p>
-                )}
+                <label className="font-bold text-slate-700 block mb-1">
+                  Profesor(es) Asignado(s) a esta Clase *
+                  <span className="font-normal text-[11px] text-slate-500 block">
+                    Puedes seleccionar más de un profesor para clases compartidas o co-docencia
+                  </span>
+                </label>
+
+                {(() => {
+                  const targetSub = subjects.find(s => s.id === ruleSubjectId);
+                  const subProfs = targetSub?.professors || [];
+
+                  if (subProfs.length === 0) {
+                    return (
+                      <p className="text-[11px] text-amber-700 p-2 bg-amber-50 rounded-xl border border-amber-200">
+                        ⚠️ Esta materia no tiene profesores registrados. Primero registra los profesores en la pestaña "Profesores".
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl max-h-40 overflow-y-auto">
+                      {subProfs.map(p => {
+                        const isSelected = ruleProfessorIds.includes(p.id);
+                        return (
+                          <label key={p.id} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-xs ${isSelected ? 'bg-purple-100/70 border border-purple-200 font-bold text-purple-950' : 'hover:bg-slate-100 text-slate-800'}`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={e => {
+                                setConflictWarning(null);
+                                if (e.target.checked) {
+                                  const updated = [...ruleProfessorIds, p.id];
+                                  setRuleProfessorIds(updated);
+                                  setRuleProfessorId(updated[0]);
+                                } else {
+                                  const updated = ruleProfessorIds.filter(id => id !== p.id);
+                                  setRuleProfessorIds(updated);
+                                  setRuleProfessorId(updated[0] || '');
+                                }
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                            />
+                            <div className="flex-1 flex items-center justify-between">
+                              <span>{p.title ? `${p.title} ` : ''}{p.name}</span>
+                              {p.department && (
+                                <span className="text-[10px] text-slate-500 font-normal">({p.department})</span>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Day of Week selection for Recurring */}
