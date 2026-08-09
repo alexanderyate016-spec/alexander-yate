@@ -582,8 +582,8 @@ export const AcademicCalculations = {
     // Active period override if exists
     const activeOverride = periodOverrides.length > 0 ? periodOverrides[periodOverrides.length - 1] : null;
 
-    // 1B. Check if any professor in subject.professors has an active period validity covering dateStr
-    const activeProfInSub = professors.find(
+    // 1B. Check if any professors in subject.professors have an active period validity covering dateStr
+    const activeProfsInSub = professors.filter(
       p => p.startDate && p.endDate && p.startDate <= dateStr && dateStr <= p.endDate
     );
 
@@ -599,8 +599,8 @@ export const AcademicCalculations = {
           return [overrideForRule.professorId];
         }
       }
-      if (activeProfInSub) {
-        return [activeProfInSub.id];
+      if (activeProfsInSub.length > 0) {
+        return activeProfsInSub.map(p => p.id);
       }
       if (ruleProfIds && ruleProfIds.length > 0) {
         return ruleProfIds;
@@ -679,17 +679,19 @@ export const AcademicCalculations = {
         professorTitle: ruleProfs[0]?.title || '',
         professors: ruleProfs,
         scheduleId: rule.id,
-        scheduleType: (overrideForThisRule || activeProfInSub) ? 'period_override' : 'recurring',
+        scheduleType: (overrideForThisRule || activeProfsInSub.length > 0) ? 'period_override' : 'recurring',
         notes: (overrideForThisRule && overrideForThisRule.notes) ? overrideForThisRule.notes : rule.notes
       });
     });
 
-    // Fallback: If no schedules are defined in subject.schedules, check legacy scheduleSessions
-    if (schedules.length === 0 && subject.scheduleSessions && subject.scheduleSessions.length > 0) {
+    // Base timetable: Process scheduleSessions if defined on subject
+    if (subject.scheduleSessions && subject.scheduleSessions.length > 0) {
       subject.scheduleSessions.forEach(ses => {
         if (ses.day === dayNum) {
-          const profIdToUse = activeProfInSub ? activeProfInSub.id : (ses.professorId || subject.professor);
-          const profInfo = getProfInfo(profIdToUse, activeProfInSub?.name || ses.professorName || subject.professor);
+          const profIds = resolveProfIds(activeOverride, ses.professorId ? [ses.professorId] : undefined, ses.professorId);
+          const ruleProfs = profIds.map(id => getProfInfo(id, ses.professorName));
+          const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
+
           rawSessions.push({
             id: `ses_leg_${subject.id}_${ses.id}_${dateStr}`,
             subjectId: subject.id,
@@ -700,12 +702,12 @@ export const AcademicCalculations = {
             date: dateStr,
             startTime: ses.startTime,
             endTime: ses.endTime,
-            professorId: profInfo.id,
-            professorName: profInfo.name,
-            professorTitle: profInfo.title,
-            professors: [profInfo],
+            professorId: ruleProfs[0]?.id || 'prof_default',
+            professorName: summaryProfName,
+            professorTitle: ruleProfs[0]?.title || '',
+            professors: ruleProfs,
             scheduleId: ses.id,
-            scheduleType: activeProfInSub ? 'period_override' : 'legacy'
+            scheduleType: (activeOverride || activeProfsInSub.length > 0) ? 'period_override' : 'legacy'
           });
         }
       });
