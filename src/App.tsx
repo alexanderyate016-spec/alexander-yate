@@ -13,6 +13,7 @@ import { PersonalDevView } from './offices/personalDev/PersonalDevView';
 import { SettingsOfficeView } from './offices/settings/SettingsOfficeView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
 import { ChiefOfStaffView } from './offices/chiefOfStaff/ChiefOfStaffView';
+import { AgendaView } from './offices/agenda/AgendaView';
 import { ToastContainer, showToast } from './components/executive';
 import {
   Download,
@@ -340,8 +341,14 @@ export function App() {
               onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
             />
           )}
-          {(activeOffice === 'jefaturaGabinete' || activeOffice === 'agenda') && (
+          {activeOffice === 'jefaturaGabinete' && (
             <ChiefOfStaffView
+              state={state}
+              onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
+            />
+          )}
+          {activeOffice === 'agenda' && (
+            <AgendaView
               state={state}
               onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
             />
