@@ -5,8 +5,158 @@ import { DailyLifeCalculations } from './DailyLifeCalculations';
 
 export const DailyLifeStore = {
   getData(): DailyLifeOfficeData {
+    this.ensureDefaultData();
     this.checkAndApplyDailyReset();
     return storeInstance.getState().offices.vidaDiaria;
+  },
+
+  ensureDefaultData() {
+    const todayStr = getTodayDateString();
+    storeInstance.updateState(draft => {
+      const data = draft.offices.vidaDiaria;
+      if (!data) return;
+
+      if (!data.baseSchedule) {
+        data.baseSchedule = {
+          wakeUpTime: '06:30',
+          breakfastTime: '07:00',
+          lunchTime: '12:30',
+          dinnerTime: '19:30',
+          sleepTime: '23:00',
+          customItems: []
+        };
+      }
+      if (!data.habits || data.habits.length === 0) {
+        data.habits = [
+          {
+            id: 'hab_read',
+            name: 'Leer 20 minutos',
+            emoji: '📖',
+            color: '#3B82F6',
+            frequency: 'daily',
+            scheduledTime: '20:00',
+            description: 'Lectura diaria personal o profesional',
+            logs: { [todayStr]: true }
+          },
+          {
+            id: 'hab_water',
+            name: 'Tomar agua',
+            emoji: '💧',
+            color: '#06B6D4',
+            frequency: 'daily',
+            description: 'Mantener hidratación adecuada (2L al día)',
+            logs: { [todayStr]: true }
+          },
+          {
+            id: 'hab_exercise',
+            name: 'Ejercicio',
+            emoji: '🏋️',
+            color: '#10B981',
+            frequency: 'custom',
+            targetDays: ['lun', 'mie', 'vie'],
+            scheduledTime: '18:00',
+            description: 'Rutina de entrenamiento físico',
+            logs: {}
+          },
+          {
+            id: 'hab_meditate',
+            name: 'Meditar',
+            emoji: '🧘',
+            color: '#8B5CF6',
+            frequency: 'daily',
+            scheduledTime: '07:00',
+            description: 'Práctica de atención plena y respiración',
+            logs: {}
+          }
+        ];
+      }
+      if (!data.routines || data.routines.length === 0) {
+        data.routines = [
+          {
+            id: 'rtn_morning',
+            name: 'Rutina de mañana',
+            timeOfDay: 'morning',
+            emoji: '☀️',
+            steps: [
+              { id: 'st_1', title: 'Levantarse a las 06:30', completedToday: true },
+              { id: 'st_2', title: 'Higiene y aseo personal', completedToday: true },
+              { id: 'st_3', title: 'Desayuno nutritivo', completedToday: true },
+              { id: 'st_4', title: 'Prepararme para salir', completedToday: false }
+            ]
+          },
+          {
+            id: 'rtn_evening',
+            name: 'Rutina de noche',
+            timeOfDay: 'evening',
+            emoji: '🌙',
+            steps: [
+              { id: 'st_5', title: 'Preparar cosas del día siguiente', completedToday: false },
+              { id: 'st_6', title: 'Higiene nocturna', completedToday: false },
+              { id: 'st_7', title: 'Desconexión de pantallas', completedToday: false },
+              { id: 'st_8', title: 'Acostarse a las 23:00', completedToday: false }
+            ]
+          }
+        ];
+      }
+      if (!data.tasks || data.tasks.length === 0) {
+        data.tasks = [
+          {
+            id: 'tsk_1',
+            name: 'Organizar documentos personales',
+            description: 'Clasificar archivos digitales y notas',
+            priority: 'medium',
+            date: todayStr,
+            status: 'completed'
+          },
+          {
+            id: 'tsk_2',
+            name: 'Terminar trabajo prioritario',
+            description: 'Revisar entregables pendientes',
+            priority: 'high',
+            date: todayStr,
+            status: 'pending'
+          },
+          {
+            id: 'tsk_3',
+            name: 'Comprar materiales necesarios',
+            description: 'Insumos personales y papelería',
+            priority: 'low',
+            date: todayStr,
+            status: 'pending'
+          }
+        ];
+      }
+    });
+  },
+
+  updateBaseSchedule(config: Partial<DailyLifeOfficeData['baseSchedule']>) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.vidaDiaria.baseSchedule) {
+        draft.offices.vidaDiaria.baseSchedule = {
+          wakeUpTime: '06:30',
+          breakfastTime: '07:00',
+          lunchTime: '12:30',
+          dinnerTime: '19:30',
+          sleepTime: '23:00',
+          customItems: []
+        };
+      }
+      Object.assign(draft.offices.vidaDiaria.baseSchedule, config);
+    });
+  },
+
+  sendTaskToChiefOfStaff(task: DailyTask) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.jefaturaGabinete) return;
+      const history = draft.offices.jefaturaGabinete.instructionHistory || [];
+      const newInst = {
+        id: 'inst_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        inputText: `Coordinar espacio para tarea: "${task.name}" (Prioridad: ${task.priority})`,
+        actionSummary: `Solicitud de asignación de bloque de tiempo para tarea personal "${task.name}"`
+      };
+      draft.offices.jefaturaGabinete.instructionHistory = [newInst, ...history];
+    });
   },
 
   checkAndApplyDailyReset() {

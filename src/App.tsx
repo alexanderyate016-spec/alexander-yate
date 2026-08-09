@@ -126,7 +126,7 @@ export function App() {
     { key: 'ovalOffice', label: 'Despacho Oval', emoji: '🏛️' },
     { key: 'jefaturaGabinete', label: 'Jefatura de Gabinete', emoji: '💼' },
     { key: 'academica', label: 'Académica', emoji: '🎓' },
-    { key: 'vidaDiaria', label: 'Vida Diaria', emoji: '📅' },
+    { key: 'vidaDiaria', label: 'Gestión Personal', emoji: '🌿' },
     { key: 'financiera', label: 'Financiera', emoji: '💰' },
     { key: 'vidaSocial', label: 'Vida Social', emoji: '💖' },
     { key: 'medica', label: 'Médica', emoji: '🩺' },

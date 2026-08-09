@@ -49,28 +49,64 @@ export interface DistributionMetric {
   statusColor: 'emerald' | 'amber' | 'rose';
 }
 
+export interface ActivityProgressResult {
+  activityId: string;
+  activityName: string;
+  activityType: string;
+  date: string;
+  grade?: number;
+  isGraded: boolean;
+  weightPercentInProf: number;  // e.g. 50% (peso dentro del profesor)
+  aporteToProf: number;         // grade * (weightPercentInProf / 100) (e.g. 1.90)
+  profWeightInCut: number;      // e.g. 60% or 100% (peso del profesor en el corte)
+  aporteToCut: number;          // aporteToProf * (profWeightInCut / 100) (e.g. 1.14)
+  cutWeightInSubject: number;   // e.g. 30% (peso del corte en la materia)
+  aporteToSubject: number;      // aporteToCut * (cutWeightInSubject / 100) (e.g. 0.342)
+  materiaEvaluadaPercent: number; // % de la materia que representa esta actividad (e.g. 15%)
+  professorId?: string;
+  professorName?: string;
+}
+
+export interface ProfessorProgressResult {
+  professorId: string;
+  professorName: string;
+  weightPercentInCut: number;     // e.g. 60% or 100%
+  activitiesProgress: ActivityProgressResult[];
+  totalActivitiesCount: number;
+  gradedActivitiesCount: number;
+  totalActivityWeightAssigned: number; // Sum of activity weights in prof
+  evaluatedWeightPercentInProf: number; // Sum of graded activity weights in prof
+  grade: number;                  // Sum of activity.aporteToProf (e.g. 4.15)
+  aporteToCut: number;            // grade * (weightPercentInCut / 100) (e.g. 2.49)
+  maxAporteToCut: number;         // 5.0 * (weightPercentInCut / 100) (e.g. 3.0)
+  evaluatedWeightInCut: number;   // (evaluatedWeightPercentInProf / 100) * weightPercentInCut
+}
+
 export interface CutProgressResult {
   cutId: string;
   cutName: string;
   cutWeightPercent: number; // Weight within the subject (e.g. 30%)
   
+  professorsProgress: ProfessorProgressResult[];
   activities: AcademicEvaluationActivity[];
   totalActivitiesCount: number;
   gradedActivitiesCount: number;
   
-  totalActivityWeightAssigned: number; // Sum of activity weights (e.g. 95, 100, 110)
-  evaluatedWeightPercent: number;     // Evaluated activity coverage % (e.g. 50%)
-  pendingWeightPercent: number;       // Pending coverage %
+  totalActivityWeightAssigned: number; // Average or overall weight assigned
+  evaluatedWeightPercent: number;     // % of the cut evaluated so far (0 - 100%)
+  pendingWeightPercent: number;       // % of the cut pending evaluation
   
-  accumulatedCutGrade: number;        // Σ (grade * weight / 100) for graded activities (0.00 - 5.00)
+  accumulatedCutGrade: number;        // Grade of the corte = Sum of professor.aporteToCut
   aporteSubject: number;              // accumulatedCutGrade * (cutWeightPercent / 100)
   maxAporteSubject: number;           // 5.0 * (cutWeightPercent / 100)
+  materiaEvaluadaPercent: number;     // cutWeightPercent * (evaluatedWeightPercent / 100)
   
   status: 'finalizado' | 'en_progreso' | 'sin_evaluar';
   statusLabel: string;
   statusColor: 'emerald' | 'amber' | 'slate';
   
   activitiesDistribution: DistributionMetric;
+  professorsDistribution?: DistributionMetric;
 }
 
 export interface SubjectProgressResult {
@@ -181,47 +217,121 @@ export const AcademicCalculations = {
   },
 
   /**
-   * Calculates progressive corte metrics dynamically in real-time.
-   * Formula:
-   *  Nota acumulada del corte = Σ (Nota de la actividad × Porcentaje de la actividad / 100) for graded activities.
-   *  Aporte a la materia = Nota acumulada del corte × (Porcentaje del corte / 100).
+   * Calculates progressive corte metrics dynamically in real-time strictly following:
+   * Actividad → Profesor → Corte → Materia
    */
   calculateCutProgress(cut: AcademicCut): CutProgressResult {
     const activities = cut.activities || [];
     const cutWeight = Number(cut.cutWeightPercent) || 0;
     
-    const totalActivityWeightAssigned = Math.round(activities.reduce((acc, a) => acc + (Number(a.weightPercent) || 0), 0) * 10) / 10;
-    
-    let evaluatedWeightPercent = 0;
-    let accumulatedCutGrade = 0;
-    let gradedActivitiesCount = 0;
-    
-    activities.forEach(act => {
-      const isGraded = act.grade !== undefined && act.grade !== null && !isNaN(Number(act.grade)) && String(act.grade).trim() !== '';
-      if (isGraded) {
-        gradedActivitiesCount++;
-        const w = Number(act.weightPercent) || 0;
-        const g = Number(act.grade) || 0;
-        evaluatedWeightPercent += w;
-        accumulatedCutGrade += (g * w) / 100;
-      }
+    // Determine professors for this cut
+    const cutProfs = (cut.professors && cut.professors.length > 0)
+      ? cut.professors
+      : [{ id: 'default_prof', name: 'Profesor Principal', weightPercent: 100 }];
+
+    const professorsProgress: ProfessorProgressResult[] = cutProfs.map(prof => {
+      const profWeightInCut = Number(prof.weightPercent) || 100;
+      
+      // Filter activities assigned to this professor
+      const profActivities = (cutProfs.length === 1)
+        ? activities
+        : activities.filter(a => a.professorId === prof.id || a.professorId === prof.professorId || (!a.professorId && prof.id === cutProfs[0].id));
+
+      let totalActivityWeightAssigned = 0;
+      let evaluatedWeightPercentInProf = 0;
+      let profGrade = 0;
+      let gradedActivitiesCount = 0;
+
+      const activitiesProgress: ActivityProgressResult[] = profActivities.map(act => {
+        const wInProf = Number(act.weightPercent) || 0;
+        totalActivityWeightAssigned += wInProf;
+
+        const isGraded = act.grade !== undefined && act.grade !== null && !isNaN(Number(act.grade)) && String(act.grade).trim() !== '';
+        const g = isGraded ? Number(act.grade) : 0;
+
+        if (isGraded) {
+          gradedActivitiesCount++;
+          evaluatedWeightPercentInProf += wInProf;
+        }
+
+        // Aporte a la nota del profesor = nota * (peso_actividad / 100)
+        const aporteToProf = isGraded ? (g * wInProf) / 100 : 0;
+        profGrade += aporteToProf;
+
+        // Aporte al corte = aporte_profesor * (peso_profesor_en_corte / 100)
+        const aporteToCut = (aporteToProf * profWeightInCut) / 100;
+
+        // Aporte a la materia = aporte_corte * (peso_corte_en_materia / 100)
+        const aporteToSubject = (aporteToCut * cutWeight) / 100;
+
+        // Porcentaje de la materia evaluado por esta actividad
+        const materiaEvaluadaPercent = isGraded ? (wInProf / 100) * (profWeightInCut / 100) * cutWeight : 0;
+
+        return {
+          activityId: act.id,
+          activityName: act.name,
+          activityType: act.type,
+          date: act.date,
+          grade: isGraded ? g : undefined,
+          isGraded,
+          weightPercentInProf: wInProf,
+          aporteToProf,
+          profWeightInCut,
+          aporteToCut,
+          cutWeightInSubject: cutWeight,
+          aporteToSubject,
+          materiaEvaluadaPercent,
+          professorId: prof.id,
+          professorName: prof.name
+        };
+      });
+
+      const aporteToCut = (profGrade * profWeightInCut) / 100;
+      const maxAporteToCut = (5.0 * profWeightInCut) / 100;
+      const evaluatedWeightInCut = (evaluatedWeightPercentInProf / 100) * profWeightInCut;
+
+      return {
+        professorId: prof.id,
+        professorName: prof.name,
+        weightPercentInCut: profWeightInCut,
+        activitiesProgress,
+        totalActivitiesCount: profActivities.length,
+        gradedActivitiesCount,
+        totalActivityWeightAssigned,
+        evaluatedWeightPercentInProf,
+        grade: profGrade,
+        aporteToCut,
+        maxAporteToCut,
+        evaluatedWeightInCut
+      };
     });
 
-    evaluatedWeightPercent = Math.round(evaluatedWeightPercent * 10) / 10;
-    
+    // Aggregations across professors inside the cut
+    const totalActivitiesCount = activities.length;
+    const gradedActivitiesCount = professorsProgress.reduce((acc, p) => acc + p.gradedActivitiesCount, 0);
+    const totalActivityWeightAssigned = Math.round(
+      (professorsProgress.reduce((acc, p) => acc + p.totalActivityWeightAssigned, 0) / Math.max(1, professorsProgress.length)) * 10
+    ) / 10;
+
+    const evaluatedWeightPercent = Math.round(
+      professorsProgress.reduce((acc, p) => acc + p.evaluatedWeightInCut, 0) * 10
+    ) / 10;
+
     const pendingWeightPercent = Math.max(0, Math.round((100 - evaluatedWeightPercent) * 10) / 10);
+    const accumulatedCutGrade = professorsProgress.reduce((acc, p) => acc + p.aporteToCut, 0);
     const aporteSubject = accumulatedCutGrade * (cutWeight / 100);
     const maxAporteSubject = 5.0 * (cutWeight / 100);
-    
+    const materiaEvaluadaPercent = Math.round((cutWeight * (evaluatedWeightPercent / 100)) * 100) / 100;
+
     const activitiesDistribution = this.getActivitiesDistribution(activities);
-    
+
     const isAllGraded = activities.length > 0 && gradedActivitiesCount === activities.length;
-    const is100PercentAssigned = Math.abs(totalActivityWeightAssigned - 100) < 0.1;
-    
+    const is100PercentAssigned = Math.abs(evaluatedWeightPercent - 100) < 0.1;
+
     let status: 'finalizado' | 'en_progreso' | 'sin_evaluar' = 'sin_evaluar';
     let statusLabel = '⚪ Sin evaluar';
     let statusColor: 'emerald' | 'amber' | 'slate' = 'slate';
-    
+
     if (isAllGraded && is100PercentAssigned) {
       status = 'finalizado';
       statusLabel = '🟢 Corte finalizado';
@@ -236,8 +346,9 @@ export const AcademicCalculations = {
       cutId: cut.id,
       cutName: cut.cutName,
       cutWeightPercent: cutWeight,
+      professorsProgress,
       activities,
-      totalActivitiesCount: activities.length,
+      totalActivitiesCount,
       gradedActivitiesCount,
       totalActivityWeightAssigned,
       evaluatedWeightPercent,
@@ -245,6 +356,7 @@ export const AcademicCalculations = {
       accumulatedCutGrade,
       aporteSubject,
       maxAporteSubject,
+      materiaEvaluadaPercent,
       status,
       statusLabel,
       statusColor,
@@ -256,7 +368,8 @@ export const AcademicCalculations = {
    * Calculates progressive subject metrics dynamically in real-time.
    * Formula:
    *  Nota acumulada de la materia = Σ (Aporte de cada corte).
-   *  Promedio acumulado (sobre lo evaluado) = Nota acumulada / (Porcentaje total evaluado de la materia / 100).
+   *  Porcentaje evaluado de la materia = Σ (Materia evaluada % de cada corte).
+   *  Promedio acumulado (sobre lo evaluado) = Nota acumulada / (Porcentaje total evaluado / 100).
    */
   calculateSubjectProgress(subject: AcademicSubject): SubjectProgressResult {
     const cuts = subject.cuts || [];
@@ -273,7 +386,7 @@ export const AcademicCalculations = {
     
     cutsProgress.forEach(cp => {
       notaAcumuladaMateria += cp.aporteSubject;
-      porcentajeEvaluadoMateria += (cp.cutWeightPercent * (cp.evaluatedWeightPercent / 100));
+      porcentajeEvaluadoMateria += cp.materiaEvaluadaPercent;
       
       if (cp.gradedActivitiesCount > 0) {
         hasGrades = true;

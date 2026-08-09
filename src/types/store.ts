@@ -75,6 +75,13 @@ export interface AcademicSession {
   professorName?: string;
 }
 
+export interface CutProfessor {
+  id: string;
+  professorId?: string;
+  name: string;
+  weightPercent: number; // Sum of professor weights in cut = 100%
+}
+
 export interface AcademicEvaluationActivity {
   id: string;
   name: string;
@@ -85,6 +92,7 @@ export interface AcademicEvaluationActivity {
   grade?: number; // 0.0 - 5.0
   status: 'pending' | 'graded' | 'cancelled';
   description?: string;
+  professorId?: string; // Optional reference to CutProfessor or SubjectProfessor
 }
 
 export type AcademicActivityType =
@@ -122,6 +130,7 @@ export interface AcademicCut {
   id: string;
   cutName: string;
   cutWeightPercent: number; // Sum of cuts = 100%
+  professors?: CutProfessor[]; // Professors in this cut (default 1 prof at 100%)
   activities: AcademicEvaluationActivity[];
 }
 
@@ -181,7 +190,9 @@ export interface HabitItem {
   name: string;
   description?: string;
   color: string;
+  emoji?: string;
   frequency: 'daily' | 'weekdays' | 'custom';
+  targetDays?: string[]; // e.g. ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
   scheduledTime?: string; // e.g. "07:00"
   durationMinutes?: number; // e.g. 10 or 15
   logs: Record<string, boolean>; // key: YYYY-MM-DD, value: true
@@ -197,6 +208,7 @@ export interface DailyTask {
   endTime?: string;
   status: 'pending' | 'completed';
   checklist?: Array<{ id: string; title: string; completed: boolean }>;
+  sendToChiefOfStaff?: boolean;
 }
 
 export interface RoutineStep {
@@ -209,7 +221,24 @@ export interface RoutineItem {
   id: string;
   name: string;
   timeOfDay: 'morning' | 'afternoon' | 'evening';
+  emoji?: string;
   steps: RoutineStep[];
+}
+
+export interface BaseScheduleItem {
+  id: string;
+  name: string;
+  emoji: string;
+  time: string;
+}
+
+export interface BaseScheduleConfig {
+  wakeUpTime: string; // "06:30"
+  breakfastTime: string; // "07:00"
+  lunchTime: string; // "12:30"
+  dinnerTime: string; // "19:30"
+  sleepTime: string; // "23:00"
+  customItems?: BaseScheduleItem[];
 }
 
 export interface DailyObjective {
@@ -274,6 +303,7 @@ export interface DailyLifeOfficeData {
   routines: RoutineItem[];
   objectives: DailyObjective[];
   timePlans: TimePlan[];
+  baseSchedule?: BaseScheduleConfig;
   lastActiveDate?: string;
   dailyHistory?: DailyHistoryRecord[];
   welcomeMessage?: WelcomeDayMessage | null;

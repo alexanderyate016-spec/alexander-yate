@@ -1,1812 +1,1408 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DailyLifeOfficeData, HabitItem, DailyTask, DailyObjective, TimePlan, RoutineItem, DailyHistoryRecord } from '../../types/store';
+import {
+  DailyLifeOfficeData,
+  HabitItem,
+  DailyTask,
+  RoutineItem,
+  RoutineStep,
+  DailyHistoryRecord,
+  BaseScheduleConfig
+} from '../../types/store';
 import { DailyLifeStore } from './DailyLifeStore';
-import { DailyLifeCalculations, FreeTimeGap } from './DailyLifeCalculations';
-import { HorarioPersonal } from './components/HorarioPersonal';
+import { DailyLifeCalculations } from './DailyLifeCalculations';
 import { getTodayDateString } from '../../utils/dates';
-import { useTimeService } from '../../hooks/useTimeService';
 import {
   GlassPanel,
   ExecutiveButton,
-  ExecutiveSectionHeader,
   ExecutiveBadge,
-  ExecutiveEmptyState,
+  ExecutiveModal,
   ExecutiveInput,
-  ExecutiveSelect,
   ExecutiveForm,
-  ExecutiveModal
+  showToast
 } from '../../components/executive';
 import {
   Flame,
-  Clock,
+  CheckCircle2,
+  Circle,
   Plus,
   Trash2,
-  Target,
-  Activity,
-  Check,
-  Zap,
-  Coffee,
-  BookOpen,
-  Sparkles,
-  TrendingUp,
-  X,
-  Layers,
-  CheckSquare,
   Edit2,
+  Clock,
+  Sparkles,
+  Sun,
+  Moon,
   Calendar,
+  Send,
+  Check,
+  RotateCcw,
   History,
-  BarChart3,
+  TrendingUp,
+  AlertCircle,
+  X,
+  Smile,
   ChevronRight,
-  Search,
-  FileText,
-  CheckCircle2,
-  XCircle,
-  CalendarDays,
-  Award
+  Info
 } from 'lucide-react';
 
 interface Props {
   data: DailyLifeOfficeData;
 }
 
-// Discrete Toast Notification
-interface ToastMessage {
-  id: string;
-  text: string;
-  type: 'success' | 'info' | 'warning';
-}
-
-// Animated Progress Bar with Liquid Glow
-const AnimatedProgressBar: React.FC<{ percent: number; color?: 'amber' | 'emerald' | 'purple' | 'gold'; height?: string }> = ({
-  percent,
-  color = 'amber',
-  height = 'h-3'
-}) => {
-  const safePercent = Math.min(100, Math.max(0, percent || 0));
-
-  const gradientMap = {
-    amber: 'from-amber-500 via-yellow-400 to-[#C5A059]',
-    emerald: 'from-emerald-500 via-teal-400 to-emerald-300',
-    purple: 'from-purple-500 via-indigo-400 to-amber-400',
-    gold: 'from-[#C5A059] via-amber-400 to-yellow-300'
-  };
-
-  return (
-    <div className={`w-full bg-slate-50 rounded-full ${height} overflow-hidden border border-slate-200 relative p-0.5 shadow-inner`}>
-      <motion.div
-        className={`h-full rounded-full bg-gradient-to-r ${gradientMap[color]} shadow-[0_0_12px_rgba(245,158,11,0.5)]`}
-        initial={{ width: 0 }}
-        animate={{ width: `${safePercent}%` }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      />
-    </div>
-  );
-};
-
-// Streak Badge with Animated Flame
-const StreakBadge: React.FC<{ streak: number; isCheckedToday: boolean }> = ({ streak, isCheckedToday }) => {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono transition-all duration-300 ${
-      isCheckedToday
-        ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-        : 'bg-slate-100/60 text-slate-500 border border-slate-200'
-    }`}>
-      <Flame className={`w-3.5 h-3.5 ${isCheckedToday ? 'text-amber-400 animate-pulse' : 'text-slate-500'}`} />
-      <span>{streak} {streak === 1 ? 'día' : 'días'}</span>
-    </div>
-  );
-};
+// Preset Emojis for Habit Creation
+const HABIT_EMOJIS = ['📖', '💧', '🏋️', '🧘', '🏃', '📚', '🥗', '🧘‍♂️', '🎨', '✍️', '🛌', '🚶', '🍏', '💻', '🧠'];
 
 export const DailyLifeView: React.FC<Props> = ({ data }) => {
-  const [activeTab, setActiveTab] = useState<'horarioPersonal' | 'dashboard' | 'history' | 'habits' | 'timePlan' | 'tasks' | 'objectives' | 'routines'>('horarioPersonal');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const todayStr = getTodayDateString();
-  const timeService = useTimeService();
-  const isAfter22 = timeService.now.getHours() >= 22 || timeService.now.getHours() < 5;
 
-  // Automatic reset check on mount
-  useEffect(() => {
-    DailyLifeStore.checkAndApplyDailyReset();
+  // Selected date for viewing history detail
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState<string | null>(null);
+
+  // Modal States
+  const [showAddHabitModal, setShowAddHabitModal] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<HabitItem | null>(null);
+
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
+
+  const [showBaseScheduleModal, setShowBaseScheduleModal] = useState(false);
+  const [showAddRoutineModal, setShowAddRoutineModal] = useState(false);
+  const [showAddStepModalRoutineId, setShowAddStepModalRoutineId] = useState<string | null>(null);
+
+  // Form State - Habit
+  const [habitForm, setHabitForm] = useState({
+    name: '',
+    emoji: '📖',
+    frequency: 'daily' as 'daily' | 'weekdays' | 'custom',
+    targetDays: ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'],
+    scheduledTime: '',
+    description: ''
+  });
+
+  // Form State - Task
+  const [taskForm, setTaskForm] = useState({
+    name: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    date: todayStr,
+    sendToChiefOfStaff: false
+  });
+
+  // Form State - Base Schedule
+  const [baseScheduleForm, setBaseScheduleForm] = useState<BaseScheduleConfig>({
+    wakeUpTime: data?.baseSchedule?.wakeUpTime || '06:30',
+    breakfastTime: data?.baseSchedule?.breakfastTime || '07:00',
+    lunchTime: data?.baseSchedule?.lunchTime || '12:30',
+    dinnerTime: data?.baseSchedule?.dinnerTime || '19:30',
+    sleepTime: data?.baseSchedule?.sleepTime || '23:00'
+  });
+
+  // Form State - Routine
+  const [routineForm, setRoutineForm] = useState({
+    name: '',
+    timeOfDay: 'morning' as 'morning' | 'afternoon' | 'evening',
+    emoji: '☀️',
+    initialSteps: ['']
+  });
+
+  const [newStepTitle, setNewStepTitle] = useState('');
+
+  // Ensures store defaults
+  React.useEffect(() => {
+    DailyLifeStore.ensureDefaultData();
   }, []);
 
-  // Toast Handler
-  const triggerToast = (text: string, type: 'success' | 'info' | 'warning' = 'success') => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev.slice(-2), { id, text, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 3000);
-  };
+  // Today calculations
+  const progressSummary = useMemo(() => {
+    return DailyLifeCalculations.calculateOverallDayProgress(data, todayStr);
+  }, [data, todayStr]);
 
-  // Habit Form State
-  const [newHabitName, setNewHabitName] = useState('');
-  const [newHabitColor, setNewHabitColor] = useState('#F59E0B');
+  const historyRecords = useMemo(() => {
+    return DailyLifeCalculations.getUnifiedHistory(data);
+  }, [data]);
 
-  // Task Form State
-  const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [newTaskDate, setNewTaskDate] = useState(todayStr);
-  const [newTaskStart, setNewTaskStart] = useState('');
+  // Streak calculation
+  const streakDays = useMemo(() => {
+    let streak = 0;
+    const habits = data?.habits || [];
+    if (habits.length === 0) return 0;
 
-  // Time Plan State
-  const [tplTitle, setTplTitle] = useState('');
-  const [tplCategory, setTplCategory] = useState<'commute' | 'lunch' | 'breakfast' | 'dinner' | 'study' | 'rest' | 'gym' | 'shopping' | 'free_time' | 'personal'>('study');
-  const [tplStart, setTplStart] = useState('14:00');
-  const [tplDuration, setTplDuration] = useState(45);
-  const [tplColor, setTplColor] = useState('#F59E0B');
-
-  // Objective State
-  const [objTitle, setObjTitle] = useState('');
-
-  // Routine Form State
-  const [rtnTitle, setRtnTitle] = useState('');
-  const [rtnTimeOfDay, setRtnTimeOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
-  const [rtnStepInput, setRtnStepInput] = useState('');
-  const [rtnSteps, setRtnSteps] = useState<string[]>([]);
-
-  // Editing Modals State
-  const [editingHabit, setEditingHabit] = useState<HabitItem | null>(null);
-  const [selectedFreeGap, setSelectedFreeGap] = useState<FreeTimeGap | null>(null);
-
-  // History State
-  const [historyPeriod, setHistoryPeriod] = useState<'day' | 'week' | 'month' | 'year'>('day');
-  const [selectedHistoryRecord, setSelectedHistoryRecord] = useState<DailyHistoryRecord | null>(null);
-  const [historySearch, setHistorySearch] = useState('');
-
-  // Calculations
-  const daySummary = useMemo(() => DailyLifeCalculations.calculateOverallDayProgress(data, todayStr), [data, todayStr]);
-  const workload = useMemo(() => DailyLifeCalculations.calculateDailyWorkload(data, todayStr), [data, todayStr]);
-  const timeDist = useMemo(() => DailyLifeCalculations.calculateTimeDistributionToday(data, todayStr), [data, todayStr]);
-  const freeGaps = useMemo(() => DailyLifeCalculations.detectFreeTimeGaps(data, todayStr), [data, todayStr]);
-
-  // Unified History list
-  const unifiedHistory = useMemo(() => DailyLifeCalculations.getUnifiedHistory(data), [data]);
-
-  // Filtered History
-  const filteredHistory = useMemo(() => {
-    return unifiedHistory.filter(record => {
-      if (!historySearch.trim()) return true;
-      const q = historySearch.toLowerCase();
-      return (
-        record.date.includes(q) ||
-        record.dayOfWeek.toLowerCase().includes(q) ||
-        record.habitsDetail?.some(h => h.name.toLowerCase().includes(q)) ||
-        record.tasksDetail?.some(t => t.name.toLowerCase().includes(q)) ||
-        record.objectivesDetail?.some(o => o.name.toLowerCase().includes(q))
-      );
-    });
-  }, [unifiedHistory, historySearch]);
-
-  // Grouped History for week / month / year
-  const periodGroupedHistory = useMemo(() => {
-    if (historyPeriod === 'day') return null;
-
-    const groups: Record<string, {
-      key: string;
-      title: string;
-      records: DailyHistoryRecord[];
-      avgCompliance: number;
-      avgHabits: number;
-      avgTasks: number;
-      avgObjectives: number;
-      totalProductiveMins: number;
-    }> = {};
-
-    filteredHistory.forEach(record => {
-      const d = new Date(record.date + 'T12:00:00');
-      let groupKey = '';
-      let groupTitle = '';
-
-      if (historyPeriod === 'week') {
-        const day = d.getDay();
-        const diffToMonday = day === 0 ? -6 : 1 - day;
-        const monday = new Date(d);
-        monday.setDate(d.getDate() + diffToMonday);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-
-        const mStr = monday.toISOString().split('T')[0];
-        const sStr = sunday.toISOString().split('T')[0];
-        groupKey = `week_${mStr}`;
-        groupTitle = `Semana (${mStr} al ${sStr})`;
-      } else if (historyPeriod === 'month') {
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        groupKey = `month_${d.getFullYear()}_${d.getMonth()}`;
-        groupTitle = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    let current = new Date(todayStr + 'T12:00:00');
+    while (true) {
+      const dateKey = current.toISOString().split('T')[0];
+      const completedAny = habits.some(h => h.logs && h.logs[dateKey]);
+      if (completedAny) {
+        streak++;
+        current.setDate(current.getDate() - 1);
       } else {
-        groupKey = `year_${d.getFullYear()}`;
-        groupTitle = `Año ${d.getFullYear()}`;
+        if (dateKey === todayStr) {
+          current.setDate(current.getDate() - 1);
+          continue;
+        }
+        break;
       }
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          key: groupKey,
-          title: groupTitle,
-          records: [],
-          avgCompliance: 0,
-          avgHabits: 0,
-          avgTasks: 0,
-          avgObjectives: 0,
-          totalProductiveMins: 0
-        };
-      }
-
-      groups[groupKey].records.push(record);
-    });
-
-    Object.values(groups).forEach(g => {
-      const len = g.records.length;
-      if (len > 0) {
-        g.avgCompliance = Math.round(g.records.reduce((sum, r) => sum + r.overallCompliancePercent, 0) / len);
-        g.avgHabits = Math.round(g.records.reduce((sum, r) => sum + r.habitsCount.percent, 0) / len);
-        g.avgTasks = Math.round(g.records.reduce((sum, r) => sum + r.tasksCount.percent, 0) / len);
-        g.avgObjectives = Math.round(g.records.reduce((sum, r) => sum + r.objectivesCount.percent, 0) / len);
-        g.totalProductiveMins = g.records.reduce((sum, r) => sum + r.productiveTimeMinutes, 0);
-      }
-    });
-
-    return Object.values(groups);
-  }, [filteredHistory, historyPeriod]);
-
-  // Overall History KPI Statistics
-  const historyKPIs = useMemo(() => {
-    const totalDays = unifiedHistory.length;
-    if (totalDays === 0) {
-      return { totalDays: 0, avgCompliance: 0, totalProductiveHours: 0, bestCompliance: 0 };
     }
-    const avgCompliance = Math.round(unifiedHistory.reduce((s, r) => s + r.overallCompliancePercent, 0) / totalDays);
-    const totalProductiveMins = unifiedHistory.reduce((s, r) => s + r.productiveTimeMinutes, 0);
-    const totalProductiveHours = (totalProductiveMins / 60).toFixed(1);
-    const bestCompliance = Math.max(...unifiedHistory.map(r => r.overallCompliancePercent));
+    return Math.max(streak, 1);
+  }, [data, todayStr]);
 
-    return { totalDays, avgCompliance, totalProductiveHours, bestCompliance };
-  }, [unifiedHistory]);
-
-  // Handlers
-  const handleAddHabit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newHabitName.trim()) return;
-    DailyLifeStore.addHabit({
-      name: newHabitName.trim(),
-      color: newHabitColor,
-      frequency: 'daily'
+  // Today's Habits
+  const todayHabits = useMemo(() => {
+    return (data?.habits || []).map(h => {
+      const isCompleted = Boolean(h.logs && h.logs[todayStr]);
+      return { ...h, isCompleted };
     });
-    setNewHabitName('');
-    triggerToast(`Hábito "${newHabitName}" creado con éxito ✨`);
-  };
+  }, [data, todayStr]);
 
-  const handleToggleHabit = (habitId: string, habitName: string) => {
-    const isAlreadyChecked = Boolean(data.habits.find(h => h.id === habitId)?.logs?.[todayStr]);
+  // All habits completed flag
+  const allHabitsCompleted = useMemo(() => {
+    if (todayHabits.length === 0) return false;
+    return todayHabits.every(h => h.isCompleted);
+  }, [todayHabits]);
+
+  // Today's Tasks vs Overdue vs Future
+  const todayTasks = useMemo(() => {
+    return (data?.tasks || []).filter(t => t.date === todayStr || (!t.date && todayStr));
+  }, [data, todayStr]);
+
+  const overdueTasks = useMemo(() => {
+    return (data?.tasks || []).filter(t => t.date && t.date < todayStr && t.status === 'pending');
+  }, [data, todayStr]);
+
+  const futureTasksCount = useMemo(() => {
+    return (data?.tasks || []).filter(t => t.date && t.date > todayStr && t.status === 'pending').length;
+  }, [data, todayStr]);
+
+  // Motivational message generator
+  const motivationalMessage = useMemo(() => {
+    const percent = progressSummary.overallPercent;
+    if (percent === 100) {
+      return {
+        title: '🎉 ¡Excelente!',
+        text: 'Completaste todo lo que te propusiste hoy. Tu disciplina da frutos.',
+        badge: 'Día Completo'
+      };
+    }
+    if (percent >= 75) {
+      return {
+        title: '🔥 ¡Gran constancia!',
+        text: 'Estás muy cerca de completar tu día. Mantén el ritmo.',
+        badge: `${streakDays} días consecutivos`
+      };
+    }
+    if (percent >= 30) {
+      return {
+        title: '💪 En buen camino',
+        text: 'Cada pequeño paso suma. Avanza con tu siguiente hábito o tarea.',
+        badge: 'Progreso en marcha'
+      };
+    }
+    return {
+      title: '🌿 Empieza por una cosa',
+      text: 'Completar una pequeña tarea o hábito también cuenta. Da el primer paso hoy.',
+      badge: 'Nuevo Comienzo'
+    };
+  }, [progressSummary.overallPercent, streakDays]);
+
+  // Formatted date string
+  const formattedTodayDate = useMemo(() => {
+    const dateObj = new Date();
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const str = dateObj.toLocaleDateString('es-ES', options);
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }, []);
+
+  // Handlers - Habit
+  const handleToggleHabit = (habitId: string) => {
     DailyLifeStore.toggleHabitLog(habitId, todayStr);
-    triggerToast(
-      isAlreadyChecked ? `Hábito "${habitName}" marcado como pendiente.` : `✓ ¡Hábito "${habitName}" completado! +10% en progreso diario.`,
-      isAlreadyChecked ? 'info' : 'success'
-    );
   };
 
-  const handleDeleteHabit = (habitId: string) => {
-    DailyLifeStore.deleteHabit(habitId);
-    triggerToast('Hábito eliminado del sistema', 'warning');
-  };
-
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskName.trim()) return;
-    DailyLifeStore.addTask({
-      name: newTaskName.trim(),
-      priority: newTaskPriority,
-      date: newTaskDate || todayStr,
-      startTime: newTaskStart || undefined
+  const handleOpenAddHabit = () => {
+    setEditingHabit(null);
+    setHabitForm({
+      name: '',
+      emoji: '📖',
+      frequency: 'daily',
+      targetDays: ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'],
+      scheduledTime: '',
+      description: ''
     });
-    setNewTaskName('');
-    setNewTaskStart('');
-    triggerToast(`Tarea "${newTaskName}" agendada correctamente.`);
+    setShowAddHabitModal(true);
   };
 
+  const handleOpenEditHabit = (h: HabitItem) => {
+    setEditingHabit(h);
+    setHabitForm({
+      name: h.name,
+      emoji: h.emoji || '📖',
+      frequency: h.frequency || 'daily',
+      targetDays: h.targetDays || ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'],
+      scheduledTime: h.scheduledTime || '',
+      description: h.description || ''
+    });
+    setShowAddHabitModal(true);
+  };
+
+  const handleSaveHabit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!habitForm.name.trim()) return;
+
+    if (editingHabit) {
+      DailyLifeStore.updateHabit(editingHabit.id, {
+        name: habitForm.name.trim(),
+        emoji: habitForm.emoji,
+        frequency: habitForm.frequency,
+        targetDays: habitForm.targetDays,
+        scheduledTime: habitForm.scheduledTime || undefined,
+        description: habitForm.description.trim() || undefined
+      });
+      showToast('Hábito actualizado correctamente', 'success');
+    } else {
+      DailyLifeStore.addHabit({
+        name: habitForm.name.trim(),
+        emoji: habitForm.emoji,
+        color: '#3B82F6',
+        frequency: habitForm.frequency,
+        targetDays: habitForm.targetDays,
+        scheduledTime: habitForm.scheduledTime || undefined,
+        description: habitForm.description.trim() || undefined
+      });
+      showToast('Nuevo hábito creado', 'success');
+    }
+    setShowAddHabitModal(false);
+  };
+
+  const handleDeleteHabit = (id: string) => {
+    DailyLifeStore.deleteHabit(id);
+    showToast('Hábito eliminado', 'info');
+  };
+
+  // Handlers - Task
   const handleToggleTask = (taskId: string) => {
     DailyLifeStore.toggleTaskStatus(taskId);
-    triggerToast('Estado de tarea actualizado ✓');
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    DailyLifeStore.deleteTask(taskId);
-    triggerToast('Tarea removida de la lista', 'warning');
-  };
-
-  const handleAddTimePlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tplTitle.trim()) return;
-    DailyLifeStore.addTimePlan({
-      title: tplTitle.trim(),
-      category: tplCategory,
+  const handleOpenAddTask = () => {
+    setEditingTask(null);
+    setTaskForm({
+      name: '',
+      description: '',
+      priority: 'medium',
       date: todayStr,
-      startTime: tplStart,
-      durationMinutes: Number(tplDuration),
-      color: tplColor
+      sendToChiefOfStaff: false
     });
-    setTplTitle('');
-    triggerToast(`Bloque "${tplTitle}" reservado en la agenda.`);
+    setShowAddTaskModal(true);
   };
 
-  const handleDeleteTimePlan = (id: string) => {
-    DailyLifeStore.deleteTimePlan(id);
-    triggerToast('Bloque de tiempo cancelado', 'warning');
+  const handleOpenEditTask = (t: DailyTask) => {
+    setEditingTask(t);
+    setTaskForm({
+      name: t.name,
+      description: t.description || '',
+      priority: t.priority,
+      date: t.date || todayStr,
+      sendToChiefOfStaff: Boolean(t.sendToChiefOfStaff)
+    });
+    setShowAddTaskModal(true);
   };
 
-  const handleAddObjective = (e: React.FormEvent) => {
+  const handleSaveTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!objTitle.trim()) return;
-    DailyLifeStore.addObjective({
-      title: objTitle.trim(),
-      date: todayStr
-    });
-    setObjTitle('');
-    triggerToast('Nuevo objetivo fijado para el día🎯');
+    if (!taskForm.name.trim()) return;
+
+    if (editingTask) {
+      DailyLifeStore.updateTask(editingTask.id, {
+        name: taskForm.name.trim(),
+        description: taskForm.description.trim() || undefined,
+        priority: taskForm.priority,
+        date: taskForm.date,
+        sendToChiefOfStaff: taskForm.sendToChiefOfStaff
+      });
+      if (taskForm.sendToChiefOfStaff) {
+        DailyLifeStore.sendTaskToChiefOfStaff({
+          ...editingTask,
+          name: taskForm.name.trim(),
+          priority: taskForm.priority,
+          date: taskForm.date
+        });
+        showToast('Enviado a Jefatura de Gabinete para asignación de espacio', 'success');
+      } else {
+        showToast('Tarea actualizada', 'success');
+      }
+    } else {
+      const newTaskData: Omit<DailyTask, 'id' | 'status'> = {
+        name: taskForm.name.trim(),
+        description: taskForm.description.trim() || undefined,
+        priority: taskForm.priority,
+        date: taskForm.date,
+        sendToChiefOfStaff: taskForm.sendToChiefOfStaff
+      };
+      DailyLifeStore.addTask(newTaskData);
+
+      if (taskForm.sendToChiefOfStaff) {
+        DailyLifeStore.sendTaskToChiefOfStaff({
+          id: 'temp',
+          status: 'pending',
+          ...newTaskData
+        });
+        showToast('Tarea creada y enviada a Jefatura de Gabinete', 'success');
+      } else {
+        showToast('Nueva tarea agregada', 'success');
+      }
+    }
+    setShowAddTaskModal(false);
   };
 
-  const handleToggleObjective = (id: string) => {
-    DailyLifeStore.toggleObjective(id);
-    triggerToast('Estado del objetivo actualizado ✓');
+  const handleDeleteTask = (id: string) => {
+    DailyLifeStore.deleteTask(id);
+    showToast('Tarea eliminada', 'info');
   };
 
-  const handleDeleteObjective = (id: string) => {
-    DailyLifeStore.deleteObjective(id);
-    triggerToast('Objetivo archivado', 'warning');
+  const handleSendTaskToCabinet = (task: DailyTask) => {
+    DailyLifeStore.sendTaskToChiefOfStaff(task);
+    showToast(`Solicitado bloque de tiempo a Jefatura para: "${task.name}"`, 'success');
   };
 
-  const handleAddRoutine = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rtnTitle.trim() || rtnSteps.length === 0) return;
-    DailyLifeStore.addRoutine({
-      name: rtnTitle.trim(),
-      timeOfDay: rtnTimeOfDay,
-      steps: rtnSteps.map((title, idx) => ({ id: `step_${idx}_${Date.now()}`, title, completedToday: false }))
-    });
-    setRtnTitle('');
-    setRtnSteps([]);
-    setRtnStepInput('');
-    triggerToast(`Rutina "${rtnTitle}" guardada con éxito.`);
-  };
-
+  // Handlers - Routine
   const handleToggleRoutineStep = (routineId: string, stepId: string) => {
     DailyLifeStore.toggleRoutineStep(routineId, stepId);
-    triggerToast('Paso de rutina completado ✓');
+  };
+
+  const handleSaveBaseSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    DailyLifeStore.updateBaseSchedule(baseScheduleForm);
+    setShowBaseScheduleModal(false);
+    showToast('Horarios base actualizados', 'success');
+  };
+
+  const handleCreateRoutine = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!routineForm.name.trim()) return;
+
+    const validSteps: RoutineStep[] = routineForm.initialSteps
+      .filter(s => s.trim().length > 0)
+      .map((s, idx) => ({ id: 'st_' + Date.now() + '_' + idx, title: s.trim(), completedToday: false }));
+
+    DailyLifeStore.addRoutine({
+      name: routineForm.name.trim(),
+      timeOfDay: routineForm.timeOfDay,
+      emoji: routineForm.emoji,
+      steps: validSteps.length > 0 ? validSteps : [{ id: 'st_1', title: 'Paso 1', completedToday: false }]
+    });
+
+    setShowAddRoutineModal(false);
+    showToast('Nueva rutina configurada', 'success');
+  };
+
+  const handleAddStepToRoutine = (routineId: string) => {
+    if (!newStepTitle.trim()) return;
+    const r = data?.routines?.find(item => item.id === routineId);
+    if (r) {
+      const updatedSteps = [...r.steps, { id: 'st_' + Date.now(), title: newStepTitle.trim(), completedToday: false }];
+      DailyLifeStore.updateRoutine(routineId, { steps: updatedSteps });
+      setNewStepTitle('');
+      setShowAddStepModalRoutineId(null);
+      showToast('Paso agregado a la rutina', 'success');
+    }
   };
 
   const handleDeleteRoutine = (routineId: string) => {
     DailyLifeStore.deleteRoutine(routineId);
-    triggerToast('Rutina eliminada', 'warning');
+    showToast('Rutina eliminada', 'info');
   };
 
-  const handleConfirmFreeGapAction = (actionType: 'study' | 'task' | 'rest') => {
-    if (!selectedFreeGap) return;
-
-    if (actionType === 'study') {
-      DailyLifeStore.addTimePlan({
-        title: 'Bloque de Estudio Intensivo',
-        category: 'study',
-        date: todayStr,
-        startTime: selectedFreeGap.startTime,
-        durationMinutes: Math.min(selectedFreeGap.durationMinutes, 60),
-        color: '#8B5CF6'
-      });
-      triggerToast('Aprovechaste el espacio libre para estudiar 📚');
-    } else if (actionType === 'task') {
-      const pendingTask = data.tasks.find(t => t.status === 'pending');
-      if (pendingTask) {
-        DailyLifeStore.addTimePlan({
-          title: `Avance en: ${pendingTask.name}`,
-          category: 'personal',
-          date: todayStr,
-          startTime: selectedFreeGap.startTime,
-          durationMinutes: Math.min(selectedFreeGap.durationMinutes, 45),
-          color: '#3B82F6'
-        });
-        triggerToast(`Asignado a la tarea "${pendingTask.name}" ⚡`);
-      } else {
-        triggerToast('No tienes tareas pendientes para asignar.', 'info');
-      }
-    } else if (actionType === 'rest') {
-      DailyLifeStore.addTimePlan({
-        title: 'Pausa de Descanso y Recuperación',
-        category: 'rest',
-        date: todayStr,
-        startTime: selectedFreeGap.startTime,
-        durationMinutes: Math.min(selectedFreeGap.durationMinutes, 30),
-        color: '#10B981'
-      });
-      triggerToast('Pausa programada para despejar la mente ☕');
-    }
-    setSelectedFreeGap(null);
-  };
-
-  // Build Chronological Timeline Items
-  const timelineItems = useMemo(() => {
-    const items: Array<{
-      id: string;
-      time: string;
-      title: string;
-      type: 'plan' | 'task' | 'habit' | 'routine';
-      status: 'completed' | 'pending';
-      badgeText: string;
-      badgeColor: 'amber' | 'emerald' | 'purple' | 'gold';
-      originalObject: any;
-    }> = [];
-
-    // Time Plans
-    (data.timePlans || []).filter(p => p.date === todayStr).forEach(p => {
-      items.push({
-        id: `tpl_${p.id}`,
-        time: p.startTime,
-        title: p.title,
-        type: 'plan',
-        status: 'pending',
-        badgeText: `${p.durationMinutes}m • ${p.category}`,
-        badgeColor: 'amber',
-        originalObject: p
-      });
-    });
-
-    // Timed Tasks
-    (data.tasks || []).filter(t => t.date === todayStr && t.startTime).forEach(t => {
-      items.push({
-        id: `tsk_${t.id}`,
-        time: t.startTime!,
-        title: t.name,
-        type: 'task',
-        status: t.status,
-        badgeText: `Prioridad: ${t.priority}`,
-        badgeColor: t.status === 'completed' ? 'emerald' : 'purple',
-        originalObject: t
-      });
-    });
-
-    return items.sort((a, b) => a.time.localeCompare(b.time));
-  }, [data, todayStr]);
+  // History detail record
+  const selectedHistoryRecord = useMemo(() => {
+    if (!selectedHistoryDate) return null;
+    return historyRecords.find(r => r.date === selectedHistoryDate) || null;
+  }, [selectedHistoryDate, historyRecords]);
 
   return (
-    <div className="space-y-6 text-slate-100 font-sans pb-16 relative">
-      {/* TOAST MESSAGES FLOATING CONTAINER */}
-      <div className="fixed top-20 right-6 z-50 space-y-2 pointer-events-none">
-        <AnimatePresence>
-          {toasts.map(t => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className={`pointer-events-auto px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl flex items-center gap-3 text-xs font-bold text-white ${
-                t.type === 'success'
-                  ? 'bg-emerald-950/80 border-emerald-500/50 shadow-emerald-500/20'
-                  : t.type === 'warning'
-                  ? 'bg-amber-950/80 border-amber-500/50 shadow-amber-500/20'
-                  : 'bg-slate-50 border-blue-500/50 shadow-blue-500/20'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{t.text}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+    <div className="space-y-6 pb-12 antialiased">
+      {/* 1. ENCABEZADO DE OFICINA & DÍA ACTUAL */}
+      <GlassPanel className="p-6 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/80 border-slate-800 text-slate-100 shadow-xl">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none text-emerald-400">
+          <Sparkles className="w-48 h-48" />
+        </div>
 
-      {/* WELCOME DAY MESSAGE BANNER */}
-      {data.welcomeMessage && !data.welcomeMessage.dismissed && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/80 via-yellow-900/40 to-slate-900/90 border border-amber-500/40 shadow-2xl flex items-start justify-between gap-4 relative overflow-hidden"
-        >
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-start gap-3 relative z-10">
-            <div className="p-2.5 bg-amber-500/20 rounded-xl border border-amber-400/30 text-amber-300 shrink-0">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">Aviso del Sistema</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/30 font-mono">Nuevo Día Activo</span>
-              </div>
-              <p className="text-sm font-bold text-white">
-                {data.welcomeMessage.text}
-              </p>
-              <p className="text-xs text-slate-700 mt-1">
-                Tus hábitos, objetivos, tareas y rutinas diarias se han reiniciado. Tu desempeño de ayer quedó guardado en el <strong className="text-amber-300">Historial Diario</strong>.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => DailyLifeStore.dismissWelcomeMessage()}
-            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 transition-all shrink-0 cursor-pointer"
-            title="Cerrar aviso"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
-      )}
-
-      {/* 1. SECTION HEADER INSTITUCIONAL */}
-      <ExecutiveSectionHeader
-        title="Oficina de Vida Diaria"
-        subtitle="Agencia Superior de Organización Cotidiana, Hábitos y Planificación Personal"
-        icon={<Activity className="w-6 h-6 text-amber-400" />}
-        accentColor="amber"
-        badgeText="Vida Viva & Activa"
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Buscar hábitos, tareas u objetivos..."
-      />
-
-      {/* 1.5 AVISO NOCTURNO DE CIERRE DE JORNADA (>22:00) */}
-      {isAfter22 && (
-        <GlassPanel accentColor="amber" padding="sm" className="bg-gradient-to-r from-amber-950/70 via-slate-900 to-slate-950 border-amber-500/40">
-          <div className="flex items-center gap-3 text-xs text-amber-100">
-            <Coffee className="w-5 h-5 text-amber-400 animate-pulse shrink-0" />
-            <div>
-              <span className="font-bold text-amber-300 block text-[11px] uppercase tracking-wider">Atmósfera Nocturna</span>
-              {daySummary.overallPercent >= 100 ? (
-                <span>Has completado todas tus metas del día. ¡Excelente trabajo!</span>
-              ) : (
-                <span>Es un buen momento para cerrar la jornada. Recuerda registrar tus hábitos o descanso.</span>
-              )}
-            </div>
-          </div>
-        </GlassPanel>
-      )}
-
-      {/* 2. BARRA RESUMEN EN TIEMPO REAL ("ESTADO DEL DÍA") */}
-      <GlassPanel accentColor="amber" padding="md" className="relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full filter blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
-          <div className="space-y-2 max-w-xl">
-            <div className="flex items-center gap-2">
-              <ExecutiveBadge variant="solid" accentColor="amber" className="animate-pulse">
-                Estado del Día en Tiempo Real
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <ExecutiveBadge accentColor="gold" variant="subtle">
+                <span className="text-base mr-1">🌿</span> GESTIÓN PERSONAL
               </ExecutiveBadge>
-              <span className="text-xs font-mono text-slate-500">Jornada: {todayStr}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>{streakDays} {streakDays === 1 ? 'día' : 'días'} de constancia</span>
+              </div>
             </div>
-            <h2 className="text-2xl font-serif font-bold text-white tracking-tight flex items-center gap-2">
-              Progreso General del Día: <span className="text-amber-400 font-mono">{daySummary.overallPercent}%</span>
-            </h2>
-            <AnimatedProgressBar percent={daySummary.overallPercent} color="amber" height="h-3.5" />
-            <p className="text-xs text-slate-700 font-sans leading-relaxed">
-              Resumen reactivo: {daySummary.completedActivities} de {daySummary.totalActivities} actividades cotidianas completadas. Cambios aplicados en tiempo real.
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {formattedTodayDate}
+            </h1>
+            <p className="text-sm text-slate-300 flex items-center gap-2">
+              <span className="italic font-medium text-amber-300/90">"Hoy es el día que importa."</span>
+              <span className="text-slate-500">•</span>
+              <span>Administración personal cotidiana</span>
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
-            <div className="p-3 bg-white/90 border border-slate-200 rounded-xl text-center space-y-1 hover:border-purple-300/40 transition-all">
-              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Hábitos</span>
-              <span className="text-lg font-bold font-mono text-amber-300">{daySummary.habitsCompleted}/{daySummary.habitsTotal}</span>
-              <span className="text-[10px] text-slate-500 block">{daySummary.habitsPercent}%</span>
+          {/* Target Progress Radial/Bar */}
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700/60 min-w-[260px] space-y-3">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-300">
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <TrendingUp className="w-4 h-4" /> Progreso de Hoy
+              </span>
+              <span className="text-lg font-mono text-amber-400 font-extrabold">{progressSummary.overallPercent}%</span>
             </div>
 
-            <div className="p-3 bg-white/90 border border-slate-200 rounded-xl text-center space-y-1 hover:border-purple-300/40 transition-all">
-              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Tareas</span>
-              <span className="text-lg font-bold font-mono text-emerald-300">{daySummary.tasksCompleted}/{daySummary.tasksTotal}</span>
-              <span className="text-[10px] text-slate-500 block">{daySummary.tasksPercent}%</span>
+            <div className="w-full bg-slate-700/60 h-3 rounded-full overflow-hidden p-0.5 border border-slate-600/40">
+              <motion.div
+                className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressSummary.overallPercent}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              />
             </div>
 
-            <div className="p-3 bg-white/90 border border-slate-200 rounded-xl text-center space-y-1 hover:border-purple-300/40 transition-all">
-              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Objetivos</span>
-              <span className="text-lg font-bold font-mono text-purple-300">{daySummary.objectivesCompleted}/{daySummary.objectivesTotal}</span>
-              <span className="text-[10px] text-slate-500 block">{daySummary.objectivesPercent}%</span>
-            </div>
-
-            <div className="p-3 bg-white/90 border border-slate-200 rounded-xl text-center space-y-1 hover:border-purple-300/40 transition-all">
-              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Carga</span>
-              <span className={`text-sm font-bold block mt-1 text-${workload.badgeColor}-400`}>{workload.level}</span>
-              <span className="text-[10px] text-slate-500 block font-mono">{workload.formattedTime}</span>
+            <div className="grid grid-cols-3 gap-2 text-center text-[11px] pt-1">
+              <div className="bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/40">
+                <span className="block text-slate-400">Hábitos</span>
+                <span className="font-bold font-mono text-emerald-300">{progressSummary.habitsCompleted}/{progressSummary.habitsTotal}</span>
+              </div>
+              <div className="bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/40">
+                <span className="block text-slate-400">Tareas</span>
+                <span className="font-bold font-mono text-amber-300">{progressSummary.tasksCompleted}/{progressSummary.tasksTotal}</span>
+              </div>
+              <div className="bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/40">
+                <span className="block text-slate-400">Rutinas</span>
+                <span className="font-bold font-mono text-indigo-300">{progressSummary.routinesPercent}%</span>
+              </div>
             </div>
           </div>
         </div>
       </GlassPanel>
 
-      {/* 3. TABS DE NAVEGACIÓN PRINCIPAL */}
-      <div className="flex border-b border-slate-200 space-x-2 overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveTab('horarioPersonal')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'horarioPersonal'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Clock className="w-4 h-4 text-amber-400" />
-          Horario Personal
-        </button>
-
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'dashboard'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          Dashboard del Día
-        </button>
-
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'history'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <History className="w-4 h-4 text-amber-400" />
-          Historial Diario ({unifiedHistory.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('habits')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'habits'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Flame className="w-4 h-4" />
-          Hábitos ({data.habits.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('timePlan')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'timePlan'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Bloques de Tiempo ({data.timePlans.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('tasks')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'tasks'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <CheckSquare className="w-4 h-4" />
-          Tareas Cotidianas ({data.tasks.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('objectives')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'objectives'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Target className="w-4 h-4" />
-          Objetivos del Día ({data.objectives.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('routines')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 cursor-pointer ${
-            activeTab === 'routines'
-              ? 'border-amber-400 bg-amber-500/15 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          Rutinas Paso a Paso ({data.routines.length})
-        </button>
-      </div>
-
-      {/* TAB 0: HORARIO PERSONAL */}
-      {activeTab === 'horarioPersonal' && <HorarioPersonal />}
-
-      {/* TAB 1: DASHBOARD & CRONOLOGÍA DEL DÍA */}
-      {activeTab === 'dashboard' && (
-        <div className="space-y-6">
-          {/* DETECCIÓN DE ESPACIOS DE TIEMPO LIBRE */}
-          {freeGaps.length > 0 && (
-            <GlassPanel accentColor="amber" padding="md" className="border-amber-500/30 bg-amber-950/20">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Coffee className="w-5 h-5 text-amber-400 animate-bounce" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                    Espacios de Tiempo Libre Disponibles
-                  </h3>
-                </div>
-                <ExecutiveBadge variant="outline" accentColor="amber">
-                  {freeGaps.length} {freeGaps.length === 1 ? 'bloque libre' : 'bloques libres'}
-                </ExecutiveBadge>
+      {/* 2. MI DÍA: HORARIOS BASE & MOTIVACIÓN */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Horarios Base Header Card */}
+        <GlassPanel className="lg:col-span-2 p-5 bg-white border-slate-200/80 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
+                🌅
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {freeGaps.slice(0, 4).map(gap => (
-                  <div
-                    key={gap.id}
-                    className="p-3 bg-white/90 border border-amber-500/20 rounded-xl flex items-center justify-between hover:border-purple-300/50 transition-all"
-                  >
-                    <div>
-                      <span className="text-xs font-bold text-amber-300 font-mono block">
-                        {gap.startTime} - {gap.endTime} ({gap.durationMinutes} min)
-                      </span>
-                      <span className="text-[11px] text-slate-500 block">{gap.label}</span>
-                    </div>
-                    <ExecutiveButton
-                      variant="outline"
-                      accentColor="amber"
-                      size="sm"
-                      onClick={() => setSelectedFreeGap(gap)}
-                    >
-                      Aprovechar
-                    </ExecutiveButton>
-                  </div>
-                ))}
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Horarios Base Habituales</h3>
+                <p className="text-xs text-slate-500">Bloques personales de referencia</p>
               </div>
-            </GlassPanel>
-          )}
-
-          {/* MATRIZ DASHBOARD PRINCIPAL (CRONOLOGÍA & LISTA DE CONTROL) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* COLUMNA 1 & 2: CRONOLOGÍA EN TIEMPO REAL Y DISTRIBUCIÓN DE TIEMPO */}
-            <div className="lg:col-span-2 space-y-6">
-              <GlassPanel accentColor="amber" padding="md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-amber-400" />
-                    <h3 className="text-base font-serif font-bold text-white">Cronología Ejecutiva del Día</h3>
-                  </div>
-                  <span className="text-xs font-mono text-slate-500">{timelineItems.length} eventos programados</span>
-                </div>
-
-                {timelineItems.length === 0 ? (
-                  <ExecutiveEmptyState
-                    icon={<Clock className="w-8 h-8 text-amber-400" />}
-                    title="No hay bloques agendados para hoy"
-                    description="Crea bloques de tiempo o asigna horarios a tus tareas para poblar la cronología del día."
-                  />
-                ) : (
-                  <div className="space-y-3 relative before:absolute before:left-4 before:top-3 before:bottom-3 before:w-0.5 before:bg-amber-500/30">
-                    {timelineItems.map(item => (
-                      <div
-                        key={item.id}
-                        className="relative pl-10 p-3.5 bg-white/80 border border-slate-200 rounded-xl flex items-center justify-between hover:border-purple-300/40 transition-all group"
-                      >
-                        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[#0B1528] shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
-
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-mono font-bold text-amber-300">{item.time}</span>
-                            <ExecutiveBadge variant="outline" accentColor={item.badgeColor}>
-                              {item.badgeText}
-                            </ExecutiveBadge>
-                          </div>
-                          <h4 className={`text-sm font-bold ${item.status === 'completed' ? 'line-through text-slate-500' : 'text-white'}`}>
-                            {item.title}
-                          </h4>
-                        </div>
-
-                        {item.type === 'task' && (
-                          <button
-                            onClick={() => handleToggleTask(item.originalObject.id)}
-                            className={`p-2 rounded-lg border transition-all cursor-pointer ${
-                              item.status === 'completed'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 border-emerald-500/40'
-                                : 'bg-slate-100 text-slate-500 border-slate-200 hover:text-slate-900'
-                            }`}
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </GlassPanel>
-
-              {/* DISTRIBUCIÓN DEL TIEMPO POR CATEGORÍA */}
-              <GlassPanel accentColor="amber" padding="md">
-                <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-amber-400" />
-                  Distribución del Tiempo por Categoría
-                </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Estudio / Formación</span>
-                    <span className="text-lg font-mono font-bold text-purple-300">{timeDist.estudio} min</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Gimnasio / Deporte</span>
-                    <span className="text-lg font-mono font-bold text-emerald-300">{timeDist.gimnasio} min</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Alimentación</span>
-                    <span className="text-lg font-mono font-bold text-amber-300">{timeDist.alimentacion} min</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Desplazamientos</span>
-                    <span className="text-lg font-mono font-bold text-blue-300">{timeDist.desplazamiento} min</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Descanso / Ocio</span>
-                    <span className="text-lg font-mono font-bold text-teal-300">{timeDist.descanso} min</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Actividades Personales</span>
-                    <span className="text-lg font-mono font-bold text-yellow-300">{timeDist.personal} min</span>
-                  </div>
-                </div>
-              </GlassPanel>
             </div>
+            <ExecutiveButton variant="secondary" onClick={() => setShowBaseScheduleModal(true)}>
+              <Clock className="w-3.5 h-3.5 mr-1" /> Editar Horarios
+            </ExecutiveButton>
+          </div>
 
-            {/* COLUMNA 3: ACCIONES RÁPIDAS & HÁBITOS DESTACADOS DEL DÍA */}
-            <div className="space-y-6">
-              <GlassPanel accentColor="amber" padding="md">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-serif font-bold text-white flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-amber-400" />
-                    Hábitos de Hoy
-                  </h3>
-                  <ExecutiveBadge variant="outline" accentColor="amber">
-                    {data.habits.length} registrados
-                  </ExecutiveBadge>
-                </div>
-
-                {data.habits.length === 0 ? (
-                  <ExecutiveEmptyState
-                    icon={<Flame className="w-6 h-6 text-amber-400" />}
-                    title="Sin hábitos registrados"
-                    description="Crea hábitos en la pestaña correspondiente para dar seguimiento diario."
-                  />
-                ) : (
-                  <div className="space-y-2.5">
-                    {data.habits.map(h => {
-                      const isCheckedToday = Boolean(h.logs && h.logs[todayStr]);
-                      const streak = DailyLifeCalculations.calculateHabitStreak(h, todayStr);
-
-                      return (
-                        <div
-                          key={h.id}
-                          className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                            isCheckedToday
-                              ? 'bg-emerald-950/30 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
-                              : 'bg-white/90 border-slate-200 hover:border-purple-300/30'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => handleToggleHabit(h.id, h.name)}
-                              className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-                                isCheckedToday
-                                  ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
-                                  : 'bg-white border-slate-200 hover:border-purple-300 text-slate-400'
-                              }`}
-                            >
-                              <Check className="w-4 h-4 stroke-[3]" />
-                            </button>
-                            <div>
-                              <span className={`text-xs font-bold block ${isCheckedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                                {h.name}
-                              </span>
-                              <span className="text-[10px] text-slate-500">Diario</span>
-                            </div>
-                          </div>
-
-                          <StreakBadge streak={streak} isCheckedToday={isCheckedToday} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </GlassPanel>
-
-              {/* OBJETIVOS RÁPIDOS */}
-              <GlassPanel accentColor="amber" padding="md">
-                <h3 className="text-base font-serif font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-amber-400" />
-                  Objetivos Rápidos del Día
-                </h3>
-
-                <div className="space-y-2">
-                  {data.objectives.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic">No hay objetivos definidos para hoy.</p>
-                  ) : (
-                    data.objectives.map(o => (
-                      <div key={o.id} className="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                        <span className={`text-xs font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                          {o.title}
-                        </span>
-                        <button
-                          onClick={() => handleToggleObjective(o.id)}
-                          className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            o.status === 'completed'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-500 hover:text-slate-900'
-                          }`}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </GlassPanel>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+            <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60">
+              <span className="text-base block">🌅</span>
+              <span className="text-[11px] text-amber-800 font-medium">Levantarse</span>
+              <span className="block font-mono text-xs font-extrabold text-slate-900 mt-0.5">
+                {data?.baseSchedule?.wakeUpTime || '06:30'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60">
+              <span className="text-base block">🍳</span>
+              <span className="text-[11px] text-amber-800 font-medium">Desayuno</span>
+              <span className="block font-mono text-xs font-extrabold text-slate-900 mt-0.5">
+                {data?.baseSchedule?.breakfastTime || '07:00'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60">
+              <span className="text-base block">🍽️</span>
+              <span className="text-[11px] text-amber-800 font-medium">Almuerzo</span>
+              <span className="block font-mono text-xs font-extrabold text-slate-900 mt-0.5">
+                {data?.baseSchedule?.lunchTime || '12:30'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60">
+              <span className="text-base block">🍽️</span>
+              <span className="text-[11px] text-amber-800 font-medium">Cena</span>
+              <span className="block font-mono text-xs font-extrabold text-slate-900 mt-0.5">
+                {data?.baseSchedule?.dinnerTime || '19:30'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl sm:col-span-1 col-span-2 bg-indigo-50/60 border border-indigo-200/60">
+              <span className="text-base block">🌙</span>
+              <span className="text-[11px] text-indigo-800 font-medium">Dormir</span>
+              <span className="block font-mono text-xs font-extrabold text-slate-900 mt-0.5">
+                {data?.baseSchedule?.sleepTime || '23:00'}
+              </span>
             </div>
           </div>
-        </div>
-      )}
+        </GlassPanel>
 
-      {/* TAB 1: HISTORIAL DIARIO */}
-      {activeTab === 'history' && (
-        <div className="space-y-6">
-          {/* HEADER DEL HISTORIAL CON FILTROS Y ESTADÍSTICAS GLOBALES */}
-          <GlassPanel accentColor="amber" padding="md">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        {/* Motivational Card */}
+        <GlassPanel className="p-5 bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-emerald-500/10 border-amber-200/70 shadow-sm flex flex-col justify-between">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                <Smile className="w-4 h-4 text-amber-600" /> Motivación Inteligente
+              </span>
+              <ExecutiveBadge accentColor="amber" variant="subtle">{motivationalMessage.badge}</ExecutiveBadge>
+            </div>
+            <h4 className="font-extrabold text-slate-900 text-base">{motivationalMessage.title}</h4>
+            <p className="text-xs text-slate-700 leading-relaxed">{motivationalMessage.text}</p>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-amber-200/50 text-[11px] text-slate-600 flex items-center justify-between">
+            <span>Filosofía del día:</span>
+            <span className="font-bold text-amber-900">Pasos pequeños, constancia diaria</span>
+          </div>
+        </GlassPanel>
+      </div>
+
+      {/* 3. COLUMNAS PRINCIPALES: HÁBITOS Y TAREAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* SECCIÓN 1: 🌱 HÁBITOS DE HOY */}
+        <GlassPanel className="p-6 bg-white border-slate-200/80 shadow-sm space-y-5">
+          <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌱</span>
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <ExecutiveBadge variant="solid" accentColor="amber">
-                    Registro Histórico Permanente
-                  </ExecutiveBadge>
-                  <span className="text-xs font-mono text-slate-500">{unifiedHistory.length} días almacenados</span>
+                <h2 className="font-bold text-slate-900 text-base">Hábitos de hoy</h2>
+                <p className="text-xs text-slate-500">Prácticas personales recurrentes</p>
+              </div>
+            </div>
+            <ExecutiveButton variant="primary" onClick={handleOpenAddHabit}>
+              <Plus className="w-4 h-4 mr-1" /> Agregar Hábito
+            </ExecutiveButton>
+          </div>
+
+          {/* Felicitación si completó todos */}
+          <AnimatePresence>
+            {allHabitsCompleted && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-amber-500/15 border border-emerald-300 text-emerald-950 flex items-center gap-3 shadow-sm"
+              >
+                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 text-xl shadow-md">
+                  🎉
                 </div>
-                <h3 className="text-xl font-serif font-bold text-slate-900 flex items-center gap-2">
-                  <History className="w-6 h-6 text-amber-400" />
-                  Historial Diario de Desempeño
-                </h3>
-                <p className="text-xs text-slate-700 mt-1">
-                  Consulta el desempeño histórico consolidado por día, semana, mes o año. Todos los datos diarios anteriores se conservan de forma permanente.
-                </p>
-              </div>
-
-              {/* CONTROLES DE FILTRO Y PERIODO */}
-              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                <div className="flex bg-white border border-slate-200 rounded-xl p-1 gap-1">
-                  {(['day', 'week', 'month', 'year'] as const).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setHistoryPeriod(p)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize cursor-pointer ${
-                        historyPeriod === p
-                          ? 'bg-amber-500 text-slate-950 shadow-md'
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-white/5'
-                      }`}
-                    >
-                      {p === 'day' ? 'Día' : p === 'week' ? 'Semana' : p === 'month' ? 'Mes' : 'Año'}
-                    </button>
-                  ))}
+                <div>
+                  <h4 className="font-extrabold text-sm text-emerald-900">¡Felicidades!</h4>
+                  <p className="text-xs text-emerald-800">Completaste todos tus hábitos programados para hoy.</p>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                <div className="relative flex-1 md:w-48">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder="Buscar fecha o actividad..."
-                    value={historySearch}
-                    onChange={e => setHistorySearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* TARJETAS KPI RESUMEN HISTÓRICO */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200">
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold uppercase text-slate-500 block">Días Registrados</span>
-                <span className="text-xl font-mono font-bold text-amber-300">{historyKPIs.totalDays}</span>
-              </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold uppercase text-slate-500 block">Promedio Cumplimiento</span>
-                <span className="text-xl font-mono font-bold text-emerald-300">{historyKPIs.avgCompliance}%</span>
-              </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold uppercase text-slate-500 block">Tiempo Productivo Total</span>
-                <span className="text-xl font-mono font-bold text-purple-300">{historyKPIs.totalProductiveHours} hrs</span>
-              </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold uppercase text-slate-500 block">Mejor Día Histórico</span>
-                <span className="text-xl font-mono font-bold text-yellow-300">{historyKPIs.bestCompliance}%</span>
-              </div>
-            </div>
-          </GlassPanel>
-
-          {/* LISTA DE HISTORIAL POR DÍA */}
-          {historyPeriod === 'day' && (
-            <div className="space-y-4">
-              {filteredHistory.length === 0 ? (
-                <ExecutiveEmptyState
-                  icon={<Calendar className="w-8 h-8 text-amber-400" />}
-                  title="No se encontraron registros de historial"
-                  description="Comienza a registrar actividades y hábitos para generar tarjetas de desempeño diario."
-                />
-              ) : (
-                filteredHistory.map(record => {
-                  const isTodayRecord = record.date === todayStr;
-                  const prodHours = Math.floor(record.productiveTimeMinutes / 60);
-                  const prodMins = record.productiveTimeMinutes % 60;
-                  const formattedProdTime = prodHours > 0 ? `${prodHours} h ${prodMins} min` : `${prodMins} min`;
-
-                  return (
-                    <GlassPanel
-                      key={record.date}
-                      accentColor={isTodayRecord ? 'emerald' : 'amber'}
-                      padding="md"
-                      className="hover:border-purple-300/50 transition-all group"
-                    >
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base font-bold text-slate-900 capitalize">{record.dayOfWeek}</span>
-                            {isTodayRecord && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 border border-emerald-500/30">
-                                Hoy
-                              </span>
-                            )}
-                            <span className="text-xs font-mono text-slate-500">({record.date})</span>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-slate-700">Cumplimiento General:</span>
-                            <span className="text-sm font-mono font-bold text-amber-400">{record.overallCompliancePercent}%</span>
-                            <div className="w-32">
-                              <AnimatedProgressBar percent={record.overallCompliancePercent} color="amber" height="h-2" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* METRICAS DE LA TARJETA DEL DÍA */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Hábitos</span>
-                            <span className="text-xs font-mono font-bold text-amber-700">
-                              {record.habitsCount.percent}% ({record.habitsCount.completed}/{record.habitsCount.total})
-                            </span>
-                          </div>
-
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Objetivos</span>
-                            <span className="text-xs font-mono font-bold text-purple-700">
-                              {record.objectivesCount.percent}% ({record.objectivesCount.completed}/{record.objectivesCount.total})
-                            </span>
-                          </div>
-
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Tareas</span>
-                            <span className="text-xs font-mono font-bold text-emerald-700">
-                              {record.tasksCount.percent}% ({record.tasksCount.completed}/{record.tasksCount.total})
-                            </span>
-                          </div>
-
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">T. Productivo</span>
-                            <span className="text-xs font-mono font-bold text-blue-700">{formattedProdTime}</span>
-                          </div>
-                        </div>
-
-                        <ExecutiveButton
-                          variant="outline"
-                          accentColor="amber"
-                          size="sm"
-                          onClick={() => setSelectedHistoryRecord(record)}
-                        >
-                          Ver Detalle
-                        </ExecutiveButton>
-                      </div>
-                    </GlassPanel>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {/* VISTA AGRUPADA POR SEMANA / MES / AÑO */}
-          {historyPeriod !== 'day' && periodGroupedHistory && (
-            <div className="space-y-6">
-              {periodGroupedHistory.length === 0 ? (
-                <ExecutiveEmptyState
-                  icon={<BarChart3 className="w-8 h-8 text-amber-400" />}
-                  title="No hay registros para este periodo"
-                  description="Realiza seguimiento a tus actividades para agrupar tu desempeño por semanas, meses o años."
-                />
-              ) : (
-                periodGroupedHistory.map(group => {
-                  const totalHrs = (group.totalProductiveMins / 60).toFixed(1);
-
-                  return (
-                    <GlassPanel key={group.key} accentColor="amber" padding="md" className="space-y-4">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-3 border-b border-slate-200">
-                        <div>
-                          <h4 className="text-lg font-serif font-bold text-slate-900 flex items-center gap-2">
-                            <CalendarDays className="w-5 h-5 text-amber-400" />
-                            {group.title}
-                          </h4>
-                          <p className="text-xs text-slate-500">{group.records.length} días registrados en este periodo</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Prom. Cumplimiento</span>
-                            <span className="text-xs font-mono font-bold text-amber-400">{group.avgCompliance}%</span>
-                          </div>
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Prom. Hábitos</span>
-                            <span className="text-xs font-mono font-bold text-emerald-300">{group.avgHabits}%</span>
-                          </div>
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">Prom. Objetivos</span>
-                            <span className="text-xs font-mono font-bold text-purple-300">{group.avgObjectives}%</span>
-                          </div>
-                          <div className="p-2 bg-white border border-slate-200 rounded-lg text-center">
-                            <span className="text-[9px] uppercase text-slate-500 block font-bold">T. Productivo</span>
-                            <span className="text-xs font-mono font-bold text-blue-300">{totalHrs} hrs</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* DESGLOSE DE DÍAS DENTRO DEL AGRUPAMIENTO */}
-                      <div className="space-y-2">
-                        {group.records.map(rec => (
-                          <div
-                            key={rec.date}
-                            className="p-3 bg-white/70 border border-slate-100 rounded-xl flex items-center justify-between hover:border-purple-300/30 transition-all"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-slate-900">{rec.dayOfWeek}</span>
-                              <span className="text-xs font-mono text-slate-500">({rec.date})</span>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                              <span className="text-xs font-mono text-amber-300 font-bold">
-                                {rec.overallCompliancePercent}% cumplimiento
-                              </span>
-                              <button
-                                onClick={() => setSelectedHistoryRecord(rec)}
-                                className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                              >
-                                Detalle <ChevronRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </GlassPanel>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 2: HÁBITOS DIARIOS */}
-      {activeTab === 'habits' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-amber-400" />
-              Crear Nuevo Hábito
-            </h3>
-
-            <form onSubmit={handleAddHabit} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="Nombre del hábito (Ej. Meditar 15m, Leer 20 págs, Beber 2L agua)..."
-                value={newHabitName}
-                onChange={e => setNewHabitName(e.target.value)}
-                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
-                required
-              />
-              <ExecutiveButton variant="primary" accentColor="amber" type="submit">
-                Agregar Hábito
+          {/* Habit Checklist */}
+          {todayHabits.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl space-y-2">
+              <span className="text-3xl block">🌱</span>
+              <p className="text-xs font-medium">No has registrado hábitos aún.</p>
+              <ExecutiveButton variant="secondary" onClick={handleOpenAddHabit}>
+                + Agregar tu primer hábito
               </ExecutiveButton>
-            </form>
-          </GlassPanel>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.habits.map(h => {
-              const isCheckedToday = Boolean(h.logs && h.logs[todayStr]);
-              const streak = DailyLifeCalculations.calculateHabitStreak(h, todayStr);
-
-              return (
-                <GlassPanel key={h.id} accentColor="amber" padding="md">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {todayHabits.map(h => {
+                return (
+                  <motion.div
+                    key={h.id}
+                    layout
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                      h.isCompleted
+                        ? 'bg-emerald-50/50 border-emerald-200 text-slate-800'
+                        : 'bg-slate-50/80 border-slate-200 text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <button
-                        onClick={() => handleToggleHabit(h.id, h.name)}
-                        className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                          isCheckedToday
-                            ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
-                            : 'bg-white border-slate-200 hover:border-purple-300 text-slate-400'
+                        type="button"
+                        onClick={() => handleToggleHabit(h.id)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0 ${
+                          h.isCompleted
+                            ? 'bg-emerald-500 text-white shadow-sm scale-105'
+                            : 'border-2 border-slate-300 text-transparent hover:border-emerald-500'
                         }`}
                       >
-                        <Check className="w-5 h-5 stroke-[3]" />
+                        <Check className="w-4 h-4 stroke-[3]" />
                       </button>
-                      <div>
-                        <h4 className={`text-sm font-bold ${isCheckedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                          {h.name}
-                        </h4>
-                        <span className="text-[10px] text-slate-500 font-mono">Frecuencia: Diaria</span>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{h.emoji || '🌱'}</span>
+                          <span className={`font-bold text-sm truncate ${h.isCompleted ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                            {h.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                          {h.scheduledTime && (
+                            <span className="flex items-center gap-1 font-mono">
+                              <Clock className="w-3 h-3 text-slate-400" /> {h.scheduledTime}
+                            </span>
+                          )}
+                          <span>•</span>
+                          <span>
+                            {h.frequency === 'daily'
+                              ? 'Todos los días'
+                              : h.frequency === 'weekdays'
+                              ? 'Lunes a Viernes'
+                              : 'Días seleccionados'}
+                          </span>
+                        </div>
+                        {h.description && <p className="text-[11px] text-slate-500 truncate mt-0.5">{h.description}</p>}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <StreakBadge streak={streak} isCheckedToday={isCheckedToday} />
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setEditingHabit(h)}
-                        className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+                        onClick={() => handleOpenEditHabit(h)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                         title="Editar hábito"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteHabit(h.id)}
-                        className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
                         title="Eliminar hábito"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </div>
-                </GlassPanel>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </GlassPanel>
+
+        {/* SECCIÓN 2: 📋 TAREAS DE HOY */}
+        <GlassPanel className="p-6 bg-white border-slate-200/80 shadow-sm space-y-5">
+          <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📋</span>
+              <div>
+                <h2 className="font-bold text-slate-900 text-base">Tareas de hoy</h2>
+                <p className="text-xs text-slate-500">Acciones puntuales del día</p>
+              </div>
+            </div>
+            <ExecutiveButton variant="primary" onClick={handleOpenAddTask}>
+              <Plus className="w-4 h-4 mr-1" /> Agregar Tarea
+            </ExecutiveButton>
           </div>
-        </div>
-      )}
 
-      {/* TAB 3: BLOQUES DE TIEMPO / PLAN DEL DÍA */}
-      {activeTab === 'timePlan' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-500" />
-              Programar Bloque de Tiempo
-            </h3>
-
-            <form onSubmit={handleAddTimePlan} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <input
-                type="text"
-                placeholder="Título del bloque (Ej. Estudio de Física, Almuerzo)..."
-                value={tplTitle}
-                onChange={e => setTplTitle(e.target.value)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 sm:col-span-2"
-                required
-              />
-
-              <select
-                value={tplCategory}
-                onChange={e => setTplCategory(e.target.value as any)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600"
-              >
-                <option value="study">📚 Estudio / Formación</option>
-                <option value="commute">🚗 Desplazamiento</option>
-                <option value="lunch">🍽️ Almuerzo / Comida</option>
-                <option value="rest">☕ Descanso / Pausa</option>
-                <option value="gym">🏋️ Gimnasio / Deporte</option>
-                <option value="personal">🎟️ Personal / Trámites</option>
-              </select>
-
-              <div className="flex gap-2">
-                <input
-                  type="time"
-                  value={tplStart}
-                  onChange={e => setTplStart(e.target.value)}
-                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 font-mono"
-                  required
-                />
-                <input
-                  type="number"
-                  placeholder="Minutos"
-                  value={tplDuration}
-                  onChange={e => setTplDuration(Number(e.target.value))}
-                  className="w-1/2 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-purple-600 font-mono"
-                  required
-                />
+          {/* Warning for Overdue Tasks */}
+          {overdueTasks.length > 0 && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-rose-800">
+                <AlertCircle className="w-4 h-4 text-rose-600" />
+                <span>Tareas vencidas de días anteriores ({overdueTasks.length})</span>
               </div>
-
-              <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
-                <ExecutiveButton variant="primary" accentColor="amber" type="submit">
-                  Guardar Bloque de Tiempo
-                </ExecutiveButton>
+              <div className="space-y-1.5">
+                {overdueTasks.map(ot => (
+                  <div key={ot.id} className="flex justify-between items-center text-xs bg-white/80 p-2 rounded-lg border border-rose-200/60">
+                    <span className="font-medium text-slate-900 truncate">🔴 Vencida — {ot.name}</span>
+                    <button
+                      onClick={() => handleToggleTask(ot.id)}
+                      className="text-[11px] text-emerald-700 font-bold hover:underline"
+                    >
+                      Completar
+                    </button>
+                  </div>
+                ))}
               </div>
-            </form>
-          </GlassPanel>
+            </div>
+          )}
 
-          <div className="space-y-3">
-            {data.timePlans.filter(p => p.date === todayStr).map(p => (
-              <GlassPanel key={p.id} accentColor="amber" padding="md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-500/20 rounded-xl border border-amber-400/30 text-amber-700">
-                      <Clock className="w-5 h-5" />
+          {/* Tasks Checklist */}
+          {todayTasks.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl space-y-2">
+              <span className="text-3xl block">📋</span>
+              <p className="text-xs font-medium">No hay tareas programadas para hoy.</p>
+              <ExecutiveButton variant="secondary" onClick={handleOpenAddTask}>
+                + Crear tarea de hoy
+              </ExecutiveButton>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {todayTasks.map(t => {
+                const isCompleted = t.status === 'completed';
+                return (
+                  <motion.div
+                    key={t.id}
+                    layout
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                      isCompleted
+                        ? 'bg-slate-50 border-slate-200 text-slate-500'
+                        : 'bg-slate-50/80 border-slate-200 text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleTask(t.id)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0 ${
+                          isCompleted
+                            ? 'bg-slate-800 text-white shadow-sm'
+                            : 'border-2 border-slate-300 text-transparent hover:border-slate-800'
+                        }`}
+                      >
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold text-sm truncate ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                            {t.name}
+                          </span>
+
+                          {/* Priority Badge */}
+                          {t.priority === 'high' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                              Alta
+                            </span>
+                          )}
+                          {t.priority === 'medium' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                              Media
+                            </span>
+                          )}
+                          {t.priority === 'low' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Baja
+                            </span>
+                          )}
+                        </div>
+                        {t.description && <p className="text-[11px] text-slate-500 truncate mt-0.5">{t.description}</p>}
+                      </div>
                     </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleSendTaskToCabinet(t)}
+                        className="p-1.5 text-slate-400 hover:text-amber-700 rounded-lg hover:bg-amber-50 transition-colors"
+                        title="Solicitar espacio en agenda a Jefatura de Gabinete"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditTask(t)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                        title="Editar tarea"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(t.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                        title="Eliminar tarea"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {futureTasksCount > 0 && (
+            <div className="text-[11px] text-slate-500 text-center pt-2 border-t border-slate-100 flex items-center justify-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{futureTasksCount} tarea(s) programada(s) para días futuros</span>
+            </div>
+          )}
+        </GlassPanel>
+      </div>
+
+      {/* 4. RUTINAS PERSONALES (CHECKLIST) */}
+      <GlassPanel className="p-6 bg-white border-slate-200/80 shadow-sm space-y-5">
+        <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🔄</span>
+            <div>
+              <h2 className="font-bold text-slate-900 text-base">Mis Rutinas</h2>
+              <p className="text-xs text-slate-500">Secuencias personales para mañanas y noches</p>
+            </div>
+          </div>
+          <ExecutiveButton variant="secondary" onClick={() => setShowAddRoutineModal(true)}>
+            <Plus className="w-4 h-4 mr-1" /> Configurar Rutina
+          </ExecutiveButton>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {(data?.routines || []).map(r => {
+            const totalSteps = r.steps?.length || 0;
+            const completedSteps = r.steps?.filter(s => s.completedToday).length || 0;
+            const routinePercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+            const isFullyCompleted = routinePercent === 100 && totalSteps > 0;
+
+            return (
+              <div
+                key={r.id}
+                className={`p-4 rounded-xl border transition-all space-y-3 ${
+                  isFullyCompleted
+                    ? 'bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border-emerald-300'
+                    : 'bg-slate-50/60 border-slate-200/90'
+                }`}
+              >
+                <div className="flex justify-between items-center border-b pb-2 border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{r.emoji || '🔄'}</span>
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">{p.title}</h4>
-                      <span className="text-xs font-mono text-amber-700">
-                        {p.startTime} - {p.endTime} ({p.durationMinutes} min) • Categoría: {p.category}
+                      <h3 className="font-bold text-slate-900 text-sm">{r.name}</h3>
+                      <span className="text-[11px] font-mono font-bold text-emerald-700">
+                        {completedSteps}/{totalSteps} Pasos ({routinePercent}%)
                       </span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleDeleteTimePlan(p.id)}
-                    className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {isFullyCompleted && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-xs">
+                        Completada 🎉
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setShowAddStepModalRoutineId(r.id)}
+                      className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-200/60 text-xs flex items-center gap-1 font-medium"
+                      title="Agregar paso"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Paso
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRoutine(r.id)}
+                      className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50"
+                      title="Eliminar rutina"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </GlassPanel>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* TAB 4: TAREAS COTIDIANAS */}
-      {activeTab === 'tasks' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <CheckSquare className="w-5 h-5 text-amber-500" />
-              Nueva Tarea Cotidiana
-            </h3>
+                {/* Steps List */}
+                <div className="space-y-1.5">
+                  {(r.steps || []).map(st => (
+                    <div
+                      key={st.id}
+                      onClick={() => handleToggleRoutineStep(r.id, st.id)}
+                      className={`p-2 rounded-lg text-xs cursor-pointer flex items-center justify-between border transition-all ${
+                        st.completedToday
+                          ? 'bg-emerald-100/60 border-emerald-300 text-emerald-950 font-medium'
+                          : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-100/80'
+                      }`}
+                    >
+                      <span className={st.completedToday ? 'line-through text-slate-500' : ''}>{st.title}</span>
+                      <div
+                        className={`w-5 h-5 rounded flex items-center justify-center text-xs ${
+                          st.completedToday ? 'bg-emerald-600 text-white' : 'border border-slate-300'
+                        }`}
+                      >
+                        {st.completedToday && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-            <form onSubmit={handleAddTask} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="text"
-                placeholder="Nombre de la tarea cotidiana..."
-                value={newTaskName}
-                onChange={e => setNewTaskName(e.target.value)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600 sm:col-span-2"
-                required
-              />
-
-              <select
-                value={newTaskPriority}
-                onChange={e => setNewTaskPriority(e.target.value as any)}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
-              >
-                <option value="low">Prioridad Baja</option>
-                <option value="medium">Prioridad Media</option>
-                <option value="high">Prioridad Alta</option>
-              </select>
-
-              <div className="sm:col-span-3 flex justify-end">
-                <ExecutiveButton variant="primary" accentColor="amber" type="submit">
-                  Agregar Tarea
-                </ExecutiveButton>
+                {/* Adding Step inline form */}
+                {showAddStepModalRoutineId === r.id && (
+                  <div className="pt-2 border-t border-slate-200/80 flex items-center gap-2">
+                    <ExecutiveInput
+                      value={newStepTitle}
+                      onChange={e => setNewStepTitle(e.target.value)}
+                      placeholder="Nuevo paso de rutina..."
+                      className="text-xs h-8"
+                    />
+                    <ExecutiveButton variant="primary" onClick={() => handleAddStepToRoutine(r.id)} className="h-8 text-xs px-2">
+                      Agregar
+                    </ExecutiveButton>
+                    <button
+                      onClick={() => setShowAddStepModalRoutineId(null)}
+                      className="p-1 text-slate-400 hover:text-slate-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
-            </form>
-          </GlassPanel>
+            );
+          })}
+        </div>
+      </GlassPanel>
 
-          <div className="space-y-3">
-            {data.tasks.map(t => (
-              <GlassPanel key={t.id} accentColor="amber" padding="md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleToggleTask(t.id)}
-                      className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-                        t.status === 'completed'
-                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
-                          : 'bg-white border-slate-200 hover:border-purple-300 text-slate-400'
-                      }`}
-                    >
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    </button>
-                    <div>
-                      <h4 className={`text-sm font-bold ${t.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                        {t.name}
-                      </h4>
-                      <span className="text-[10px] text-slate-500 font-mono">Prioridad: {t.priority}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleDeleteTask(t.id)}
-                    className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </GlassPanel>
-            ))}
+      {/* 5. HISTORIAL DE CUMPLIMIENTO */}
+      <GlassPanel className="p-6 bg-white border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-amber-600" />
+            <div>
+              <h2 className="font-bold text-slate-900 text-base">Historial Reciente de Cumplimiento</h2>
+              <p className="text-xs text-slate-500">El pasado se conserva. Cada día inicia limpio.</p>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* TAB 5: OBJETIVOS DEL DÍA */}
-      {activeTab === 'objectives' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-amber-500" />
-              Fijar Nuevo Objetivo para Hoy
-            </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {historyRecords.slice(0, 8).map(record => {
+            const isToday = record.date === todayStr;
+            const percent = record.overallCompliancePercent;
 
-            <form onSubmit={handleAddObjective} className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Título del objetivo del día (Ej. Entregar reporte, Estudiar tema 4)..."
-                value={objTitle}
-                onChange={e => setObjTitle(e.target.value)}
-                className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
+            return (
+              <div
+                key={record.date}
+                onClick={() => setSelectedHistoryDate(record.date)}
+                className={`p-3.5 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
+                  isToday
+                    ? 'bg-amber-500/10 border-amber-300 ring-2 ring-amber-400/30'
+                    : 'bg-slate-50/80 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-xs text-slate-900">
+                    {isToday ? 'HOY' : record.dayOfWeek.split(',')[0]}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-slate-500">{record.date}</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs font-mono font-extrabold text-slate-800">
+                    <span>Cumplimiento</span>
+                    <span>{percent}%</span>
+                  </div>
+
+                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        percent >= 80 ? 'bg-emerald-500' : percent >= 50 ? 'bg-amber-500' : 'bg-rose-400'
+                      }`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-2 text-[10px] text-slate-500 flex justify-between pt-1 border-t border-slate-200/60">
+                  <span>Hábitos: {record.habitsCount?.completed}/{record.habitsCount?.total}</span>
+                  <span>Tareas: {record.tasksCount?.completed}/{record.tasksCount?.total}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </GlassPanel>
+
+      {/* MODAL: AGREGAR / EDITAR HÁBITO */}
+      <ExecutiveModal
+        isOpen={showAddHabitModal}
+        onClose={() => setShowAddHabitModal(false)}
+        title={editingHabit ? 'Editar Hábito' : '🌱 Crear Nuevo Hábito'}
+      >
+        <ExecutiveForm onSubmit={handleSaveHabit}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre del hábito</label>
+              <ExecutiveInput
+                value={habitForm.name}
+                onChange={e => setHabitForm({ ...habitForm, name: e.target.value })}
+                placeholder="ej. Leer 20 minutos, Tomar agua, Meditar..."
                 required
               />
-              <ExecutiveButton variant="primary" accentColor="amber" type="submit">
-                Guardar Objetivo
-              </ExecutiveButton>
-            </form>
-          </GlassPanel>
+            </div>
 
-          <div className="space-y-3">
-            {data.objectives.map(o => (
-              <GlassPanel key={o.id} accentColor="amber" padding="md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleToggleObjective(o.id)}
-                      className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-                        o.status === 'completed'
-                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
-                          : 'bg-white border-slate-200 hover:border-purple-300 text-slate-400'
-                      }`}
-                    >
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    </button>
-                    <div>
-                      <h4 className={`text-sm font-bold ${o.status === 'completed' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                        {o.title}
-                      </h4>
-                      <span className="text-[10px] text-slate-500 font-mono">Estado: {o.status === 'completed' ? 'Completado' : 'Pendiente'}</span>
-                    </div>
-                  </div>
-
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Emoji representativo</label>
+              <div className="flex flex-wrap gap-2">
+                {HABIT_EMOJIS.map(e => (
                   <button
-                    onClick={() => handleDeleteObjective(o.id)}
-                    className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
+                    key={e}
+                    type="button"
+                    onClick={() => setHabitForm({ ...habitForm, emoji: e })}
+                    className={`w-9 h-9 text-lg rounded-xl flex items-center justify-center border transition-all ${
+                      habitForm.emoji === e
+                        ? 'bg-amber-100 border-amber-500 scale-110 shadow-sm'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                    }`}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {e}
                   </button>
-                </div>
-              </GlassPanel>
-            ))}
-          </div>
-        </div>
-      )}
+                ))}
+              </div>
+            </div>
 
-      {/* TAB 6: RUTINAS PASO A PASO */}
-      {activeTab === 'routines' && (
-        <div className="space-y-6">
-          <GlassPanel accentColor="amber" padding="md">
-            <h3 className="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-500" />
-              Crear Nueva Rutina
-            </h3>
-
-            <form onSubmit={handleAddRoutine} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Nombre de la rutina (Ej. Rutina Mañanera)..."
-                  value={rtnTitle}
-                  onChange={e => setRtnTitle(e.target.value)}
-                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
-                  required
-                />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Frecuencia</label>
                 <select
-                  value={rtnTimeOfDay}
-                  onChange={e => setRtnTimeOfDay(e.target.value as any)}
-                  className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
+                  value={habitForm.frequency}
+                  onChange={e =>
+                    setHabitForm({
+                      ...habitForm,
+                      frequency: e.target.value as 'daily' | 'weekdays' | 'custom'
+                    })
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-medium"
                 >
-                  <option value="morning">🌅 Mañana</option>
-                  <option value="afternoon">☀️ Tarde</option>
-                  <option value="evening">🌙 Noche</option>
+                  <option value="daily">Todos los días</option>
+                  <option value="weekdays">Lunes a Viernes</option>
+                  <option value="custom">Días específicos</option>
                 </select>
               </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Agregar un paso (Ej. Estiramiento, Ducha)..."
-                  value={rtnStepInput}
-                  onChange={e => setRtnStepInput(e.target.value)}
-                  className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-purple-600"
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Hora sugerida (opcional)</label>
+                <ExecutiveInput
+                  type="time"
+                  value={habitForm.scheduledTime}
+                  onChange={e => setHabitForm({ ...habitForm, scheduledTime: e.target.value })}
                 />
-                <ExecutiveButton
-                  variant="outline"
-                  accentColor="amber"
-                  type="button"
-                  onClick={() => {
-                    if (rtnStepInput.trim()) {
-                      setRtnSteps(prev => [...prev, rtnStepInput.trim()]);
-                      setRtnStepInput('');
-                    }
-                  }}
-                >
-                  + Paso
-                </ExecutiveButton>
               </div>
-
-              {rtnSteps.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {rtnSteps.map((step, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-amber-500/20 text-amber-800 rounded-lg text-xs font-mono border border-amber-400/30 flex items-center gap-1.5">
-                      {step}
-                      <button
-                        type="button"
-                        onClick={() => setRtnSteps(prev => prev.filter((_, i) => i !== idx))}
-                        className="text-amber-800 hover:text-slate-900"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <ExecutiveButton variant="primary" accentColor="amber" type="submit">
-                  Guardar Rutina
-                </ExecutiveButton>
-              </div>
-            </form>
-          </GlassPanel>
-
-          <div className="space-y-4">
-            {data.routines.map(r => (
-              <GlassPanel key={r.id} accentColor="amber" padding="md">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-amber-500" />
-                    {r.name} <span className="text-xs font-mono text-slate-500">({r.timeOfDay})</span>
-                  </h4>
-                  <button
-                    onClick={() => handleDeleteRoutine(r.id)}
-                    className="p-1.5 hover:bg-rose-500/20 rounded-lg text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {(r.steps || []).map(step => (
-                    <div key={step.id} className="p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                      <span className={`text-xs ${step.completedToday ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                        {step.title}
-                      </span>
-                      <button
-                        onClick={() => handleToggleRoutineStep(r.id, step.id)}
-                        className={`p-1 rounded-lg text-xs font-bold cursor-pointer ${
-                          step.completedToday ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </GlassPanel>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DETALLE DE DÍA HISTÓRICO */}
-      {selectedHistoryRecord && (
-        <ExecutiveModal
-          isOpen={Boolean(selectedHistoryRecord)}
-          onClose={() => setSelectedHistoryRecord(null)}
-          title={`Detalle Histórico: ${selectedHistoryRecord.dayOfWeek}`}
-          accentColor="amber"
-        >
-          <div className="space-y-6 py-2 text-slate-900">
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Fecha del Registro:</span>
-                <span className="text-xs font-mono text-amber-700 font-bold">{selectedHistoryRecord.date}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Cumplimiento General:</span>
-                <span className="text-sm font-mono font-bold text-emerald-700">{selectedHistoryRecord.overallCompliancePercent}%</span>
-              </div>
-              <AnimatedProgressBar percent={selectedHistoryRecord.overallCompliancePercent} color="emerald" height="h-3" />
             </div>
 
-            {/* SECCIÓN HÁBITOS DEL DÍA */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-2">
-                <Flame className="w-4 h-4" />
-                Hábitos en este día ({selectedHistoryRecord.habitsCount.completed}/{selectedHistoryRecord.habitsCount.total})
-              </h4>
-              {!selectedHistoryRecord.habitsDetail || selectedHistoryRecord.habitsDetail.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No hubo hábitos registrados.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {selectedHistoryRecord.habitsDetail.map(h => (
-                    <div key={h.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
-                      <span className={`text-xs font-bold ${h.completed ? 'text-slate-900' : 'text-slate-500 line-through'}`}>
-                        {h.name}
-                      </span>
-                      {h.completed ? (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Completado
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                          <XCircle className="w-3 h-3" /> Pendiente
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Descripción corta (opcional)</label>
+              <ExecutiveInput
+                value={habitForm.description}
+                onChange={e => setHabitForm({ ...habitForm, description: e.target.value })}
+                placeholder="ej. Práctica diaria de atención plena"
+              />
             </div>
 
-            {/* SECCIÓN TAREAS DEL DÍA */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-2">
-                <CheckSquare className="w-4 h-4" />
-                Tareas en este día ({selectedHistoryRecord.tasksCount.completed}/{selectedHistoryRecord.tasksCount.total})
-              </h4>
-              {!selectedHistoryRecord.tasksDetail || selectedHistoryRecord.tasksDetail.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No hubo tareas agendadas.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {selectedHistoryRecord.tasksDetail.map(t => (
-                    <div key={t.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
-                      <div>
-                        <span className={`text-xs font-bold ${t.completed ? 'text-slate-900' : 'text-slate-500'}`}>{t.name}</span>
-                        {t.category && <span className="text-[10px] text-slate-500 block font-mono">{t.category}</span>}
-                      </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                        t.completed ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {t.completed ? 'Completada' : 'Incompleta'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* SECCIÓN OBJETIVOS DEL DÍA */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                Objetivos del día ({selectedHistoryRecord.objectivesCount.completed}/{selectedHistoryRecord.objectivesCount.total})
-              </h4>
-              {!selectedHistoryRecord.objectivesDetail || selectedHistoryRecord.objectivesDetail.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No hubo objetivos registrados.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {selectedHistoryRecord.objectivesDetail.map(o => (
-                    <div key={o.id} className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-900">{o.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                        o.completed ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {o.completed ? 'Cumplido' : 'Pendiente'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-slate-200">
-              <ExecutiveButton variant="primary" accentColor="amber" onClick={() => setSelectedHistoryRecord(null)}>
-                Cerrar Detalle
-              </ExecutiveButton>
-            </div>
-          </div>
-        </ExecutiveModal>
-      )}
-
-      {/* MODAL APROVECHAR TIEMPO LIBRE */}
-      {selectedFreeGap && (
-        <ExecutiveModal
-          isOpen={Boolean(selectedFreeGap)}
-          onClose={() => setSelectedFreeGap(null)}
-          title="Aprovechar Espacio de Tiempo Libre"
-          accentColor="amber"
-        >
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-slate-700 leading-relaxed">
-              Detectamos un espacio de <strong className="text-amber-700">{selectedFreeGap.durationMinutes} minutos libre</strong> ({selectedFreeGap.startTime} - {selectedFreeGap.endTime}). ¿Cómo deseas optimizar este tiempo?
-            </p>
-
-            <div className="space-y-2">
-              <button
-                onClick={() => handleConfirmFreeGapAction('study')}
-                className="w-full p-3.5 bg-white hover:bg-amber-50/80 border border-amber-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
-              >
-                <BookOpen className="w-5 h-5 text-amber-600 shrink-0" />
-                <div>
-                  <span className="block text-sm">📚 Programar Sesión de Estudio / Lectura</span>
-                  <span className="text-[11px] text-slate-500 font-normal">Crear bloque de estudio intensivo de {Math.min(selectedFreeGap.durationMinutes, 60)}m</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleConfirmFreeGapAction('task')}
-                className="w-full p-3.5 bg-white hover:bg-purple-50/80 border border-purple-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
-              >
-                <CheckSquare className="w-5 h-5 text-purple-600 shrink-0" />
-                <div>
-                  <span className="block text-sm">✅ Completar Tarea Pendiente</span>
-                  <span className="text-[11px] text-slate-500 font-normal">Asignar este bloque a la primera tarea pendiente de tu lista</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleConfirmFreeGapAction('rest')}
-                className="w-full p-3.5 bg-white hover:bg-emerald-50/80 border border-emerald-200 rounded-xl text-left text-xs text-slate-900 font-bold flex items-center gap-3 transition-all cursor-pointer shadow-sm"
-              >
-                <Coffee className="w-5 h-5 text-emerald-600 shrink-0" />
-                <div>
-                  <span className="block text-sm">☕ Pausa de Descanso y Recuperación</span>
-                  <span className="text-[11px] text-slate-500 font-normal">Programar descanso estructurado de {selectedFreeGap.durationMinutes}m</span>
-                </div>
-              </button>
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-slate-200">
-              <ExecutiveButton
-                variant="outline"
-                accentColor="amber"
-                onClick={() => setSelectedFreeGap(null)}
-              >
-                Ignorar por ahora
-              </ExecutiveButton>
-            </div>
-          </div>
-        </ExecutiveModal>
-      )}
-
-      {/* MODAL EDITAR HÁBITO */}
-      {editingHabit && (
-        <ExecutiveModal
-          isOpen={Boolean(editingHabit)}
-          onClose={() => setEditingHabit(null)}
-          title="Editar Hábito"
-          accentColor="amber"
-        >
-          <div className="space-y-4 py-2">
-            <ExecutiveInput
-              label="Nombre del Hábito"
-              value={editingHabit.name}
-              onChange={e => setEditingHabit({ ...editingHabit, name: e.target.value })}
-              accentColor="amber"
-            />
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-              <ExecutiveButton variant="outline" accentColor="amber" onClick={() => setEditingHabit(null)}>
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <ExecutiveButton type="button" variant="secondary" onClick={() => setShowAddHabitModal(false)}>
                 Cancelar
               </ExecutiveButton>
-              <ExecutiveButton
-                variant="primary"
-                accentColor="amber"
-                onClick={() => {
-                  DailyLifeStore.updateHabit(editingHabit.id, {
-                    name: editingHabit.name,
-                    color: editingHabit.color
-                  });
-                  setEditingHabit(null);
-                  triggerToast('Hábito actualizado ✓');
-                }}
-              >
-                Guardar Cambios
+              <ExecutiveButton type="submit" variant="primary">
+                Guardar Hábito
               </ExecutiveButton>
             </div>
           </div>
-        </ExecutiveModal>
-      )}
+        </ExecutiveForm>
+      </ExecutiveModal>
+
+      {/* MODAL: AGREGAR / EDITAR TAREA */}
+      <ExecutiveModal
+        isOpen={showAddTaskModal}
+        onClose={() => setShowAddTaskModal(false)}
+        title={editingTask ? 'Editar Tarea' : '📋 Crear Nueva Tarea'}
+      >
+        <ExecutiveForm onSubmit={handleSaveTask}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Título de la tarea</label>
+              <ExecutiveInput
+                value={taskForm.name}
+                onChange={e => setTaskForm({ ...taskForm, name: e.target.value })}
+                placeholder="ej. Organizar documentos, Terminar trabajo..."
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Descripción opcional</label>
+              <ExecutiveInput
+                value={taskForm.description}
+                onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
+                placeholder="Detalles adicionales..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Fecha de cumplimiento</label>
+                <ExecutiveInput
+                  type="date"
+                  value={taskForm.date}
+                  onChange={e => setTaskForm({ ...taskForm, date: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Prioridad</label>
+                <select
+                  value={taskForm.priority}
+                  onChange={e =>
+                    setTaskForm({
+                      ...taskForm,
+                      priority: e.target.value as 'low' | 'medium' | 'high'
+                    })
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-medium"
+                >
+                  <option value="low">Baja 🟢</option>
+                  <option value="medium">Media 🟡</option>
+                  <option value="high">Alta 🔴</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between">
+              <div className="space-y-0.5 pr-2">
+                <span className="text-xs font-bold text-slate-900 block">Coordinar con Jefatura de Gabinete</span>
+                <span className="text-[11px] text-slate-600 block">
+                  Envía esta tarea a Jefatura de Gabinete para que busque un espacio disponible en tu agenda.
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={taskForm.sendToChiefOfStaff}
+                onChange={e => setTaskForm({ ...taskForm, sendToChiefOfStaff: e.target.checked })}
+                className="w-5 h-5 rounded text-amber-600 focus:ring-amber-500 border-slate-300"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <ExecutiveButton type="button" variant="secondary" onClick={() => setShowAddTaskModal(false)}>
+                Cancelar
+              </ExecutiveButton>
+              <ExecutiveButton type="submit" variant="primary">
+                Guardar Tarea
+              </ExecutiveButton>
+            </div>
+          </div>
+        </ExecutiveForm>
+      </ExecutiveModal>
+
+      {/* MODAL: EDITAR HORARIOS BASE */}
+      <ExecutiveModal
+        isOpen={showBaseScheduleModal}
+        onClose={() => setShowBaseScheduleModal(false)}
+        title="🌅 Configurar Horarios Base Habituales"
+      >
+        <ExecutiveForm onSubmit={handleSaveBaseSchedule}>
+          <div className="space-y-4">
+            <p className="text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-200">
+              Establece tus bloques habituales de descanso y alimentación. Esta información sirve como referencia para la Jefatura de Gabinete al coordinar la agenda diaria.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">🌅 Hora de Levantarse</label>
+                <ExecutiveInput
+                  type="time"
+                  value={baseScheduleForm.wakeUpTime}
+                  onChange={e => setBaseScheduleForm({ ...baseScheduleForm, wakeUpTime: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">🍳 Hora de Desayuno</label>
+                <ExecutiveInput
+                  type="time"
+                  value={baseScheduleForm.breakfastTime}
+                  onChange={e => setBaseScheduleForm({ ...baseScheduleForm, breakfastTime: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">🍽️ Hora de Almuerzo</label>
+                <ExecutiveInput
+                  type="time"
+                  value={baseScheduleForm.lunchTime}
+                  onChange={e => setBaseScheduleForm({ ...baseScheduleForm, lunchTime: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">🍽️ Hora de Cena</label>
+                <ExecutiveInput
+                  type="time"
+                  value={baseScheduleForm.dinnerTime}
+                  onChange={e => setBaseScheduleForm({ ...baseScheduleForm, dinnerTime: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1">🌙 Hora habitual de ir a Dormir</label>
+                <ExecutiveInput
+                  type="time"
+                  value={baseScheduleForm.sleepTime}
+                  onChange={e => setBaseScheduleForm({ ...baseScheduleForm, sleepTime: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <ExecutiveButton type="button" variant="secondary" onClick={() => setShowBaseScheduleModal(false)}>
+                Cancelar
+              </ExecutiveButton>
+              <ExecutiveButton type="submit" variant="primary">
+                Guardar Horarios
+              </ExecutiveButton>
+            </div>
+          </div>
+        </ExecutiveForm>
+      </ExecutiveModal>
+
+      {/* MODAL: CONFIGURAR NUEVA RUTINA */}
+      <ExecutiveModal
+        isOpen={showAddRoutineModal}
+        onClose={() => setShowAddRoutineModal(false)}
+        title="🔄 Configurar Nueva Rutina"
+      >
+        <ExecutiveForm onSubmit={handleCreateRoutine}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la Rutina</label>
+              <ExecutiveInput
+                value={routineForm.name}
+                onChange={e => setRoutineForm({ ...routineForm, name: e.target.value })}
+                placeholder="ej. Rutina de Mañana, Rutina de Noche..."
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Momento del día</label>
+                <select
+                  value={routineForm.timeOfDay}
+                  onChange={e =>
+                    setRoutineForm({
+                      ...routineForm,
+                      timeOfDay: e.target.value as 'morning' | 'afternoon' | 'evening'
+                    })
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-medium"
+                >
+                  <option value="morning">Mañana ☀️</option>
+                  <option value="afternoon">Tarde 🌤️</option>
+                  <option value="evening">Noche 🌙</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Emoji</label>
+                <ExecutiveInput
+                  value={routineForm.emoji}
+                  onChange={e => setRoutineForm({ ...routineForm, emoji: e.target.value })}
+                  placeholder="☀️"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Pasos iniciales</label>
+              <div className="space-y-2">
+                {routineForm.initialSteps.map((s, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <ExecutiveInput
+                      value={s}
+                      onChange={e => {
+                        const updated = [...routineForm.initialSteps];
+                        updated[idx] = e.target.value;
+                        setRoutineForm({ ...routineForm, initialSteps: updated });
+                      }}
+                      placeholder={`Paso ${idx + 1}`}
+                    />
+                  </div>
+                ))}
+                <ExecutiveButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setRoutineForm({ ...routineForm, initialSteps: [...routineForm.initialSteps, ''] })}
+                  className="text-xs"
+                >
+                  + Agregar otro paso
+                </ExecutiveButton>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <ExecutiveButton type="button" variant="secondary" onClick={() => setShowAddRoutineModal(false)}>
+                Cancelar
+              </ExecutiveButton>
+              <ExecutiveButton type="submit" variant="primary">
+                Crear Rutina
+              </ExecutiveButton>
+            </div>
+          </div>
+        </ExecutiveForm>
+      </ExecutiveModal>
+
+      {/* MODAL: DETALLE HISTÓRICO DE DÍA ANTERIOR */}
+      <ExecutiveModal
+        isOpen={Boolean(selectedHistoryDate)}
+        onClose={() => setSelectedHistoryDate(null)}
+        title={`📈 Registro Histórico — ${selectedHistoryRecord?.date || ''}`}
+      >
+        {selectedHistoryRecord && (
+          <div className="space-y-4 text-xs text-slate-800">
+            <div className="p-3 rounded-xl bg-slate-900 text-slate-100 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-sm block">{selectedHistoryRecord.dayOfWeek}</span>
+                <span className="text-slate-400 text-xs">Cumplimiento General</span>
+              </div>
+              <span className="text-2xl font-mono font-extrabold text-amber-400">
+                {selectedHistoryRecord.overallCompliancePercent}%
+              </span>
+            </div>
+
+            {/* Hábitos en esa fecha */}
+            <div className="space-y-1.5 border-t pt-3">
+              <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                <span>🌱</span> Hábitos del Día
+              </h4>
+              <div className="space-y-1">
+                {(selectedHistoryRecord.habitsDetail || []).map(hd => (
+                  <div
+                    key={hd.id}
+                    className={`p-2 rounded-lg flex items-center justify-between border ${
+                      hd.completed ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <span>{hd.name}</span>
+                    <span className="font-bold">{hd.completed ? '☑ Completado' : '☐ Pendiente'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tareas en esa fecha */}
+            <div className="space-y-1.5 border-t pt-3">
+              <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                <span>📋</span> Tareas del Día
+              </h4>
+              <div className="space-y-1">
+                {(selectedHistoryRecord.tasksDetail || []).length === 0 ? (
+                  <p className="text-slate-400 text-[11px]">Sin tareas registradas en esta fecha.</p>
+                ) : (
+                  (selectedHistoryRecord.tasksDetail || []).map(td => (
+                    <div
+                      key={td.id}
+                      className={`p-2 rounded-lg flex items-center justify-between border ${
+                        td.completed ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-amber-50 border-amber-200 text-slate-900'
+                      }`}
+                    >
+                      <span>{td.name}</span>
+                      <span className="font-bold">{td.completed ? '☑ Completada' : '☐ Pendiente'}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t">
+              <ExecutiveButton variant="secondary" onClick={() => setSelectedHistoryDate(null)}>
+                Cerrar
+              </ExecutiveButton>
+            </div>
+          </div>
+        )}
+      </ExecutiveModal>
     </div>
   );
 };

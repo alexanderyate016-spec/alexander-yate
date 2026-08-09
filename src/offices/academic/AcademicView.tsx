@@ -1904,61 +1904,134 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                         <ActivitiesDistributionBar activities={cut.activities || []} />
 
                         {/* Activities Table inside Cut */}
-                        <div className="space-y-2">
-                          <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Evaluaciones de este Corte</h5>
-                          
-                          {cut.activities && cut.activities.length > 0 ? (
-                            <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                              {cut.activities.map((act) => (
-                                <div key={act.id} className="p-3 bg-white hover:bg-slate-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                                  <div className="space-y-0.5">
-                                    <div className="font-bold text-slate-900 flex items-center gap-2">
-                                      <span>{act.name}</span>
-                                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
-                                        {act.type}
-                                      </span>
-                                    </div>
-                                    <div className="text-slate-500 text-[11px] font-mono">
-                                      🗓️ {act.date} • Peso: {act.weightPercent}%
-                                    </div>
-                                  </div>
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                              <span>Evaluaciones de este Corte</span>
+                              <span className="text-[10px] font-mono text-slate-500 normal-case font-normal">(Cadena: Actividad ➔ Profesor ➔ Corte ➔ Materia)</span>
+                            </h5>
+                            <span className="text-xs text-purple-900 font-mono font-bold bg-purple-50 px-2.5 py-1 rounded-xl border border-purple-200">
+                              Aporte acumulado del corte a la materia: {formatGrade(cutProgress.aporteSubject)} / {(5.0 * cutProgress.cutWeightPercent / 100).toFixed(2)} ({cutProgress.materiaEvaluadaPercent}% de la materia)
+                            </span>
+                          </div>
 
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-slate-500 font-semibold">Nota:</span>
-                                      <input
-                                        type="number"
-                                        step="0.1"
-                                        min="0"
-                                        max="5"
-                                        placeholder="0.0"
-                                        value={act.grade !== undefined && act.grade !== null ? act.grade : ''}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          const parsed = val !== '' ? parseFloat(val) : undefined;
-                                          AcademicStore.updateActivity(currentExpandedSubject.id, cut.id, act.id, {
-                                            grade: parsed,
-                                            status: parsed !== undefined ? 'graded' : 'pending'
-                                          });
-                                        }}
-                                        className="w-16 p-1.5 text-center font-mono font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600"
-                                      />
+                          {cutProgress.professorsProgress && cutProgress.professorsProgress.length > 0 ? (
+                            <div className="space-y-3">
+                              {cutProgress.professorsProgress.map((profProg) => (
+                                <div key={profProg.professorId} className="space-y-2 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200">
+                                  {cutProgress.professorsProgress.length > 1 && (
+                                    <div className="flex flex-wrap items-center justify-between border-b border-slate-200 pb-2 mb-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-900 text-xs">Profesor: {profProg.professorName}</span>
+                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-900 font-bold text-[10px] rounded-full border border-purple-200">
+                                          Peso en el corte: {profProg.weightPercentInCut}%
+                                        </span>
+                                      </div>
+                                      <div className="text-xs font-mono font-bold text-purple-900">
+                                        Nota Profesor: {profProg.gradedActivitiesCount > 0 ? formatGrade(profProg.grade) : 'S/N'} / 5.0
+                                        <span className="text-slate-500 font-normal ml-2">
+                                          (Aporte al corte: {formatGrade(profProg.aporteToCut)})
+                                        </span>
+                                      </div>
                                     </div>
+                                  )}
 
-                                    <button
-                                      onClick={() => handleOpenEditActivityModal(currentExpandedSubject.id, cut.id, act)}
-                                      className="p-1 text-slate-400 hover:text-slate-700"
-                                    >
-                                      <Edit3 className="w-3.5 h-3.5" />
-                                    </button>
+                                  {profProg.activitiesProgress && profProg.activitiesProgress.length > 0 ? (
+                                    <div className="space-y-2">
+                                      {profProg.activitiesProgress.map((actProg) => (
+                                        <div key={actProg.activityId} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all shadow-2xs">
+                                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                            <div className="space-y-0.5">
+                                              <div className="font-bold text-slate-900 flex items-center gap-2">
+                                                <span>{actProg.activityName}</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                                                  {actProg.activityType}
+                                                </span>
+                                              </div>
+                                              <div className="text-slate-500 text-[11px] font-mono">
+                                                🗓️ {actProg.date} • Peso en Profesor/Corte: {actProg.weightPercentInProf}%
+                                              </div>
+                                            </div>
 
-                                    <button
-                                      onClick={() => handleDeleteActivity(currentExpandedSubject.id, cut.id, act.id)}
-                                      className="p-1 text-slate-400 hover:text-rose-600"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-slate-500 font-semibold">Nota obtenida:</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.1"
+                                                  min="0"
+                                                  max="5"
+                                                  placeholder="0.0"
+                                                  value={actProg.grade !== undefined && actProg.grade !== null ? actProg.grade : ''}
+                                                  onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    const parsed = val !== '' ? parseFloat(val) : undefined;
+                                                    AcademicStore.updateActivity(currentExpandedSubject.id, cut.id, actProg.activityId, {
+                                                      grade: parsed,
+                                                      status: parsed !== undefined ? 'graded' : 'pending'
+                                                    });
+                                                  }}
+                                                  className="w-16 p-1.5 text-center font-mono font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600"
+                                                />
+                                              </div>
+
+                                              <button
+                                                onClick={() => {
+                                                  const rawAct = cut.activities.find(a => a.id === actProg.activityId);
+                                                  if (rawAct) handleOpenEditActivityModal(currentExpandedSubject.id, cut.id, rawAct);
+                                                }}
+                                                className="p-1 text-slate-400 hover:text-slate-700"
+                                                title="Editar evaluación"
+                                              >
+                                                <Edit3 className="w-3.5 h-3.5" />
+                                              </button>
+
+                                              <button
+                                                onClick={() => handleDeleteActivity(currentExpandedSubject.id, cut.id, actProg.activityId)}
+                                                className="p-1 text-slate-400 hover:text-rose-600"
+                                                title="Eliminar evaluación"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* Explicit Chain Calculation Bar */}
+                                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 font-mono text-[11px] text-slate-700 flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <span className="font-sans font-bold text-slate-500 text-[10px] uppercase">Aporte Ponderado:</span>
+                                              <span className={actProg.isGraded ? "text-purple-900 font-bold" : "text-slate-400 font-normal"}>
+                                                Nota: {actProg.isGraded ? formatGrade(actProg.grade) : 'Pendiente'}
+                                              </span>
+                                              <span>×</span>
+                                              <span>{actProg.weightPercentInProf}%</span>
+                                              <span>➔</span>
+                                              <span className="text-blue-900 font-semibold">
+                                                Prof: {actProg.isGraded ? formatGrade(actProg.aporteToProf) : '0.00'}
+                                              </span>
+                                              <span>➔</span>
+                                              <span className="text-emerald-900 font-semibold">
+                                                Corte: {actProg.isGraded ? formatGrade(actProg.aporteToCut) : '0.00'}
+                                              </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <span className="bg-purple-100 text-purple-900 px-2 py-0.5 rounded font-bold text-[10px]">
+                                                Aporte a Materia: {actProg.isGraded ? `+${formatGrade(actProg.aporteToSubject)}` : '+0.000'} / 5.0
+                                              </span>
+                                              <span className="bg-slate-200 text-slate-800 px-2 py-0.5 rounded font-bold text-[10px]">
+                                                {actProg.isGraded ? `${actProg.materiaEvaluadaPercent.toFixed(1)}%` : '0%'} materia
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-slate-500 italic p-3 bg-white rounded-xl border border-dashed border-slate-200">
+                                      No hay evaluaciones asignadas a este profesor en este corte.
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
