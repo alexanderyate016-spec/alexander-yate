@@ -226,6 +226,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [profPhone, setProfPhone] = useState('');
   const [profDepartment, setProfDepartment] = useState('');
   const [profNotes, setProfNotes] = useState('');
+  const [profStartDate, setProfStartDate] = useState('');
+  const [profEndDate, setProfEndDate] = useState('');
 
   // Schedule Rule Modal State
   const [showScheduleRuleModal, setShowScheduleRuleModal] = useState(false);
@@ -549,6 +551,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   // Professor Handlers
   const handleOpenProfessorModal = (subjectId: string, prof?: SubjectProfessor) => {
     setProfSubjectId(subjectId);
+    const sub = subjects.find(s => s.id === subjectId);
+    const activeSem = currentSemester;
+    const defaultStart = activeSem?.startDate || todayStr;
+    const defaultEnd = activeSem?.endDate || '';
+
     if (prof) {
       setEditingProfessor(prof);
       setProfName(prof.name);
@@ -557,6 +564,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setProfPhone(prof.phone || '');
       setProfDepartment(prof.department || '');
       setProfNotes(prof.notes || '');
+      setProfStartDate(prof.startDate || '');
+      setProfEndDate(prof.endDate || '');
     } else {
       setEditingProfessor(null);
       setProfName('');
@@ -565,6 +574,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setProfPhone('');
       setProfDepartment('');
       setProfNotes('');
+      setProfStartDate(defaultStart);
+      setProfEndDate(defaultEnd);
     }
     setShowProfessorModal(true);
   };
@@ -576,26 +587,58 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       return;
     }
 
+    const profPayload = {
+      name: profName.trim(),
+      title: profTitle.trim(),
+      email: profEmail.trim(),
+      phone: profPhone.trim(),
+      department: profDepartment.trim(),
+      notes: profNotes.trim(),
+      startDate: profStartDate || undefined,
+      endDate: profEndDate || undefined,
+    };
+
+    let targetProfId = editingProfessor?.id;
+
     if (editingProfessor) {
-      AcademicStore.updateProfessor(profSubjectId, editingProfessor.id, {
-        name: profName.trim(),
-        title: profTitle.trim(),
-        email: profEmail.trim(),
-        phone: profPhone.trim(),
-        department: profDepartment.trim(),
-        notes: profNotes.trim()
-      });
+      AcademicStore.updateProfessor(profSubjectId, editingProfessor.id, profPayload);
       showToast('Información del profesor actualizada correctamente');
     } else {
-      AcademicStore.addProfessor(profSubjectId, {
-        name: profName.trim(),
-        title: profTitle.trim(),
-        email: profEmail.trim(),
-        phone: profPhone.trim(),
-        department: profDepartment.trim(),
-        notes: profNotes.trim()
-      });
+      const added = AcademicStore.addProfessor(profSubjectId, profPayload);
+      targetProfId = added.id;
       showToast('Profesor registrado correctamente');
+    }
+
+    // Automatically synchronize a period_override rule if dates are set
+    if (profStartDate && profEndDate && targetProfId) {
+      const sub = subjects.find(s => s.id === profSubjectId);
+      if (sub) {
+        const fullName = `${profTitle ? profTitle + ' ' : ''}${profName.trim()}`;
+        const existingRule = sub.schedules?.find(
+          s => s.type === 'period_override' && (s.professorId === targetProfId || s.professorIds?.includes(targetProfId))
+        );
+
+        const rulePayload: Omit<SubjectScheduleRule, 'id' | 'subjectId'> = {
+          type: 'period_override',
+          professorId: targetProfId,
+          professorName: fullName,
+          professorIds: [targetProfId],
+          professorNames: [fullName],
+          startTime: '',
+          endTime: '',
+          classroom: sub.classroom || '',
+          modality: 'presencial',
+          startDate: profStartDate,
+          endDate: profEndDate,
+          notes: `Asignación por período para ${fullName}`
+        };
+
+        if (existingRule) {
+          AcademicStore.updateScheduleRule(profSubjectId, existingRule.id, rulePayload);
+        } else {
+          AcademicStore.addScheduleRule(profSubjectId, rulePayload);
+        }
+      }
     }
 
     setShowProfessorModal(false);
@@ -1744,8 +1787,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               </span>
                             </div>
 
-                            {/* Contact info & Notes */}
+                            {/* Contact info, Notes & Period Validity */}
                             <div className="space-y-1.5 text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100">
+                              {(prof.startDate || prof.endDate) && (
+                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-900 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100">
+                                  <Calendar className="w-3 h-3 text-purple-700 shrink-0" />
+                                  <span>Vigencia: {prof.startDate || 'Inicio'} → {prof.endDate || 'Fin'}</span>
+                                </div>
+                              )}
                               {prof.email && (
                                 <div className="flex items-center gap-1.5 text-[11px]">
                                   <Mail className="w-3 h-3 text-slate-400 shrink-0" />
@@ -3350,6 +3399,37 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 />
               </div>
 
+              {/* Período de Asignación / Vigencia Automática */}
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-purple-700 shrink-0" />
+                  <span className="font-bold text-purple-900 text-xs">Período de Asignación a la Materia (Vigencia)</span>
+                </div>
+                <p className="text-[11px] text-purple-800 leading-relaxed">
+                  Al definir un período para este profesor, el sistema lo asignará automáticamente a <strong>todas las clases y horas programadas</strong> para esta materia (mañana, tarde o noche) entre las fechas indicadas, sin volver a pedirte días ni horas.
+                </p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="font-bold text-purple-900 block text-[11px] mb-1">Desde (Inicio)</label>
+                    <input
+                      type="date"
+                      value={profStartDate}
+                      onChange={e => setProfStartDate(e.target.value)}
+                      className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-purple-900 block text-[11px] mb-1">Hasta (Fin)</label>
+                    <input
+                      type="date"
+                      value={profEndDate}
+                      onChange={e => setProfEndDate(e.target.value)}
+                      className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -3569,29 +3649,41 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
               )}
 
-              {/* Hours */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Hora Inicio *</label>
-                  <input
-                    type="time"
-                    required
-                    value={ruleStartTime}
-                    onChange={e => { setRuleStartTime(e.target.value); setConflictWarning(null); }}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
-                  />
+              {/* Hours - Only required for recurring and single_date, optional/inherited for period_override */}
+              {ruleType === 'period_override' ? (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1 text-xs text-purple-900">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <Sparkles className="w-4 h-4 text-purple-700 shrink-0" />
+                    <span>Horario Automático Heredado</span>
+                  </div>
+                  <p className="text-[11px] text-purple-800 leading-relaxed">
+                    No necesitas ingresar horas ni días de la semana. El profesor seleccionado asumirá <strong>todas las clases de la materia</strong> (mañana, tarde o noche) entre las fechas de inicio y fin configuradas.
+                  </p>
                 </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Hora Fin *</label>
-                  <input
-                    type="time"
-                    required
-                    value={ruleEndTime}
-                    onChange={e => { setRuleEndTime(e.target.value); setConflictWarning(null); }}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
-                  />
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Hora Inicio *</label>
+                    <input
+                      type="time"
+                      required
+                      value={ruleStartTime}
+                      onChange={e => { setRuleStartTime(e.target.value); setConflictWarning(null); }}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Hora Fin *</label>
+                    <input
+                      type="time"
+                      required
+                      value={ruleEndTime}
+                      onChange={e => { setRuleEndTime(e.target.value); setConflictWarning(null); }}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Classroom & Modality */}
               <div className="grid grid-cols-2 gap-3">

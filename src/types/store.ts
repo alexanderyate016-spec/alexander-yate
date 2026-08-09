@@ -31,6 +31,8 @@ export interface SubjectProfessor {
   phone?: string;
   department?: string;
   notes?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
 }
 
 export type AcademicScheduleType = 'recurring' | 'period_override' | 'single_date';

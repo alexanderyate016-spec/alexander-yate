@@ -582,7 +582,34 @@ export const AcademicCalculations = {
     // Active period override if exists
     const activeOverride = periodOverrides.length > 0 ? periodOverrides[periodOverrides.length - 1] : null;
 
+    // 1B. Check if any professor in subject.professors has an active period validity covering dateStr
+    const activeProfInSub = professors.find(
+      p => p.startDate && p.endDate && p.startDate <= dateStr && dateStr <= p.endDate
+    );
+
     const rawSessions: ResolvedAcademicSession[] = [];
+
+    // Helper to determine professor IDs for a rule, giving priority to period overrides
+    const resolveProfIds = (overrideForRule: SubjectScheduleRule | null, ruleProfIds?: string[], defaultProfId?: string): string[] => {
+      if (overrideForRule) {
+        if (overrideForRule.professorIds && overrideForRule.professorIds.length > 0) {
+          return overrideForRule.professorIds;
+        }
+        if (overrideForRule.professorId) {
+          return [overrideForRule.professorId];
+        }
+      }
+      if (activeProfInSub) {
+        return [activeProfInSub.id];
+      }
+      if (ruleProfIds && ruleProfIds.length > 0) {
+        return ruleProfIds;
+      }
+      if (defaultProfId) {
+        return [defaultProfId];
+      }
+      return [subject.professor || 'prof_default'];
+    };
 
     // 2. Candidate rules for dateStr
     // A) Single date rules on dateStr
@@ -603,10 +630,7 @@ export const AcademicCalculations = {
 
     // Process single date rules
     singleDateRules.forEach(rule => {
-      const profIds = rule.professorIds && rule.professorIds.length > 0
-        ? rule.professorIds
-        : [activeOverride ? (activeOverride.professorId || '') : (rule.professorId || '')];
-
+      const profIds = resolveProfIds(activeOverride, rule.professorIds, rule.professorId);
       const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
       const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
 
@@ -636,10 +660,7 @@ export const AcademicCalculations = {
         ? activeOverride
         : null;
 
-      const profIds = rule.professorIds && rule.professorIds.length > 0
-        ? rule.professorIds
-        : [overrideForThisRule ? (overrideForThisRule.professorId || '') : (rule.professorId || '')];
-
+      const profIds = resolveProfIds(overrideForThisRule, rule.professorIds, rule.professorId);
       const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
       const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
 
@@ -648,8 +669,8 @@ export const AcademicCalculations = {
         subjectId: subject.id,
         subjectName: subject.name,
         subjectColor: subject.color || '#3B82F6',
-        classroom: rule.classroom || subject.classroom,
-        modality: rule.modality || 'presencial',
+        classroom: (overrideForThisRule && overrideForThisRule.classroom) ? overrideForThisRule.classroom : (rule.classroom || subject.classroom),
+        modality: (overrideForThisRule && overrideForThisRule.modality) ? overrideForThisRule.modality : (rule.modality || 'presencial'),
         date: dateStr,
         startTime: rule.startTime || '08:00',
         endTime: rule.endTime || '10:00',
@@ -658,8 +679,8 @@ export const AcademicCalculations = {
         professorTitle: ruleProfs[0]?.title || '',
         professors: ruleProfs,
         scheduleId: rule.id,
-        scheduleType: activeOverride ? 'period_override' : 'recurring',
-        notes: rule.notes
+        scheduleType: (overrideForThisRule || activeProfInSub) ? 'period_override' : 'recurring',
+        notes: (overrideForThisRule && overrideForThisRule.notes) ? overrideForThisRule.notes : rule.notes
       });
     });
 
@@ -667,7 +688,8 @@ export const AcademicCalculations = {
     if (schedules.length === 0 && subject.scheduleSessions && subject.scheduleSessions.length > 0) {
       subject.scheduleSessions.forEach(ses => {
         if (ses.day === dayNum) {
-          const profInfo = getProfInfo(ses.professorId, ses.professorName || subject.professor);
+          const profIdToUse = activeProfInSub ? activeProfInSub.id : (ses.professorId || subject.professor);
+          const profInfo = getProfInfo(profIdToUse, activeProfInSub?.name || ses.professorName || subject.professor);
           rawSessions.push({
             id: `ses_leg_${subject.id}_${ses.id}_${dateStr}`,
             subjectId: subject.id,
@@ -683,7 +705,7 @@ export const AcademicCalculations = {
             professorTitle: profInfo.title,
             professors: [profInfo],
             scheduleId: ses.id,
-            scheduleType: 'legacy'
+            scheduleType: activeProfInSub ? 'period_override' : 'legacy'
           });
         }
       });
@@ -745,20 +767,24 @@ export const AcademicCalculations = {
     return professors.map(prof => {
       const profSchedules = schedules.filter(s => s.professorId === prof.id || s.professorName === prof.name);
 
-      const isActive = profSchedules.some(s => {
+      const isActiveByProfDate = prof.startDate && prof.endDate ? (prof.startDate <= todayStr && todayStr <= prof.endDate) : false;
+      const isPastByProfDate = prof.endDate ? (prof.endDate < todayStr) : false;
+      const isUpcomingByProfDate = prof.startDate ? (prof.startDate > todayStr) : false;
+
+      const isActive = isActiveByProfDate || profSchedules.some(s => {
         if (s.type === 'single_date') return (s.date || s.startDate) === todayStr;
         return s.startDate <= todayStr && todayStr <= s.endDate;
       });
 
-      const isPast = profSchedules.length > 0 && profSchedules.every(s => {
+      const isPast = (isPastByProfDate && profSchedules.length === 0) || (profSchedules.length > 0 && profSchedules.every(s => {
         if (s.type === 'single_date') return (s.date || s.startDate || '') < todayStr;
         return s.endDate < todayStr;
-      });
+      }));
 
-      const isUpcoming = profSchedules.length > 0 && profSchedules.some(s => {
+      const isUpcoming = isUpcomingByProfDate || (profSchedules.length > 0 && profSchedules.some(s => {
         if (s.type === 'single_date') return (s.date || s.startDate || '') > todayStr;
         return s.startDate > todayStr;
-      });
+      }));
 
       let status: 'active' | 'previous' | 'upcoming' | 'unassigned' = 'unassigned';
       if (isActive) status = 'active';
