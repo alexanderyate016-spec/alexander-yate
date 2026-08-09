@@ -1937,95 +1937,165 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                   )}
 
                                   {profProg.activitiesProgress && profProg.activitiesProgress.length > 0 ? (
-                                    <div className="space-y-2">
-                                      {profProg.activitiesProgress.map((actProg) => (
-                                        <div key={actProg.activityId} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 hover:border-slate-300 transition-all shadow-2xs">
-                                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                                            <div className="space-y-0.5">
-                                              <div className="font-bold text-slate-900 flex items-center gap-2">
-                                                <span>{actProg.activityName}</span>
-                                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
-                                                  {actProg.activityType}
-                                                </span>
-                                              </div>
-                                              <div className="text-slate-500 text-[11px] font-mono">
-                                                🗓️ {actProg.date} • Peso en Profesor/Corte: {actProg.weightPercentInProf}%
-                                              </div>
-                                            </div>
+                                    <div className="space-y-3">
+                                      {/* Tabla de Actividades del Corte */}
+                                      <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+                                        <table className="w-full text-left border-collapse text-xs">
+                                          <thead>
+                                            <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                                              <th className="py-2.5 px-3">Actividad</th>
+                                              <th className="py-2.5 px-3">Tipo</th>
+                                              <th className="py-2.5 px-3 text-center">% Peso</th>
+                                              <th className="py-2.5 px-3 text-center">Nota (0.0 - 5.0)</th>
+                                              <th className="py-2.5 px-3 text-right">Aporte al Corte</th>
+                                              <th className="py-2.5 px-3 text-center">Acciones</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-100 text-slate-800">
+                                            {profProg.activitiesProgress.map((actProg) => {
+                                              const isGraded = actProg.isGraded;
+                                              return (
+                                                <tr key={actProg.activityId} className="hover:bg-purple-50/30 transition-colors">
+                                                  <td className="py-2.5 px-3 font-bold text-slate-900">
+                                                    <div>{actProg.activityName}</div>
+                                                    <span className="text-[10px] text-slate-400 font-normal font-mono block">
+                                                      🗓️ {actProg.date}
+                                                    </span>
+                                                  </td>
+                                                  <td className="py-2.5 px-3">
+                                                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                                                      {actProg.activityType}
+                                                    </span>
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700">
+                                                    {actProg.weightPercentInProf}%
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-center">
+                                                    <input
+                                                      type="number"
+                                                      step="0.1"
+                                                      min="0"
+                                                      max="5"
+                                                      placeholder="—"
+                                                      value={isGraded && actProg.grade !== undefined && actProg.grade !== null ? actProg.grade : ''}
+                                                      onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        const parsed = val !== '' ? parseFloat(val) : undefined;
+                                                        AcademicStore.updateActivity(currentExpandedSubject.id, cut.id, actProg.activityId, {
+                                                          grade: parsed,
+                                                          status: parsed !== undefined ? 'graded' : 'pending'
+                                                        });
+                                                      }}
+                                                      className="w-16 p-1 text-center font-mono font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 focus:bg-white"
+                                                    />
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-right font-mono font-bold">
+                                                    {isGraded ? (
+                                                      <span className="text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                                                        {formatGrade(actProg.aporteToCut)}
+                                                      </span>
+                                                    ) : (
+                                                      <span className="text-slate-400 italic font-normal">—</span>
+                                                    )}
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                      <button
+                                                        onClick={() => {
+                                                          const rawAct = cut.activities.find(a => a.id === actProg.activityId);
+                                                          if (rawAct) handleOpenEditActivityModal(currentExpandedSubject.id, cut.id, rawAct);
+                                                        }}
+                                                        className="p-1 text-slate-400 hover:text-slate-700 rounded"
+                                                        title="Editar evaluación"
+                                                      >
+                                                        <Edit3 className="w-3.5 h-3.5" />
+                                                      </button>
+                                                      <button
+                                                        onClick={() => handleDeleteActivity(currentExpandedSubject.id, cut.id, actProg.activityId)}
+                                                        className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                                                        title="Eliminar evaluación"
+                                                      >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                      </button>
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                          <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-200 text-slate-900">
+                                            <tr>
+                                              <td colSpan={2} className="py-2.5 px-3">
+                                                TOTAL DEL CORTE ({profProg.gradedActivitiesCount}/{profProg.totalActivitiesCount} evaluadas)
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center font-mono text-slate-700">
+                                                {profProg.totalActivityWeightAssigned}%
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center font-mono text-purple-900 text-[11px]">
+                                                {profProg.evaluatedWeightPercentInProf}% evaluado
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono text-purple-900 text-sm font-bold">
+                                                {profProg.gradedActivitiesCount > 0 ? formatGrade(profProg.grade) : '—'}
+                                              </td>
+                                              <td></td>
+                                            </tr>
+                                          </tfoot>
+                                        </table>
+                                      </div>
 
-                                            <div className="flex items-center gap-3">
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-slate-500 font-semibold">Nota obtenida:</span>
-                                                <input
-                                                  type="number"
-                                                  step="0.1"
-                                                  min="0"
-                                                  max="5"
-                                                  placeholder="0.0"
-                                                  value={actProg.grade !== undefined && actProg.grade !== null ? actProg.grade : ''}
-                                                  onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    const parsed = val !== '' ? parseFloat(val) : undefined;
-                                                    AcademicStore.updateActivity(currentExpandedSubject.id, cut.id, actProg.activityId, {
-                                                      grade: parsed,
-                                                      status: parsed !== undefined ? 'graded' : 'pending'
-                                                    });
-                                                  }}
-                                                  className="w-16 p-1.5 text-center font-mono font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600"
-                                                />
-                                              </div>
+                                      {/* Panel de Aporte del Corte a la Materia */}
+                                      <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2 text-xs">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-200/80 pb-2">
+                                          <span className="font-bold text-purple-950 text-xs flex items-center gap-1.5">
+                                            <span>🏛️</span>
+                                            <span>Resumen del Corte en la Materia</span>
+                                          </span>
+                                          <span className="font-mono font-bold text-purple-900 bg-white px-2 py-0.5 rounded-md border border-purple-200 text-[11px]">
+                                            Peso en Materia: {cut.cutWeightPercent}%
+                                          </span>
+                                        </div>
 
-                                              <button
-                                                onClick={() => {
-                                                  const rawAct = cut.activities.find(a => a.id === actProg.activityId);
-                                                  if (rawAct) handleOpenEditActivityModal(currentExpandedSubject.id, cut.id, rawAct);
-                                                }}
-                                                className="p-1 text-slate-400 hover:text-slate-700"
-                                                title="Editar evaluación"
-                                              >
-                                                <Edit3 className="w-3.5 h-3.5" />
-                                              </button>
-
-                                              <button
-                                                onClick={() => handleDeleteActivity(currentExpandedSubject.id, cut.id, actProg.activityId)}
-                                                className="p-1 text-slate-400 hover:text-rose-600"
-                                                title="Eliminar evaluación"
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                                          <div className="bg-white p-2 rounded-lg border border-purple-100">
+                                            <span className="text-[10px] text-slate-500 font-medium block">Nota del Corte</span>
+                                            <span className="text-xs font-bold font-mono text-purple-950">
+                                              {profProg.gradedActivitiesCount > 0 ? formatGrade(cutProgress.accumulatedCutGrade) : '—'} / 5.0
+                                            </span>
                                           </div>
 
-                                          {/* Explicit Chain Calculation Bar */}
-                                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 font-mono text-[11px] text-slate-700 flex flex-wrap items-center justify-between gap-2">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                              <span className="font-sans font-bold text-slate-500 text-[10px] uppercase">Aporte Ponderado:</span>
-                                              <span className={actProg.isGraded ? "text-purple-900 font-bold" : "text-slate-400 font-normal"}>
-                                                Nota: {actProg.isGraded ? formatGrade(actProg.grade) : 'Pendiente'}
-                                              </span>
-                                              <span>×</span>
-                                              <span>{actProg.weightPercentInProf}%</span>
-                                              <span>➔</span>
-                                              <span className="text-blue-900 font-semibold">
-                                                Prof: {actProg.isGraded ? formatGrade(actProg.aporteToProf) : '0.00'}
-                                              </span>
-                                              <span>➔</span>
-                                              <span className="text-emerald-900 font-semibold">
-                                                Corte: {actProg.isGraded ? formatGrade(actProg.aporteToCut) : '0.00'}
-                                              </span>
-                                            </div>
+                                          <div className="bg-white p-2 rounded-lg border border-purple-100">
+                                            <span className="text-[10px] text-slate-500 font-medium block">Peso en Materia</span>
+                                            <span className="text-xs font-bold font-mono text-slate-900">
+                                              {cut.cutWeightPercent}%
+                                            </span>
+                                          </div>
 
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                              <span className="bg-purple-100 text-purple-900 px-2 py-0.5 rounded font-bold text-[10px]">
-                                                Aporte a Materia: {actProg.isGraded ? `+${formatGrade(actProg.aporteToSubject)}` : '+0.000'} / 5.0
-                                              </span>
-                                              <span className="bg-slate-200 text-slate-800 px-2 py-0.5 rounded font-bold text-[10px]">
-                                                {actProg.isGraded ? `${actProg.materiaEvaluadaPercent.toFixed(1)}%` : '0%'} materia
-                                              </span>
-                                            </div>
+                                          <div className="bg-white p-2 rounded-lg border border-purple-100">
+                                            <span className="text-[10px] text-slate-500 font-medium block">Aporte a Materia</span>
+                                            <span className="text-xs font-bold font-mono text-emerald-700">
+                                              +{formatGrade(cutProgress.aporteSubject)} pts
+                                            </span>
+                                          </div>
+
+                                          <div className="bg-white p-2 rounded-lg border border-purple-100">
+                                            <span className="text-[10px] text-slate-500 font-medium block">% Materia Evaluado</span>
+                                            <span className="text-xs font-bold font-mono text-slate-900">
+                                              {cutProgress.materiaEvaluadaPercent}%
+                                            </span>
                                           </div>
                                         </div>
-                                      ))}
+
+                                        {/* Detalle Explicativo (Regla 5 y 7) */}
+                                        {cutProgress.evaluatedWeightPercent < 100 ? (
+                                          <p className="text-[11px] text-purple-900 font-medium pt-0.5">
+                                            ⚠️ <strong>Corte en desarrollo:</strong> Se ha evaluado el {cutProgress.evaluatedWeightPercent}% del corte (equivale al {cutProgress.materiaEvaluadaPercent}% de la materia). Aporte acumulado a la materia al momento: <strong>+{formatGrade(cutProgress.aporteSubject)} pts</strong> (Corte: {formatGrade(cutProgress.accumulatedCutGrade)} × {cut.cutWeightPercent}%).
+                                          </p>
+                                        ) : (
+                                          <p className="text-[11px] text-emerald-800 font-medium pt-0.5">
+                                            ✅ <strong>Corte 100% completado:</strong> Nota final del corte = <strong>{formatGrade(cutProgress.accumulatedCutGrade)}</strong>. Aporte final a la materia = <strong>+{formatGrade(cutProgress.aporteSubject)} pts</strong> ({formatGrade(cutProgress.accumulatedCutGrade)} × {cut.cutWeightPercent}%).
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
                                   ) : (
                                     <div className="text-xs text-slate-500 italic p-3 bg-white rounded-xl border border-dashed border-slate-200">
