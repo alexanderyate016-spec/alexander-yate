@@ -939,6 +939,8 @@ export interface PersonalScheduleConfig {
 export interface ChiefOfStaffEvent {
   id: string;
   title: string;
+  emoji?: string;
+  category?: 'academic' | 'medical' | 'social' | 'personal' | 'commute' | 'dining' | 'rest' | 'other';
   description?: string;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
@@ -947,6 +949,7 @@ export interface ChiefOfStaffEvent {
   location?: string;
   travelTimeMinutes?: number;
   prepTimeMinutes?: number;
+  reminderMinutes?: number;
   priority: 'low' | 'medium' | 'high';
   status: 'active' | 'completed' | 'rescheduled' | 'cancelled';
   isRecurring?: boolean;

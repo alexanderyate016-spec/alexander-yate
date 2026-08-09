@@ -458,4 +458,26 @@ export class ChiefOfStaffSync {
       freeTimeGaps: freeGaps
     };
   }
+
+  /**
+   * Converts UnifiedExecutiveEvent array into CalendarEvent array for UniversalSchedule
+   */
+  public static convertToCalendarEvents(unifiedEvents: UnifiedExecutiveEvent[]): any[] {
+    return unifiedEvents.map(evt => ({
+      id: evt.id,
+      title: evt.title,
+      subtitle: evt.subtitle,
+      date: evt.date,
+      startTime: evt.startTime || '08:00',
+      endTime: evt.endTime || '09:00',
+      color: evt.color || '#8B5CF6',
+      category: evt.type,
+      officeLabel: evt.officeLabel,
+      sourceOffice: evt.sourceOffice,
+      location: evt.location,
+      priority: evt.priority,
+      completed: evt.status === 'completed',
+      raw: evt
+    }));
+  }
 }

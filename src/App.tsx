@@ -124,7 +124,7 @@ export function App() {
 
   const navItems = [
     { key: 'ovalOffice', label: 'Despacho Oval', emoji: '🏛️' },
-    { key: 'jefaturaGabinete', label: 'Jefatura de Gabinete', emoji: '💼' },
+    { key: 'jefaturaGabinete', label: 'Oficina de Agenda', emoji: '🗓️' },
     { key: 'academica', label: 'Académica', emoji: '🎓' },
     { key: 'vidaDiaria', label: 'Gestión Personal', emoji: '🌿' },
     { key: 'financiera', label: 'Financiera', emoji: '💰' },
@@ -340,7 +340,12 @@ export function App() {
               onActivateEmergencyLock={() => SecurityStore.lockApp('manual')}
             />
           )}
-          {activeOffice === 'jefaturaGabinete' && <ChiefOfStaffView state={state} />}
+          {(activeOffice === 'jefaturaGabinete' || activeOffice === 'agenda') && (
+            <ChiefOfStaffView
+              state={state}
+              onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
+            />
+          )}
           {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}
           {activeOffice === 'vidaDiaria' && <DailyLifeView data={state.offices.vidaDiaria} />}
           {activeOffice === 'financiera' && <FinancialView data={state.offices.financiera} />}

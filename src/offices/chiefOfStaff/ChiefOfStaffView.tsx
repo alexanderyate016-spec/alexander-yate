@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MasterState, ChiefOfStaffEvent, CommuteRoute } from '../../types/store';
 import { ChiefOfStaffSync, minutesToTime, timeToMinutes, formatMinutesHuman } from './ChiefOfStaffSync';
 import { ChiefOfStaffStore } from './ChiefOfStaffStore';
-import { showToast } from '../../components/executive';
+import { ExecutiveCalendar, CalendarEvent, showToast } from '../../components/executive';
 import { getTodayDateString, addDaysToDateStr, getWeekDaysForDate } from '../../utils/dates';
 import {
   Calendar as CalendarIcon,
@@ -22,23 +22,41 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
-  HelpCircle,
   FileText,
   Trash2,
-  RefreshCw,
   Zap,
-  Info
+  Info,
+  CalendarDays,
+  ListOrdered,
+  ArrowRight,
+  Edit2,
+  Check,
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 interface Props {
   state: MasterState;
+  onNavigateToOffice?: (officeKey: string) => void;
 }
 
-export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
+const CATEGORIES = [
+  { id: 'academic', label: '🎓 Académico', color: '#3B82F6', defaultEmoji: '🎓' },
+  { id: 'medical', label: '🩺 Médico', color: '#F43F5E', defaultEmoji: '🩺' },
+  { id: 'social', label: '👥 Social', color: '#EC4899', defaultEmoji: '👥' },
+  { id: 'personal', label: '💼 Personal', color: '#8B5CF6', defaultEmoji: '💼' },
+  { id: 'commute', label: '🚗 Desplazamiento', color: '#64748B', defaultEmoji: '🚗' },
+  { id: 'dining', label: '🍽️ Alimentación', color: '#F59E0B', defaultEmoji: '🍽️' },
+  { id: 'rest', label: '😴 Descanso', color: '#10B981', defaultEmoji: '😴' },
+  { id: 'other', label: '📋 Otro', color: '#0EA5E9', defaultEmoji: '📋' },
+];
+
+export const ChiefOfStaffView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
   const userName = state.security.userProfile?.fullName || state.security.profile?.name || 'Alex';
   const todayStr = getTodayDateString();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'conflicts' | 'reminders' | 'config'>('daily');
+  const [calendarViewMode, setCalendarViewMode] = useState<'week' | 'day'>('week');
 
   // Natural language instruction input
   const [instructionInput, setInstructionInput] = useState('');
@@ -46,17 +64,22 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ChiefOfStaffEvent | null>(null);
   const [isMorningBriefingOpen, setIsMorningBriefingOpen] = useState(false);
   const [isNightBriefingOpen, setIsNightBriefingOpen] = useState(false);
 
-  // New event form state
+  // New/Edit event form state
   const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventEmoji, setNewEventEmoji] = useState('🗓️');
+  const [newEventCategory, setNewEventCategory] = useState<string>('personal');
   const [newEventDesc, setNewEventDesc] = useState('');
+  const [newEventDate, setNewEventDate] = useState(selectedDate);
   const [newEventStartTime, setNewEventStartTime] = useState('09:00');
   const [newEventEndTime, setNewEventEndTime] = useState('10:00');
   const [newEventPriority, setNewEventPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [newEventLocation, setNewEventLocation] = useState('');
   const [newEventTravelMins, setNewEventTravelMins] = useState<number>(0);
+  const [newEventReminderMins, setNewEventReminderMins] = useState<number>(30);
   const [newEventIsRecurring, setNewEventIsRecurring] = useState(false);
   const [newEventRecurrenceType, setNewEventRecurrenceType] = useState<'daily' | 'weekly'>('weekly');
 
@@ -76,49 +99,109 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
     commuteRoutes: []
   };
 
-  // Process natural language command
-  const handleSendInstruction = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!instructionInput.trim()) return;
+  // Convert all week events for UniversalSchedule
+  const weekDays = getWeekDaysForDate(selectedDate);
+  const weekEventsRaw = weekDays.flatMap(day => ChiefOfStaffSync.getUnifiedEventsForDate(state, day.dateStr));
+  const calendarEvents: CalendarEvent[] = ChiefOfStaffSync.convertToCalendarEvents(weekEventsRaw);
 
-    const res = ChiefOfStaffStore.processPresidentInstruction(instructionInput, selectedDate);
+  // Process natural language command
+  const handleSendInstruction = (inputTextToProcess?: string) => {
+    const textToUse = inputTextToProcess || instructionInput;
+    if (!textToUse.trim()) return;
+
+    const res = ChiefOfStaffStore.processPresidentInstruction(textToUse, selectedDate);
     setLastFeedback(res.summary);
     showToast(res.summary, 'success');
     setInstructionInput('');
   };
 
-  // Add new standalone cabinet event
-  const handleCreateEvent = (e: React.FormEvent) => {
+  // Open Add Modal
+  const openAddModal = (dateStr?: string, timeStr?: string) => {
+    setEditingEvent(null);
+    setNewEventTitle('');
+    setNewEventEmoji('🗓️');
+    setNewEventCategory('personal');
+    setNewEventDesc('');
+    setNewEventDate(dateStr || selectedDate);
+    setNewEventStartTime(timeStr || '09:00');
+    setNewEventEndTime(timeStr ? minutesToTime(timeToMinutes(timeStr) + 60) : '10:00');
+    setNewEventPriority('medium');
+    setNewEventLocation('');
+    setNewEventTravelMins(0);
+    setNewEventReminderMins(30);
+    setNewEventIsRecurring(false);
+    setIsAddModalOpen(true);
+  };
+
+  // Open Edit Modal
+  const openEditModal = (evt: ChiefOfStaffEvent) => {
+    setEditingEvent(evt);
+    setNewEventTitle(evt.title);
+    setNewEventEmoji(evt.emoji || '🗓️');
+    setNewEventCategory(evt.category || 'personal');
+    setNewEventDesc(evt.description || '');
+    setNewEventDate(evt.date);
+    setNewEventStartTime(evt.startTime);
+    setNewEventEndTime(evt.endTime);
+    setNewEventPriority(evt.priority || 'medium');
+    setNewEventLocation(evt.location || '');
+    setNewEventTravelMins(evt.travelTimeMinutes || 0);
+    setNewEventReminderMins(evt.reminderMinutes || 30);
+    setNewEventIsRecurring(!!evt.isRecurring);
+    setIsAddModalOpen(true);
+  };
+
+  // Add / Edit standalone cabinet event
+  const handleSaveEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventTitle.trim()) {
       showToast('Por favor ingrese el título del compromiso', 'error');
       return;
     }
 
-    ChiefOfStaffStore.addEvent({
+    const payload = {
       title: newEventTitle,
+      emoji: newEventEmoji,
+      category: newEventCategory as any,
       description: newEventDesc,
-      date: selectedDate,
+      date: newEventDate,
       startTime: newEventStartTime,
       endTime: newEventEndTime,
-      sourceOffice: 'jefatura',
+      sourceOffice: 'jefatura' as const,
       priority: newEventPriority,
       location: newEventLocation,
       travelTimeMinutes: newEventTravelMins > 0 ? newEventTravelMins : undefined,
+      reminderMinutes: newEventReminderMins > 0 ? newEventReminderMins : undefined,
       isRecurring: newEventIsRecurring,
       recurrenceRule: newEventIsRecurring
         ? {
             type: newEventRecurrenceType,
-            startDate: selectedDate,
+            startDate: newEventDate,
             daysOfWeek: [1, 2, 3, 4, 5]
           }
         : undefined
-    });
+    };
 
-    showToast('✓ Compromiso agendado correctamente en Jefatura de Gabinete', 'success');
+    if (editingEvent) {
+      ChiefOfStaffStore.updateEvent(editingEvent.id, payload);
+      showToast('✓ Compromiso actualizado en la Oficina de Agenda', 'success');
+    } else {
+      ChiefOfStaffStore.addEvent(payload);
+      showToast('✓ Compromiso agendado correctamente en la Oficina de Agenda', 'success');
+    }
+
     setIsAddModalOpen(false);
-    setNewEventTitle('');
-    setNewEventDesc('');
+  };
+
+  // Schedule task in free gap
+  const handleScheduleTaskInGap = (taskTitle: string, gapStartTime: string, gapEndTime: string) => {
+    // End time default 45 mins or gap end
+    const startMins = timeToMinutes(gapStartTime);
+    const endMins = Math.min(startMins + 45, timeToMinutes(gapEndTime));
+    const targetEndTime = minutesToTime(endMins);
+
+    ChiefOfStaffStore.scheduleTaskInFreeGap(taskTitle, selectedDate, gapStartTime, targetEndTime, '📚', 'academic');
+    showToast(`✓ Agendado '${taskTitle}' de ${gapStartTime} a ${targetEndTime}`, 'success');
   };
 
   // Resolve conflict
@@ -128,7 +211,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
     eventB: any,
     actionType: 'cancel_A' | 'cancel_B' | 'reschedule_A' | 'reschedule_B' | 'keep_both' | 'custom'
   ) => {
-    const decisionNote = customResolutionText[conflictId] || 'Decisión ejecutiva del Presidente';
+    const decisionNote = customResolutionText[conflictId] || 'Decisión ejecutiva tomada en Oficina de Agenda';
     ChiefOfStaffStore.resolveConflict(
       conflictId,
       { id: eventA.id, title: eventA.title, office: eventA.officeLabel },
@@ -137,13 +220,13 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
       decisionNote,
       actionType
     );
-    showToast('✓ Conflicto resuelto. Agenda actualizada.', 'success');
+    showToast('✓ Conflicto resuelto. Agenda de tiempo actualizada.', 'success');
   };
 
   // Config handlers
   const handleUpdateConfig = (key: string, val: any) => {
     ChiefOfStaffStore.updateConfig({ [key]: val });
-    showToast('✓ Configuración de horario actualizada', 'success');
+    showToast('✓ Horario personal base actualizado', 'success');
   };
 
   const handleAddCommute = (route: CommuteRoute) => {
@@ -158,29 +241,34 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
     showToast('✓ Ruta eliminada', 'success');
   };
 
+  // Fetch pending tasks from vidaDiaria for free time suggestions
+  const pendingTasks = (state.offices.vidaDiaria?.tasks || []).filter(
+    t => t.status === 'pending' && (!t.date || t.date === selectedDate)
+  );
+
   return (
     <div className="space-y-6 pb-12 font-sans">
-      {/* 1. ENCABEZA EJECUTIVO DE JEFATURA DE GABINETE */}
+      {/* 1. HEADER EJECUTIVO - OFICINA DE AGENDA */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-600/30 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
-                <Shield className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/30 to-amber-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 text-2xl shadow-inner">
+                🗓️
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                    Oficina de Jefatura de Gabinete
+                    Oficina de Agenda
                   </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 uppercase tracking-widest">
-                    Secretaría Ejecutiva
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-widest">
+                    Gestión de Tiempo
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Fuente Única de Verdad y Protección del Tiempo del Presidente {userName}
+                  Organización integral del tiempo, secuencias diarias y compromisos unificados • {userName}
                 </p>
               </div>
             </div>
@@ -212,7 +300,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               {selectedDate !== todayStr && (
                 <button
                   onClick={() => setSelectedDate(todayStr)}
-                  className="px-2 py-1 text-[11px] font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg border border-amber-500/30 ml-1 transition-all"
+                  className="px-2 py-1 text-[11px] font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 ml-1 transition-all"
                 >
                   Hoy
                 </button>
@@ -231,37 +319,37 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               onClick={() => setIsNightBriefingOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
             >
-              <Moon className="w-4 h-4 text-purple-400" /> Informe Nocturno
+              <Moon className="w-4 h-4 text-purple-400" /> Cierre Nocturno
             </button>
 
             <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition-all active:scale-95"
+              onClick={() => openAddModal()}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition-all active:scale-95"
             >
-              <Plus className="w-4 h-4 stroke-[3]" /> Nuevo Compromiso
+              <Plus className="w-4 h-4 stroke-[3]" /> Nuevo Evento
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. DYNAMIC EXECUTIVE REPORT & METRICS CARD */}
+      {/* 2. INFORME EJECUTIVO & RESUMEN DEL DÍA */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-600" />
+            <Sparkles className="w-4 h-4 text-purple-600" />
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Informe Ejecutivo de la Jefatura
+              ¿Cómo transcurre mi día y cómo debo organizar mi tiempo?
             </h2>
           </div>
-          <span className="text-xs font-mono font-medium text-slate-500">Fecha: {selectedDate}</span>
+          <span className="text-xs font-mono font-medium text-slate-500">{selectedDate}</span>
         </div>
 
         {/* Executive summary text */}
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm leading-relaxed font-medium flex items-start gap-3">
-          <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl bg-purple-50/60 border border-purple-200 text-purple-950 text-xs sm:text-sm leading-relaxed font-medium flex items-start gap-3">
+          <Info className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-slate-900 mb-1">{briefing.greeting}</p>
-            <p className="text-slate-700">{briefing.summaryText}</p>
+            <p className="font-bold text-purple-900 mb-1">{briefing.greeting}</p>
+            <p className="text-purple-800">{briefing.summaryText}</p>
           </div>
         </div>
 
@@ -300,7 +388,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
           </div>
 
           <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col justify-between">
-            <span className="text-xs font-medium text-emerald-700">Siguiente Espacio Libre</span>
+            <span className="text-xs font-medium text-emerald-700">Próximo Espacio Libre</span>
             <div className="text-xs font-bold font-mono text-emerald-900 mt-1 truncate">
               {briefing.nextFreeGapText}
             </div>
@@ -308,77 +396,105 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
         </div>
       </div>
 
-      {/* 3. NATURAL LANGUAGE INSTRUCTION BAR (SECRETARÍA DE INTELIGENCIA NATURAL) */}
-      <div className="bg-gradient-to-r from-purple-900 via-slate-900 to-slate-900 rounded-2xl p-5 border border-purple-500/30 text-white shadow-lg space-y-3">
+      {/* 3. MODIFICACIÓN NATURAL DE LA AGENDA (COMANDOS EN LENGUAJE NATURAL) */}
+      <div className="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 rounded-2xl p-5 border border-purple-500/30 text-white shadow-lg space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" />
             <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-              Instrucciones Directas del Presidente (Lenguaje Natural)
+              Modificación Natural de la Agenda (Asistente de Tiempo)
             </span>
           </div>
-          <span className="text-[10px] text-slate-400">Intérprete Inteligente Activo</span>
+          <span className="text-[10px] text-purple-300 bg-purple-900/60 px-2 py-0.5 rounded-md border border-purple-500/30">
+            Intérprete Ejecutivo
+          </span>
         </div>
 
-        <form onSubmit={handleSendInstruction} className="flex gap-2">
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            handleSendInstruction();
+          }}
+          className="flex gap-2"
+        >
           <input
             type="text"
             value={instructionInput}
             onChange={e => setInstructionInput(e.target.value)}
-            placeholder="Ej: 'Pide permiso para la cita hasta las 11', 'Tengo que salir de casa 30 minutos antes', 'Mover la clase del viernes'..."
-            className="flex-1 bg-slate-800/90 border border-purple-500/40 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+            placeholder="Ej: 'Pedí permiso para la cita hasta las 11', 'Ese día no tengo clase', 'Reprograma la cita para mañana'..."
+            className="flex-1 bg-slate-800/90 border border-purple-500/40 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
           />
           <button
             type="submit"
-            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0"
           >
             <Send className="w-3.5 h-3.5" /> Procesar
           </button>
         </form>
 
+        {/* Quick prompt chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+          <span className="text-slate-400">Ejemplos rápidos:</span>
+          {[
+            'Pedí permiso para la cita hasta las 11',
+            'Ese día no tengo clase',
+            'Reprograma la cita para mañana',
+            'Mantén las dos'
+          ].map((chip, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSendInstruction(chip)}
+              className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-900/60 border border-purple-500/30 text-purple-200 transition-all hover:scale-102"
+            >
+              "{chip}"
+            </button>
+          ))}
+        </div>
+
         {lastFeedback && (
-          <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-200 text-xs animate-in fade-in duration-200 flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="p-3 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs animate-in fade-in duration-200 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>{lastFeedback}</span>
           </div>
         )}
       </div>
 
-      {/* 4. NAVIGATION TABS */}
+      {/* 4. TABS DE NAVEGACIÓN */}
       <div className="border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-xs flex gap-1 overflow-x-auto">
         <button
           onClick={() => setActiveTab('daily')}
           className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
             activeTab === 'daily'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <CalendarIcon className="w-4 h-4 text-amber-400" /> Agenda Diaria
+          <ListOrdered className="w-4 h-4" /> Vista Diaria (Structured)
         </button>
 
         <button
           onClick={() => setActiveTab('weekly')}
           className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
             activeTab === 'weekly'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Clock className="w-4 h-4 text-purple-400" /> Calendario Semanal
+          <CalendarDays className="w-4 h-4" /> Vista Semanal (Calendario)
         </button>
 
         <button
           onClick={() => setActiveTab('conflicts')}
           className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all relative ${
             activeTab === 'conflicts'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <AlertTriangle className="w-4 h-4 text-red-400" /> Conflictos & Prioridades
+          <AlertTriangle className="w-4 h-4 text-amber-400" /> Conflictos de Agenda
           {briefing.conflictCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-mono font-bold">
               {briefing.conflictCount}
             </span>
           )}
@@ -388,7 +504,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
           onClick={() => setActiveTab('reminders')}
           className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
             activeTab === 'reminders'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -399,79 +515,106 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
           onClick={() => setActiveTab('config')}
           className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
             activeTab === 'config'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <Settings className="w-4 h-4 text-slate-400" /> Horarios & Desplazamientos
+          <Settings className="w-4 h-4 text-slate-400" /> Horarios Base & Rutas
         </button>
       </div>
 
-      {/* 5. TAB CONTENT */}
+      {/* 5. TAB CONTENIDO */}
 
-      {/* TAB 1: AGENDA DIARIA */}
+      {/* TAB 1: VISTA DIARIA STRUCTURED */}
       {activeTab === 'daily' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-purple-600" /> Línea de Tiempo Diaria • {selectedDate}
-              </h3>
-              <span className="text-xs text-slate-500 font-mono">
-                Horario activo: {config.wakeUpTime} – {config.sleepTime}
-              </span>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span>📅</span> Secuencia Cronológica del Día • {selectedDate}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Visualización continua del flujo del tiempo, actividades, desplazamientos y espacios libres.
+                </p>
+              </div>
+
+              <button
+                onClick={() => openAddModal()}
+                className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> Agregar Compromiso
+              </button>
             </div>
 
-            {unifiedEvents.length === 0 ? (
-              <div className="p-12 text-center text-slate-500 space-y-3">
-                <CalendarIcon className="w-10 h-10 mx-auto text-slate-300" />
-                <p className="font-medium text-sm">No hay compromisos agendados para este día.</p>
-                <p className="text-xs text-slate-400">
-                  Puede agregar un nuevo compromiso o usar el intérprete de lenguaje natural.
-                </p>
-                <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs transition-all"
-                >
-                  Agendar Evento
-                </button>
+            {/* Structured Vertical Timeline */}
+            <div className="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-3 sm:before:left-4 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+              {/* Wake up base node */}
+              <div className="relative flex items-center gap-3 text-xs text-slate-500 font-mono">
+                <div className="absolute -left-6 sm:-left-8 w-6 h-6 rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-xs z-10">
+                  🌅
+                </div>
+                <span className="font-bold text-amber-700">{config.wakeUpTime}</span>
+                <span className="font-medium text-slate-600">Levantarse y rutina matutina habitual</span>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {unifiedEvents.map((evt, idx) => {
+
+              {unifiedEvents.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <CalendarIcon className="w-10 h-10 mx-auto text-slate-300" />
+                  <p className="font-bold text-sm text-slate-800">Día completamente libre de compromisos.</p>
+                  <p className="text-xs text-slate-400">
+                    No hay clases, evaluaciones ni citas programadas para esta fecha.
+                  </p>
+                  <button
+                    onClick={() => openAddModal()}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs transition-all"
+                  >
+                    Crear un evento nuevo
+                  </button>
+                </div>
+              ) : (
+                unifiedEvents.map((evt, idx) => {
                   const hasTravel = evt.travelTimeMinutes && evt.travelTimeMinutes > 0;
                   const travelStartMins = hasTravel ? timeToMinutes(evt.startTime) - evt.travelTimeMinutes! : 0;
                   const travelStartStr = hasTravel ? minutesToTime(travelStartMins) : '';
+                  const durationMins = evt.startTime && evt.endTime ? timeToMinutes(evt.endTime) - timeToMinutes(evt.startTime) : 60;
 
                   return (
-                    <div key={evt.id || idx} className="space-y-1">
+                    <div key={evt.id || idx} className="space-y-2 relative">
                       {/* Desplazamiento block if specified */}
                       {hasTravel && (
-                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between ml-6 font-mono">
+                        <div className="relative p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between font-mono shadow-2xs">
+                          <div className="absolute -left-6 sm:-left-8 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px] z-10">
+                            🚗
+                          </div>
                           <div className="flex items-center gap-2">
                             <Car className="w-4 h-4 text-amber-600" />
-                            <span className="font-bold">🚗 Desplazamiento / Camino</span>
-                            <span className="text-amber-700">({evt.travelTimeMinutes} min antes)</span>
+                            <span className="font-bold">Desplazamiento</span>
+                            <span className="text-amber-700">({evt.travelTimeMinutes} min de margen)</span>
                           </div>
-                          <span className="font-semibold">
+                          <span className="font-semibold text-amber-900">
                             {travelStartStr} – {evt.startTime}
                           </span>
                         </div>
                       )}
 
-                      {/* Main Event Card */}
-                      <div className="p-4 rounded-xl border bg-white border-slate-200 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Main Structured Event Card */}
+                      <div className="relative p-4 rounded-xl border bg-white border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="absolute -left-6 sm:-left-8 w-6 h-6 rounded-full bg-white border-2 border-purple-500 flex items-center justify-center text-xs z-10 shadow-2xs">
+                          {evt.rawObject?.emoji || '🗓️'}
+                        </div>
+
                         <div className="flex items-start gap-3">
                           <div
-                            className="w-3 h-12 rounded-full shrink-0 mt-0.5"
-                            style={{ backgroundColor: evt.color || '#3B82F6' }}
+                            className="w-2.5 h-12 rounded-full shrink-0 mt-0.5"
+                            style={{ backgroundColor: evt.color || '#8B5CF6' }}
                           />
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-slate-900 text-sm">{evt.title}</span>
+                              <h4 className="font-bold text-slate-900 text-sm">{evt.title}</h4>
                               <span
                                 className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider"
-                                style={{ backgroundColor: evt.color || '#3B82F6' }}
+                                style={{ backgroundColor: evt.color || '#8B5CF6' }}
                               >
                                 {evt.officeLabel}
                               </span>
@@ -480,9 +623,14 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                                   Prioridad Alta
                                 </span>
                               )}
+                              {evt.status === 'rescheduled' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                  Reprogramado
+                                </span>
+                              )}
                             </div>
 
-                            <p className="text-xs text-slate-600">{evt.subtitle || evt.type}</p>
+                            {evt.subtitle && <p className="text-xs text-slate-600">{evt.subtitle}</p>}
 
                             {evt.location && (
                               <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
@@ -493,16 +641,115 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                           </div>
                         </div>
 
-                        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0 gap-1.5">
                           <div className="font-mono font-bold text-slate-900 text-sm">
-                            {evt.startTime || 'Sin hora'} {evt.endTime ? `– ${evt.endTime}` : ''}
+                            {evt.startTime || 'Todo el día'} {evt.endTime ? `– ${evt.endTime}` : ''}
                           </div>
-                          <span className="text-[11px] text-slate-500">
-                            {evt.startTime && evt.endTime
-                              ? formatMinutesHuman(timeToMinutes(evt.endTime) - timeToMinutes(evt.startTime))
-                              : ''}
+                          <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded-md">
+                            {formatMinutesHuman(durationMins)}
                           </span>
+
+                          {/* Quick action controls */}
+                          <div className="flex items-center gap-1 pt-1">
+                            {evt.sourceOffice === 'jefatura' && (
+                              <button
+                                onClick={() => openEditModal(evt.rawObject)}
+                                className="p-1 hover:bg-slate-100 text-slate-600 rounded-lg transition-all"
+                                title="Editar compromiso"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {evt.sourceOffice && evt.sourceOffice !== 'jefatura' && (
+                              <button
+                                onClick={() => onNavigateToOffice && onNavigateToOffice(evt.sourceOffice)}
+                                className="px-2 py-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-md flex items-center gap-1 transition-all"
+                              >
+                                <span>Ir a Oficina</span>
+                                <ArrowRight className="w-3 h-3 text-purple-600" />
+                              </button>
+                            )}
+                          </div>
                         </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+
+              {/* Sleep base node */}
+              <div className="relative flex items-center gap-3 text-xs text-slate-500 font-mono pt-2">
+                <div className="absolute -left-6 sm:-left-8 w-6 h-6 rounded-full bg-indigo-100 border-2 border-indigo-400 flex items-center justify-center text-xs z-10">
+                  🌙
+                </div>
+                <span className="font-bold text-indigo-700">{config.sleepTime}</span>
+                <span className="font-medium text-slate-600">Hora de descanso y sueño programado</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bloques de Tiempo Libre & Sugerencias de Gestión Personal */}
+          <div className="bg-emerald-50/70 rounded-2xl p-6 border border-emerald-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-200/80">
+              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-600" /> Bloques Libres & Sugerencias de Gestión Personal
+              </h3>
+              <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Optimización de Agenda
+              </span>
+            </div>
+
+            {briefing.freeTimeGaps.length === 0 ? (
+              <p className="text-xs text-emerald-800 italic">No hay bloques libres significativos hoy.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {briefing.freeTimeGaps.map((gap, gIdx) => {
+                  const suggestedTask = pendingTasks[gIdx % Math.max(1, pendingTasks.length)];
+
+                  return (
+                    <div key={gap.id} className="p-4 rounded-xl bg-white border border-emerald-200 shadow-2xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-emerald-900 text-sm">
+                          🕐 {gap.startTime} – {gap.endTime}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          {gap.durationFormatted} libre
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-slate-600 space-y-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          {gap.suggestions.map((sug, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-medium border border-emerald-100"
+                            >
+                              {sug}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Direct task integration from Gestión Personal */}
+                        {suggestedTask && (
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 pt-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase text-purple-700 tracking-wider">
+                                📌 Tarea pendiente en Gestión Personal
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono">{suggestedTask.priority}</span>
+                            </div>
+                            <p className="font-bold text-slate-900 text-xs">
+                              {suggestedTask.name}
+                            </p>
+                            <button
+                              onClick={() => handleScheduleTaskInGap(suggestedTask.name, gap.startTime, gap.endTime)}
+                              className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Agendar en este espacio ({gap.startTime})</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -510,126 +757,72 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               </div>
             )}
           </div>
-
-          {/* Explicit Free Time Gaps */}
-          <div className="bg-emerald-50/60 rounded-2xl p-6 border border-emerald-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-emerald-200/80">
-              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-600" /> Bloques de Tiempo Libre Identificados
-              </h3>
-              <span className="text-xs font-semibold text-emerald-700">Jefatura de Gabinete</span>
-            </div>
-
-            {briefing.freeTimeGaps.length === 0 ? (
-              <p className="text-xs text-emerald-800 italic">No hay bloques libres extensos entre sus compromisos.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {briefing.freeTimeGaps.map(gap => (
-                  <div key={gap.id} className="p-4 rounded-xl bg-white border border-emerald-200 shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-emerald-900 text-sm">
-                        🕐 {gap.startTime} – {gap.endTime}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        {gap.durationFormatted} libre
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-600">
-                      <span className="font-semibold text-slate-800">Sugerencias de la Jefatura:</span>
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {gap.suggestions.map((sug, sIdx) => (
-                          <span
-                            key={sIdx}
-                            className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200"
-                          >
-                            {sug}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
-      {/* TAB 2: CALENDARIO SEMANAL */}
+      {/* TAB 2: VISTA SEMANAL (REUTILIZANDO MODELO DE CALENDARIO) */}
       {activeTab === 'weekly' && (
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-purple-600" /> Vista Semanal Integrada de Agenda
-            </h3>
-            <span className="text-xs text-slate-500 font-mono">Semana de {selectedDate}</span>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-purple-600" />
+                Calendario Semanal Unificado
+              </h3>
+              <p className="text-xs text-slate-500">
+                Modelo estructural unificado con bloques por día, colores adaptativos y grilla horaria.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCalendarViewMode('week')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  calendarViewMode === 'week' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => setCalendarViewMode('day')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  calendarViewMode === 'day' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Día
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-7 gap-3">
-            {getWeekDaysForDate(selectedDate).map((day, dIdx) => {
-              const dayEvents = ChiefOfStaffSync.getUnifiedEventsForDate(state, day.dateStr);
-              const isSelected = day.dateStr === selectedDate;
-              const isToday = day.dateStr === todayStr;
-
-              return (
-                <div
-                  key={dIdx}
-                  onClick={() => setSelectedDate(day.dateStr)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 min-h-[160px] flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-purple-50 border-purple-300 ring-2 ring-purple-500/20 shadow-xs'
-                      : isToday
-                      ? 'bg-amber-50/50 border-amber-200'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="border-b pb-2 flex justify-between items-center border-slate-200">
-                    <span className="font-bold text-xs text-slate-900">{day.dayShort}</span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                        isToday ? 'bg-amber-500 text-slate-950' : 'text-slate-500'
-                      }`}
-                    >
-                      {day.dateStr.slice(8)}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[220px]">
-                    {dayEvents.length === 0 ? (
-                      <span className="text-[10px] text-slate-400 italic block pt-2">Libre</span>
-                    ) : (
-                      dayEvents.map((evt, eIdx) => (
-                        <div
-                          key={eIdx}
-                          className="p-1.5 rounded-lg text-[10px] font-semibold text-white truncate shadow-2xs"
-                          style={{ backgroundColor: evt.color || '#3B82F6' }}
-                          title={`${evt.startTime || ''} ${evt.title} (${evt.officeLabel})`}
-                        >
-                          <span className="font-mono">{evt.startTime || '•'}</span> {evt.title}
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <span className="text-[10px] text-slate-400 text-right block pt-1 border-t border-slate-200">
-                    {dayEvents.length} eventos
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <ExecutiveCalendar
+            events={calendarEvents}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            viewMode={calendarViewMode}
+            onChangeViewMode={setCalendarViewMode}
+            onAddActivity={(dStr, hStr) => openAddModal(dStr, hStr)}
+            onSelectEvent={evt => {
+              if (evt.raw && evt.raw.sourceOffice === 'jefatura') {
+                openEditModal(evt.raw.rawObject || evt.raw);
+              } else if (evt.sourceOffice && onNavigateToOffice) {
+                onNavigateToOffice(evt.sourceOffice);
+              }
+            }}
+            accentColor="purple"
+            title="Horario Ejecutivo Presidencial"
+            subtitle="Académico, Médico, Personal, Social y Rutinas"
+          />
         </div>
       )}
 
-      {/* TAB 3: CONFLICTOS Y PRIORIDADES */}
+      {/* TAB 3: CONFLICTOS DE AGENDA */}
       {activeTab === 'conflicts' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
-                Gestor de Conflictos de Horario (Autorización Presidencial)
+                Detección & Resolución de Conflictos de Horario
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
                 {briefing.conflictCount} traslapes activos
@@ -637,22 +830,22 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
             </div>
 
             {briefing.conflicts.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 space-y-2">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                <p className="font-bold text-sm text-slate-800">¡Agenda Perfecta! No existen conflictos de horario.</p>
+              <div className="p-10 text-center text-slate-500 space-y-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                <p className="font-bold text-sm text-slate-800">¡Agenda Despejada! No hay traslapes ni conflictos para {selectedDate}.</p>
                 <p className="text-xs text-slate-500">
-                  Todos sus compromisos están organizados ordenadamente en la línea de tiempo.
+                  Todos sus eventos y compromisos se encuentran libres de solapamientos horarios.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {briefing.conflicts.map(conf => (
-                  <div key={conf.id} className="p-5 rounded-xl bg-red-50/60 border border-red-200 space-y-4">
+                  <div key={conf.id} className="p-5 rounded-2xl bg-red-50/70 border border-red-200 space-y-4 shadow-xs">
                     <div className="flex items-start justify-between gap-2 border-b border-red-200 pb-3">
                       <div>
                         <span className="font-bold text-red-900 text-sm flex items-center gap-1.5">
                           <AlertTriangle className="w-4 h-4 text-red-600" />
-                          Conflicto de Horario: {conf.timeRange}
+                          Conflicto Detectado: {conf.timeRange}
                         </span>
                         <p className="text-xs text-red-800 mt-1">{conf.description}</p>
                       </div>
@@ -665,7 +858,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="p-3.5 bg-white rounded-xl border border-red-200 space-y-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                          Compromiso A ({conf.eventA.officeLabel})
+                          Evento A ({conf.eventA.officeLabel})
                         </span>
                         <h4 className="font-bold text-slate-900 text-xs">{conf.eventA.title}</h4>
                         <p className="text-[11px] text-slate-600 font-mono">
@@ -675,7 +868,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
 
                       <div className="p-3.5 bg-white rounded-xl border border-red-200 space-y-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                          Compromiso B ({conf.eventB.officeLabel})
+                          Evento B ({conf.eventB.officeLabel})
                         </span>
                         <h4 className="font-bold text-slate-900 text-xs">{conf.eventB.title}</h4>
                         <p className="text-[11px] text-slate-600 font-mono">
@@ -687,7 +880,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                     {/* Resolution action buttons */}
                     <div className="space-y-2 pt-2 border-t border-red-200">
                       <span className="text-xs font-bold text-slate-900 block">
-                        Opciones de Resolución Recomendadas:
+                        Opciones de Resolución Ejecutiva:
                       </span>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -747,9 +940,9 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Bell className="w-4 h-4 text-amber-500" />
-              Centro de Recordatorios Ejecutivos
+              Centro de Recordatorios & Avisos de Compromiso
             </h3>
-            <span className="text-xs text-slate-500 font-mono">Actualizado en tiempo real</span>
+            <span className="text-xs text-slate-500 font-mono">Sincronización Multióficina</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -804,7 +997,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
             <div className="space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-orange-600 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                Importante (🟠 Evaluaciones & Entregas en &lt;3 días)
+                Importante (🟠 Evaluaciones & Citas Próximas)
               </h4>
               {reminders.filter(r => r.tier === 'importante').length === 0 ? (
                 <p className="text-xs text-slate-400 italic">Sin parciales o evaluaciones urgentes esta semana.</p>
@@ -827,7 +1020,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
             <div className="space-y-3">
               <h4 className="font-bold text-xs uppercase tracking-wider text-red-700 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-700"></span>
-                Vencidos / Atrasados (🔴 Tareas u Obligaciones pasadas)
+                Vencidos / Atrasados (🔴 Pendientes atrasados)
               </h4>
               {reminders.filter(r => r.tier === 'vencido').length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No hay tareas u obligaciones financieras atrasadas.</p>
@@ -855,9 +1048,9 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Settings className="w-4 h-4 text-slate-700" />
-              Información Personal del Horario y Desplazamientos
+              Horarios Personales Base & Rutas de Desplazamiento
             </h3>
-            <span className="text-xs text-slate-500 font-mono">Parámetros de Estructura</span>
+            <span className="text-xs text-slate-500 font-mono">Estructura Habitual</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -965,40 +1158,72 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
         </div>
       )}
 
-      {/* MODAL: NUEVO COMPROMISO PRESIDENCIAL */}
+      {/* MODAL: NUEVO / EDITAR EVENTO DE AGENDA */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Plus className="w-4 h-4 text-amber-500" /> Agendar Compromiso Presidencial
+                <Plus className="w-4 h-4 text-purple-600" />
+                {editingEvent ? 'Editar Evento de Agenda' : 'Nuevo Evento de Agenda'}
               </h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveEvent} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Título del Compromiso</label>
+                <label className="font-semibold text-slate-700 block mb-1">Título del Evento</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Reunión con Ministro de Hacienda"
+                  placeholder="Ej: Reunión con Profesor / Cita médica"
                   value={newEventTitle}
                   onChange={e => setNewEventTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Categoría</label>
+                  <select
+                    value={newEventCategory}
+                    onChange={e => {
+                      setNewEventCategory(e.target.value);
+                      const catObj = CATEGORIES.find(c => c.id === e.target.value);
+                      if (catObj) setNewEventEmoji(catObj.defaultEmoji);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium"
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Emoji Representativo</label>
+                  <input
+                    type="text"
+                    value={newEventEmoji}
+                    onChange={e => setNewEventEmoji(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium text-center"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Descripción / Notas</label>
-                <textarea
-                  rows={2}
-                  placeholder="Detalles adicionales..."
-                  value={newEventDesc}
-                  onChange={e => setNewEventDesc(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"
+                <label className="font-semibold text-slate-700 block mb-1">Fecha</label>
+                <input
+                  type="date"
+                  required
+                  value={newEventDate}
+                  onChange={e => setNewEventDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-mono font-bold"
                 />
               </div>
 
@@ -1007,6 +1232,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                   <label className="font-semibold text-slate-700 block mb-1">Hora Inicio</label>
                   <input
                     type="time"
+                    required
                     value={newEventStartTime}
                     onChange={e => setNewEventStartTime(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-mono font-bold"
@@ -1017,6 +1243,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                   <label className="font-semibold text-slate-700 block mb-1">Hora Fin</label>
                   <input
                     type="time"
+                    required
                     value={newEventEndTime}
                     onChange={e => setNewEventEndTime(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-mono font-bold"
@@ -1029,7 +1256,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                   <label className="font-semibold text-slate-700 block mb-1">Ubicación</label>
                   <input
                     type="text"
-                    placeholder="Ej: Despacho / Aula 201"
+                    placeholder="Ej: Consultorio 302 / Aula 101"
                     value={newEventLocation}
                     onChange={e => setNewEventLocation(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2"
@@ -1037,7 +1264,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Desplazamiento (Min)</label>
+                  <label className="font-semibold text-slate-700 block mb-1">Desplazamiento Previo (Min)</label>
                   <input
                     type="number"
                     min={0}
@@ -1050,19 +1277,59 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Prioridad</label>
-                <select
-                  value={newEventPriority}
-                  onChange={e => setNewEventPriority(e.target.value as any)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium"
-                >
-                  <option value="low">Baja</option>
-                  <option value="medium">Media</option>
-                  <option value="high">Alta (Presidencial)</option>
-                </select>
+                <label className="font-semibold text-slate-700 block mb-1">Notas / Descripción</label>
+                <textarea
+                  rows={2}
+                  placeholder="Detalles adicionales o preparativos..."
+                  value={newEventDesc}
+                  onChange={e => setNewEventDesc(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium"
+                />
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex justify-end gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Prioridad</label>
+                  <select
+                    value={newEventPriority}
+                    onChange={e => setNewEventPriority(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium"
+                  >
+                    <option value="low">Baja</option>
+                    <option value="medium">Media</option>
+                    <option value="high">Alta (Urgente)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Recordatorio Previo</label>
+                  <select
+                    value={newEventReminderMins}
+                    onChange={e => setNewEventReminderMins(parseInt(e.target.value, 10) || 15)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium"
+                  >
+                    <option value={15}>15 minutos antes</option>
+                    <option value={30}>30 minutos antes</option>
+                    <option value={60}>1 hora antes</option>
+                    <option value={120}>2 horas antes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="recurringCheck"
+                  checked={newEventIsRecurring}
+                  onChange={e => setNewEventIsRecurring(e.target.checked)}
+                  className="rounded text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="recurringCheck" className="text-slate-700 font-medium">
+                  Evento Recurrente (semanal / diario)
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
@@ -1072,9 +1339,9 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
                 >
-                  Agendar Evento
+                  {editingEvent ? 'Guardar Cambios' : 'Agendar Evento'}
                 </button>
               </div>
             </form>
@@ -1089,7 +1356,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
             <div className="flex justify-between items-center pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Sun className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-amber-300 text-base">Informe Matutino de la Jefatura</h3>
+                <h3 className="font-bold text-amber-300 text-base">Informe Matutino de Agenda</h3>
               </div>
               <button onClick={() => setIsMorningBriefingOpen(false)} className="text-slate-400 hover:text-white">
                 <XCircle className="w-5 h-5" />
@@ -1103,7 +1370,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               </p>
 
               <div className="space-y-1">
-                <span className="font-bold text-amber-400 block">Puntos de Atención Prioritaria:</span>
+                <span className="font-bold text-amber-400 block">Puntos de Atención:</span>
                 <ul className="list-disc pl-4 space-y-1 text-slate-300">
                   <li>Primera actividad: {briefing.firstActivityTime}</li>
                   <li>Conflictos detectados: {briefing.conflictCount}</li>
@@ -1143,16 +1410,16 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
               <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700 space-y-2">
                 <div className="flex justify-between">
                   <span>Compromisos Totales del Día:</span>
-                  <span className="font-mono font-bold text-amber-400">{briefing.totalCommitments}</span>
+                  <span className="font-mono font-bold text-purple-300">{briefing.totalCommitments}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Hora Recomendada de Descanso:</span>
-                  <span className="font-mono font-bold text-purple-300">{config.sleepTime}</span>
+                  <span className="font-mono font-bold text-amber-400">{config.sleepTime}</span>
                 </div>
               </div>
 
               <p className="text-slate-400 italic text-[11px]">
-                La Jefatura de Gabinete ha resguardado sus horarios para garantizar un descanso óptimo antes de la jornada de mañana.
+                La Oficina de Agenda ha resguardado sus horarios para garantizar un descanso óptimo antes de la jornada de mañana.
               </p>
             </div>
 
@@ -1161,7 +1428,7 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
                 onClick={() => setIsNightBriefingOpen(false)}
                 className="px-4 py-2 bg-purple-600 text-white font-bold rounded-xl text-xs"
               >
-                Cerrar Informe Nocturno
+                Cerrar Cierre Nocturno
               </button>
             </div>
           </div>
@@ -1170,3 +1437,6 @@ export const ChiefOfStaffView: React.FC<Props> = ({ state }) => {
     </div>
   );
 };
+
+// Export alias for seamless routing compatibility
+export const AgendaView = ChiefOfStaffView;
