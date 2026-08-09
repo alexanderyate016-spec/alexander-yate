@@ -14,18 +14,22 @@ export const AcademicSync = {
     const resolvedSessions = AcademicCalculations.getAllSessionsForDate(data?.subjects || [], targetDateStr);
 
     resolvedSessions.forEach(ses => {
+      const profsFormatted = ses.professors && ses.professors.length > 0
+        ? ses.professors.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ')
+        : `${ses.professorTitle ? ses.professorTitle + ' ' : ''}${ses.professorName}`;
+
       events.push({
         id: `acad_cls_${ses.subjectId}_${ses.scheduleId}_${targetDateStr}_${ses.startTime}`,
         sourceOffice: 'academica',
         officeLabel: 'Oficina Académica',
         color: ses.subjectColor || '#3B82F6',
         title: `Clase: ${ses.subjectName}`,
-        subtitle: `Prof: ${ses.professorTitle ? ses.professorTitle + ' ' : ''}${ses.professorName}${ses.classroom ? ' | Aula: ' + ses.classroom : ''}${ses.modality ? ' (' + ses.modality + ')' : ''}`,
+        subtitle: `Prof: ${profsFormatted}${ses.classroom ? ' | Aula: ' + ses.classroom : ''}${ses.modality ? ' (' + ses.modality + ')' : ''}`,
         date: targetDateStr,
         startTime: ses.startTime,
         endTime: ses.endTime,
         type: 'class',
-        rawObject: { subject: { id: ses.subjectId, name: ses.subjectName, color: ses.subjectColor, professor: ses.professorName, classroom: ses.classroom }, session: ses }
+        rawObject: { subject: { id: ses.subjectId, name: ses.subjectName, color: ses.subjectColor, professor: profsFormatted, classroom: ses.classroom }, session: ses }
       });
     });
 

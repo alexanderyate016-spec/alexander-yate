@@ -38,8 +38,10 @@ export type AcademicScheduleType = 'recurring' | 'period_override' | 'single_dat
 export interface SubjectScheduleRule {
   id: string;
   subjectId: string;
-  professorId: string; // References SubjectProfessor.id or professor name
+  professorId: string; // References SubjectProfessor.id or professor name (primary)
   professorName?: string; // Cached display name
+  professorIds?: string[]; // Array of professor IDs for multi-professor sessions
+  professorNames?: string[]; // Array of professor names for display
   type: AcademicScheduleType;
   
   // For 'recurring'

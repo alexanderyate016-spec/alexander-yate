@@ -31,6 +31,7 @@ export interface ResolvedAcademicSession {
   professorId: string;
   professorName: string;
   professorTitle?: string;
+  professors?: Array<{ id: string; name: string; title?: string }>;
   scheduleId: string;
   scheduleType: 'recurring' | 'period_override' | 'single_date' | 'legacy';
   notes?: string;
@@ -577,7 +578,7 @@ export const AcademicCalculations = {
     // Active period override if exists
     const activeOverride = periodOverrides.length > 0 ? periodOverrides[periodOverrides.length - 1] : null;
 
-    const resolved: ResolvedAcademicSession[] = [];
+    const rawSessions: ResolvedAcademicSession[] = [];
 
     // 2. Candidate rules for dateStr
     // A) Single date rules on dateStr
@@ -595,11 +596,14 @@ export const AcademicCalculations = {
 
     // Process single date rules
     singleDateRules.forEach(rule => {
-      const activeProf = activeOverride
-        ? getProfInfo(activeOverride.professorId, activeOverride.professorName)
-        : getProfInfo(rule.professorId, rule.professorName);
+      const profIds = rule.professorIds && rule.professorIds.length > 0
+        ? rule.professorIds
+        : [activeOverride ? (activeOverride.professorId || '') : (rule.professorId || '')];
 
-      resolved.push({
+      const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
+      const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
+
+      rawSessions.push({
         id: `ses_sd_${subject.id}_${rule.id}_${dateStr}`,
         subjectId: subject.id,
         subjectName: subject.name,
@@ -609,9 +613,10 @@ export const AcademicCalculations = {
         date: dateStr,
         startTime: rule.startTime || '08:00',
         endTime: rule.endTime || '10:00',
-        professorId: activeProf.id,
-        professorName: activeProf.name,
-        professorTitle: activeProf.title,
+        professorId: ruleProfs[0]?.id || 'prof_default',
+        professorName: summaryProfName,
+        professorTitle: ruleProfs[0]?.title || '',
+        professors: ruleProfs,
         scheduleId: rule.id,
         scheduleType: 'single_date',
         notes: rule.notes
@@ -620,16 +625,18 @@ export const AcademicCalculations = {
 
     // Process recurring rules
     recurringRules.forEach(rule => {
-      // Check if active override applies specifically to this rule or all
       const overrideForThisRule = activeOverride && (!activeOverride.applyToScheduleId || activeOverride.applyToScheduleId === rule.id)
         ? activeOverride
         : null;
 
-      const activeProf = overrideForThisRule
-        ? getProfInfo(overrideForThisRule.professorId, overrideForThisRule.professorName)
-        : getProfInfo(rule.professorId, rule.professorName);
+      const profIds = rule.professorIds && rule.professorIds.length > 0
+        ? rule.professorIds
+        : [overrideForThisRule ? (overrideForThisRule.professorId || '') : (rule.professorId || '')];
 
-      resolved.push({
+      const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
+      const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
+
+      rawSessions.push({
         id: `ses_rec_${subject.id}_${rule.id}_${dateStr}`,
         subjectId: subject.id,
         subjectName: subject.name,
@@ -639,9 +646,10 @@ export const AcademicCalculations = {
         date: dateStr,
         startTime: rule.startTime || '08:00',
         endTime: rule.endTime || '10:00',
-        professorId: activeProf.id,
-        professorName: activeProf.name,
-        professorTitle: activeProf.title,
+        professorId: ruleProfs[0]?.id || 'prof_default',
+        professorName: summaryProfName,
+        professorTitle: ruleProfs[0]?.title || '',
+        professors: ruleProfs,
         scheduleId: rule.id,
         scheduleType: activeOverride ? 'period_override' : 'recurring',
         notes: rule.notes
@@ -653,7 +661,7 @@ export const AcademicCalculations = {
       subject.scheduleSessions.forEach(ses => {
         if (ses.day === dayNum) {
           const profInfo = getProfInfo(ses.professorId, ses.professorName || subject.professor);
-          resolved.push({
+          rawSessions.push({
             id: `ses_leg_${subject.id}_${ses.id}_${dateStr}`,
             subjectId: subject.id,
             subjectName: subject.name,
@@ -666,6 +674,7 @@ export const AcademicCalculations = {
             professorId: profInfo.id,
             professorName: profInfo.name,
             professorTitle: profInfo.title,
+            professors: [profInfo],
             scheduleId: ses.id,
             scheduleType: 'legacy'
           });
@@ -673,7 +682,36 @@ export const AcademicCalculations = {
       });
     }
 
-    return resolved;
+    // GROUP & MERGE SESSIONS AT THE EXACT SAME TIME SLOT FOR A SINGLE CLASS EVENT
+    const mergedMap = new Map<string, ResolvedAcademicSession>();
+
+    rawSessions.forEach(ses => {
+      const timeKey = `${ses.startTime}_${ses.endTime}`;
+      if (mergedMap.has(timeKey)) {
+        const existing = mergedMap.get(timeKey)!;
+        const existingProfs = existing.professors || [];
+        const existingProfIds = new Set(existingProfs.map(p => p.id));
+
+        (ses.professors || []).forEach(p => {
+          if (!existingProfIds.has(p.id)) {
+            existingProfs.push(p);
+            existingProfIds.add(p.id);
+          }
+        });
+
+        existing.professors = existingProfs;
+        existing.professorName = existingProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
+        existing.professorId = existingProfs[0]?.id || '';
+        existing.professorTitle = existingProfs[0]?.title || '';
+        if (ses.classroom && !existing.classroom) {
+          existing.classroom = ses.classroom;
+        }
+      } else {
+        mergedMap.set(timeKey, { ...ses, professors: [...(ses.professors || [])] });
+      }
+    });
+
+    return Array.from(mergedMap.values());
   },
 
   /**
@@ -759,9 +797,15 @@ export const AcademicCalculations = {
     // Check 2: Time slot overlap for recurring or single_date rules for same professor
     if ((newRule.type === 'recurring' || newRule.type === 'single_date') && newRule.startTime && newRule.endTime) {
       for (const sub of allSubjects) {
+        // Skip same subject - co-teaching or multi-professor schedule rules in same subject are allowed
+        if (sub.id === subject.id) continue;
+
         for (const s of (sub.schedules || [])) {
           if (s.id === newRule.id) continue;
-          if (s.professorId !== profId) continue;
+          
+          // Check if professor is involved in rule s
+          const isSameProf = s.professorId === profId || (s.professorIds && s.professorIds.includes(profId));
+          if (!isSameProf) continue;
           if (s.type === 'period_override') continue;
 
           // Check date overlap
