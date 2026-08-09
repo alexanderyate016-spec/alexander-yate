@@ -548,6 +548,10 @@ export const AcademicCalculations = {
    * taking into account recurring rules, period overrides, and single-date sessions.
    */
   getSessionsForSubjectAndDate(subject: AcademicSubject, dateStr: string): ResolvedAcademicSession[] {
+    if (subject.cancelledClassDates?.includes(dateStr)) {
+      return [];
+    }
+
     const dayNum = getDayOfWeekNumber(dateStr);
     const schedules = subject.schedules || [];
     const professors = subject.professors || [];
@@ -583,7 +587,9 @@ export const AcademicCalculations = {
     // 2. Candidate rules for dateStr
     // A) Single date rules on dateStr
     const singleDateRules = schedules.filter(
-      s => s.type === 'single_date' && (s.date === dateStr || s.startDate === dateStr)
+      s => s.type === 'single_date' &&
+           (s.date === dateStr || s.startDate === dateStr) &&
+           !s.cancelledDates?.includes(dateStr)
     );
 
     // B) Recurring rules covering dateStr and matching dayNum
@@ -591,7 +597,8 @@ export const AcademicCalculations = {
       s => s.type === 'recurring' &&
            s.startDate <= dateStr &&
            dateStr <= s.endDate &&
-           s.daysOfWeek?.includes(dayNum)
+           s.daysOfWeek?.includes(dayNum) &&
+           !s.cancelledDates?.includes(dateStr)
     );
 
     // Process single date rules

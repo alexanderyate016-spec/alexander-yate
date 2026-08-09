@@ -63,6 +63,7 @@ export interface SubjectScheduleRule {
   // For 'period_override'
   applyToScheduleId?: string; // Optional: specific rule ID to override, or empty/null for all schedules
   
+  cancelledDates?: string[]; // Array of cancelled dates YYYY-MM-DD
   notes?: string;
   createdAt?: string;
 }
@@ -90,6 +91,8 @@ export interface AcademicEvaluationActivity {
   type: 'Parcial' | 'Quiz' | 'Taller' | 'Laboratorio' | 'Exposición' | 'Proyecto' | 'Otro';
   date: string; // YYYY-MM-DD
   time?: string;
+  startTime?: string; // HH:mm
+  endTime?: string;   // HH:mm
   weightPercent: number; // e.g. 20 (20%)
   grade?: number; // 0.0 - 5.0
   status: 'pending' | 'graded' | 'cancelled';
@@ -156,6 +159,7 @@ export interface AcademicSubject {
   cuts: AcademicCut[];
   academicActivities?: AcademicActivity[];
   totalStudyMinutes?: number;
+  cancelledClassDates?: string[];
 }
 
 export interface AcademicSemester {

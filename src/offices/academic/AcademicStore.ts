@@ -75,6 +75,32 @@ export const AcademicStore = {
     });
   },
 
+  // CANCEL SPECIFIC CLASS SESSION OCCURRENCE DATE
+  cancelClassOccurrence(subjectId: string, scheduleId: string | undefined, dateStr: string) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub) {
+        if (!sub.cancelledClassDates) {
+          sub.cancelledClassDates = [];
+        }
+        if (!sub.cancelledClassDates.includes(dateStr)) {
+          sub.cancelledClassDates.push(dateStr);
+        }
+        if (scheduleId && sub.schedules) {
+          const rule = sub.schedules.find(r => r.id === scheduleId);
+          if (rule) {
+            if (!rule.cancelledDates) {
+              rule.cancelledDates = [];
+            }
+            if (!rule.cancelledDates.includes(dateStr)) {
+              rule.cancelledDates.push(dateStr);
+            }
+          }
+        }
+      }
+    });
+  },
+
   // PROFESSORS FOR A SUBJECT
   addProfessor(subjectId: string, professor: Omit<SubjectProfessor, 'id'>) {
     storeInstance.updateState(draft => {

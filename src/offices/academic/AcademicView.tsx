@@ -247,7 +247,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
 
   // Universal Schedule State
-  const [scheduleSelectedDate] = useState<string>(getTodayDateString());
+  const [scheduleSelectedDate, setScheduleSelectedDate] = useState<string>(getTodayDateString());
   const [scheduleViewMode, setScheduleViewMode] = useState<'week' | 'day'>('week');
 
   // Toast Notification State
@@ -427,9 +427,35 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     const events: CalendarEvent[] = [];
     const weekDays = getWeekDaysForDate(scheduleSelectedDate);
     
+    // 1. Collect all resolved class sessions for the week
     weekDays.forEach(day => {
       const resolvedSessions = AcademicCalculations.getAllSessionsForDate(activeSubjects, day.dateStr);
       resolvedSessions.forEach(ses => {
+        // Find pending activities associated with this subject
+        const sub = activeSubjects.find(s => s.id === ses.subjectId);
+        const pendingEvalActs: any[] = [];
+        if (sub?.cuts) {
+          sub.cuts.forEach(cut => {
+            if (cut.activities) {
+              cut.activities.forEach(act => {
+                if (act.status === 'pending') {
+                  pendingEvalActs.push({ ...act, cutName: cut.cutName, subjectName: sub.name });
+                }
+              });
+            }
+          });
+        }
+
+        const pendingAcadActs: any[] = [];
+        if (sub?.academicActivities) {
+          sub.academicActivities.forEach(act => {
+            pendingAcadActs.push({ ...act, subjectName: sub.name });
+          });
+        }
+
+        const hasPendingActivities = pendingEvalActs.length > 0 || pendingAcadActs.length > 0;
+        const pendingActivitiesCount = pendingEvalActs.length + pendingAcadActs.length;
+
         events.push({
           id: ses.id,
           title: ses.subjectName,
@@ -437,11 +463,84 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           date: day.dateStr,
           startTime: ses.startTime,
           endTime: ses.endTime,
+          classroom: ses.classroom,
+          professor: ses.professorName,
           location: ses.classroom,
           color: ses.subjectColor || '#3B82F6',
-          sourceOffice: 'academica'
+          officeLabel: 'Académica',
+          sourceOffice: 'academica',
+          raw: {
+            type: 'class_session',
+            session: ses,
+            hasPendingActivities,
+            pendingActivitiesCount,
+            pendingEvalActs,
+            pendingAcadActs
+          }
         });
       });
+    });
+
+    // 2. Collect evaluation activities and academic activities
+    activeSubjects.forEach(sub => {
+      // Evaluation activities
+      if (sub.cuts) {
+        sub.cuts.forEach(cut => {
+          if (cut.activities) {
+            cut.activities.forEach(act => {
+              if (act.status !== 'cancelled' && act.date) {
+                const startTime = act.startTime || act.time || 'UNTIMED';
+                const endTime = act.endTime || (act.startTime ? act.startTime : 'UNTIMED');
+
+                events.push({
+                  id: `eval_${act.id}_${act.date}`,
+                  title: `📝 ${act.name} (${act.type})`,
+                  subtitle: `Materia: ${sub.name} • ${act.weightPercent}% (${cut.cutName})`,
+                  date: act.date,
+                  startTime,
+                  endTime,
+                  color: '#F59E0B',
+                  officeLabel: 'Evaluación',
+                  sourceOffice: 'academica',
+                  raw: {
+                    type: 'evaluation_activity',
+                    subjectId: sub.id,
+                    cutId: cut.id,
+                    activity: act
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Non-graded academic activities
+      if (sub.academicActivities) {
+        sub.academicActivities.forEach(act => {
+          if (act.date) {
+            const startTime = act.startTime || 'UNTIMED';
+            const endTime = act.endTime || (act.startTime ? act.startTime : 'UNTIMED');
+
+            events.push({
+              id: `acad_${act.id}_${act.date}`,
+              title: `📌 ${act.name} (${act.type})`,
+              subtitle: `Materia: ${sub.name}`,
+              date: act.date,
+              startTime,
+              endTime,
+              color: '#8B5CF6',
+              officeLabel: 'Actividad',
+              sourceOffice: 'academica',
+              raw: {
+                type: 'academic_activity',
+                subjectId: sub.id,
+                activity: act
+              }
+            });
+          }
+        });
+      }
     });
 
     return events;
@@ -2498,9 +2597,55 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               <UniversalSchedule
                 events={scheduleEvents}
                 selectedDate={scheduleSelectedDate}
-                onSelectDate={() => {}}
+                onSelectDate={setScheduleSelectedDate}
                 viewMode={scheduleViewMode}
                 onChangeViewMode={setScheduleViewMode}
+                onAddActivity={(dateStr) => {
+                  if (dateStr) {
+                    setAcadActDate(dateStr);
+                  }
+                  handleOpenAcademicActivityModal(undefined, activeSubjects[0]?.id);
+                }}
+                onCancelClassOccurrence={(subjectId, scheduleId, dateStr) => {
+                  AcademicStore.cancelClassOccurrence(subjectId, scheduleId, dateStr);
+                  showToast(`Sesión de clase cancelada únicamente para el ${dateStr}.`, 'warning');
+                }}
+                onRescheduleActivity={(evt) => {
+                  if (evt.raw?.type === 'evaluation_activity' && evt.raw.activity) {
+                    handleOpenEditActivityModal(evt.raw.subjectId, evt.raw.cutId, evt.raw.activity);
+                  } else if (evt.raw?.type === 'academic_activity' && evt.raw.activity) {
+                    handleOpenAcademicActivityModal(evt.raw.activity, evt.raw.subjectId);
+                  }
+                }}
+                onRescheduleClass={(evt) => {
+                  if (evt.raw?.type === 'class_session') {
+                    const sub = activeSubjects.find(s => s.id === evt.raw.session.subjectId);
+                    if (sub) {
+                      setExpandedSubjectId(sub.id);
+                      setActiveTab('subjects');
+                      showToast(`Abre la materia "${sub.name}" para modificar las reglas de horario.`, 'warning');
+                    }
+                  }
+                }}
+                onCancelActivity={(evt) => {
+                  if (evt.raw?.type === 'evaluation_activity') {
+                    AcademicStore.deleteActivity(evt.raw.subjectId, evt.raw.cutId, evt.raw.activity.id);
+                    showToast('Evaluación cancelada y eliminada.');
+                  } else if (evt.raw?.type === 'academic_activity') {
+                    AcademicStore.deleteAcademicActivity(evt.raw.activity.id);
+                    showToast('Actividad cancelada y eliminada.');
+                  }
+                }}
+                onDeleteActivity={(eventId) => {
+                  const evt = scheduleEvents.find(e => e.id === eventId);
+                  if (evt?.raw?.type === 'evaluation_activity') {
+                    AcademicStore.deleteActivity(evt.raw.subjectId, evt.raw.cutId, evt.raw.activity.id);
+                    showToast('Evaluación eliminada.');
+                  } else if (evt?.raw?.type === 'academic_activity') {
+                    AcademicStore.deleteAcademicActivity(evt.raw.activity.id);
+                    showToast('Actividad eliminada.');
+                  }
+                }}
               />
             </div>
           )}
