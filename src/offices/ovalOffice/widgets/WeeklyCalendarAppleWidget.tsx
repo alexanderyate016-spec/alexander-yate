@@ -1,6 +1,7 @@
 import React from 'react';
 import { MasterState } from '../../../types/store';
 import { OvalOfficeCalculations } from '../OvalOfficeCalculations';
+import { getWeekDaysForDate } from '../../../utils/dates';
 import { Calendar, ArrowRight, Clock } from 'lucide-react';
 
 interface Props {
@@ -14,29 +15,13 @@ export const WeeklyCalendarAppleWidget: React.FC<Props> = ({
   selectedDate,
   onNavigateToOffice,
 }) => {
-  const currentDate = new Date(selectedDate);
-
-  // Calculate Monday of the current selected week
-  const day = currentDate.getDay(); // 0 is Sun, 1 is Mon...
-  const diffToMon = day === 0 ? -6 : 1 - day;
-  const monday = new Date(currentDate);
-  monday.setDate(currentDate.getDate() + diffToMon);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dateISO = d.toISOString().split('T')[0];
-    return {
-      date: d,
-      dateISO,
-      dayName: ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'][i],
-      dayNum: d.getDate(),
-      isToday: dateISO === todayStr,
-      isSelected: dateISO === selectedDate
-    };
-  });
+  const weekDays = getWeekDaysForDate(selectedDate).map(wd => ({
+    dateISO: wd.dateStr,
+    dayName: wd.dayShort,
+    dayNum: parseInt(wd.dayNumberStr, 10),
+    isToday: wd.isToday,
+    isSelected: wd.dateStr === selectedDate
+  }));
 
   // Hours from 07:00 to 22:00
   const hours = Array.from({ length: 16 }, (_, i) => {

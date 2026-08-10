@@ -90,14 +90,15 @@ export function addDaysToDateStr(dateStr: string, daysToAdd: number): string {
   return `${y}-${m}-${day}`;
 }
 
-export function getWeekDaysForDate(dateStr: string): Array<{ dateStr: string; dayNum: number; dayShort: string; dayNumberStr: string; isToday: boolean }> {
-  const d = new Date(dateStr + 'T12:00:00');
+export function getWeekDaysForDate(dateStr?: string): Array<{ dateStr: string; dayNum: number; dayShort: string; dayNumberStr: string; isToday: boolean }> {
+  const todayStr = getTodayDateString();
+  const validDateStr = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) ? dateStr : todayStr;
+  const d = new Date(validDateStr + 'T12:00:00');
   const day = d.getDay(); // 0 is Sunday, 1 is Monday...
   const diffToMonday = day === 0 ? -6 : 1 - day;
   const monday = new Date(d);
   monday.setDate(d.getDate() + diffToMonday);
 
-  const todayStr = getTodayDateString();
   const days = [];
   const shortNames = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 

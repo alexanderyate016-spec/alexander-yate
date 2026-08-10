@@ -412,19 +412,28 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                     key={day.dateStr}
                     onClick={() => onSelectDate(day.dateStr)}
                     className={`p-2 border-r border-slate-200 cursor-pointer transition-all ${
-                      day.dateStr === selectedDate
-                        ? 'bg-purple-50 font-bold border-b-2 border-b-purple-600 text-purple-900'
+                      day.isToday
+                        ? 'bg-purple-100/80 font-bold border-b-2 border-b-purple-600 text-purple-950 shadow-inner'
+                        : day.dateStr === selectedDate
+                        ? 'bg-purple-50 font-bold border-b-2 border-b-purple-500 text-purple-900'
                         : 'hover:bg-slate-100/80 text-slate-700'
                     }`}
                   >
-                    <div className="text-[10px] uppercase tracking-widest font-semibold text-purple-700 flex items-center justify-center gap-1">
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-purple-800 flex items-center justify-center gap-1">
                       <span>{day.dayShort}</span>
+                      {day.isToday && (
+                        <span className="text-[8px] font-black uppercase text-purple-700 bg-purple-200 px-1 py-0.2 rounded-xs">
+                          Hoy
+                        </span>
+                      )}
                       {layout.hasConflict && (
                         <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" title="Conflicto de horario" />
                       )}
                     </div>
-                    <div className={`text-sm font-serif ${day.isToday ? 'text-purple-700 font-extrabold underline' : 'text-slate-900'}`}>
-                      {day.dayNumberStr}
+                    <div className="text-sm font-serif flex items-center justify-center mt-0.5">
+                      <span className={day.isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center font-black text-xs shadow-xs' : 'text-slate-900 font-semibold'}>
+                        {day.dayNumberStr}
+                      </span>
                     </div>
 
                     {/* UNTIMED DUE DATES / DELIVERIES TOP STRIP */}
