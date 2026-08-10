@@ -605,7 +605,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       showToast('Información del profesor actualizada correctamente');
     } else {
       const added = AcademicStore.addProfessor(profSubjectId, profPayload);
-      targetProfId = added.id;
+      targetProfId = added?.id;
       showToast('Profesor registrado correctamente');
     }
 
@@ -1499,11 +1499,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
                     <span className="text-[11px] font-semibold text-slate-500 block">Promedio Actual</span>
                     <div className="text-xl font-mono font-bold text-slate-900">
-                      {statusInfo.hasGrades ? formatGrade(statusInfo.average) : 'S/N'}
+                      {subjectProgress.hasGrades ? formatGrade(subjectProgress.notaAcumuladaMateria) : 'S/N'}
                       <span className="text-xs text-slate-400 font-sans"> / 5.0</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">
-                      {statusInfo.hasGrades ? `Acumulado: ${formatGrade(statusInfo.notaAcumulada)}` : 'Sin notas registradas'}
+                    <span className="text-[10px] text-slate-500 block">
+                      {subjectProgress.hasGrades ? `Acumulado: ${formatGrade(subjectProgress.notaAcumuladaMateria)}` : 'Sin notas registradas'}
                     </span>
                   </div>
 
@@ -2038,38 +2038,73 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     return (
                       <div key={cut.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                         
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                          {/* Title & Weight */}
                           <div className="flex items-center gap-3">
-                            <span className="w-7 h-7 rounded-lg bg-slate-900 text-white font-mono font-bold text-xs flex items-center justify-center">
+                            <span className="w-9 h-9 rounded-xl bg-slate-900 text-white font-mono font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
                               C{idx + 1}
                             </span>
                             <div>
-                              <h4 className="text-base font-bold text-slate-900">{cut.cutName}</h4>
-                              <span className="text-xs text-slate-500 font-mono font-semibold">
-                                Peso en la materia: {cut.cutWeightPercent}%
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-base font-bold text-slate-900">{cut.cutName}</h4>
+                                <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 font-mono font-bold text-xs border border-purple-200">
+                                  PESO: {cut.cutWeightPercent}%
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                Evaluado: {cutProgress.evaluatedWeightPercent}% del corte ({cutProgress.materiaEvaluadaPercent}% de la materia)
+                              </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <span className="text-xs text-slate-500 block">Promedio del Corte</span>
-                              <span className="text-base font-mono font-bold text-purple-900">
-                                {cutProgress.gradedActivitiesCount > 0 ? formatGrade(cutProgress.accumulatedCutGrade) : 'S/N'} / 5.0
+                          {/* Primary Indicators: NOTA CORTE & APORTE */}
+                          <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 bg-slate-50/90 border border-slate-200 rounded-2xl px-4 py-2.5 shadow-2xs">
+                            {/* Indicator 1: NOTA CORTE (Principal) */}
+                            <div className="text-center min-w-[90px]">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-0.5">
+                                NOTA CORTE
                               </span>
+                              <div className="flex items-baseline justify-center gap-0.5">
+                                <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900">
+                                  {cutProgress.gradedActivitiesCount > 0 ? formatGrade(cutProgress.accumulatedCutGrade) : '0,00'}
+                                </span>
+                                <span className="text-xs font-mono font-semibold text-slate-400">/ 5.0</span>
+                              </div>
                             </div>
-                            <button
-                              onClick={() => handleOpenCutModal(currentExpandedSubject.id, cut)}
-                              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => AcademicStore.deleteCut(currentExpandedSubject.id, cut.id)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+
+                            {/* Divider */}
+                            <div className="h-8 w-px bg-slate-200 shrink-0" />
+
+                            {/* Indicator 2: APORTE (Grande y claramente visible, ligeramente secundario) */}
+                            <div className="text-center min-w-[90px]">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 block mb-0.5">
+                                APORTE
+                              </span>
+                              <div className="flex items-baseline justify-center gap-0.5">
+                                <span className="text-xl sm:text-2xl font-mono font-bold text-emerald-700">
+                                  +{formatGrade(cutProgress.aporteSubject)}
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-400 font-medium">pts</span>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 pl-2 border-l border-slate-200 shrink-0">
+                              <button
+                                onClick={() => handleOpenCutModal(currentExpandedSubject.id, cut)}
+                                className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-white transition-colors"
+                                title="Editar corte"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => AcademicStore.deleteCut(currentExpandedSubject.id, cut.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white transition-colors"
+                                title="Eliminar corte"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
 

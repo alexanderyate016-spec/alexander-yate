@@ -117,13 +117,13 @@ class CasaBlancaStore {
           sleepTargetHours: parsed?.offices?.medica?.sleepTargetHours ?? initial.offices.medica.sleepTargetHours ?? 8.0
         },
         desarrolloPersonal: {
-          journalEntries: parsed?.offices?.desarrolloPersonal?.journalEntries || initial.offices.desarrolloPersonal.journalEntries || [],
-          lifeLessons: parsed?.offices?.desarrolloPersonal?.lifeLessons || initial.offices.desarrolloPersonal.lifeLessons || [],
-          monthlyReviews: parsed?.offices?.desarrolloPersonal?.monthlyReviews || initial.offices.desarrolloPersonal.monthlyReviews || {},
-          direction: parsed?.offices?.desarrolloPersonal?.direction || initial.offices.desarrolloPersonal.direction,
-          characterAreas: parsed?.offices?.desarrolloPersonal?.characterAreas || [],
-          personalHistory: parsed?.offices?.desarrolloPersonal?.personalHistory || [],
-          philosophicalReflections: parsed?.offices?.desarrolloPersonal?.philosophicalReflections || []
+          journalEntries: Array.isArray(parsed?.offices?.desarrolloPersonal?.journalEntries) ? parsed.offices.desarrolloPersonal.journalEntries : [],
+          lifeLessons: Array.isArray(parsed?.offices?.desarrolloPersonal?.lifeLessons) ? parsed.offices.desarrolloPersonal.lifeLessons : [],
+          monthlyReviews: (parsed?.offices?.desarrolloPersonal?.monthlyReviews && typeof parsed.offices.desarrolloPersonal.monthlyReviews === 'object') ? parsed.offices.desarrolloPersonal.monthlyReviews : {},
+          direction: parsed?.offices?.desarrolloPersonal?.direction || { purpose: '', vision: '', principles: [] },
+          characterAreas: Array.isArray(parsed?.offices?.desarrolloPersonal?.characterAreas) ? parsed.offices.desarrolloPersonal.characterAreas : [],
+          personalHistory: Array.isArray(parsed?.offices?.desarrolloPersonal?.personalHistory) ? parsed.offices.desarrolloPersonal.personalHistory : [],
+          philosophicalReflections: Array.isArray(parsed?.offices?.desarrolloPersonal?.philosophicalReflections) ? parsed.offices.desarrolloPersonal.philosophicalReflections : []
         }
       },
       executive: { ...initial.executive, ...parsed?.executive }

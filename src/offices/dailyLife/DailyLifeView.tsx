@@ -87,6 +87,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
     date: todayStr,
     sendToChiefOfStaff: false
   });
+  const [quickTaskInput, setQuickTaskInput] = useState('');
 
   // Form State - Base Schedule
   const [baseScheduleForm, setBaseScheduleForm] = useState<BaseScheduleConfig>({
@@ -281,6 +282,18 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
     DailyLifeStore.toggleTaskStatus(taskId);
   };
 
+  const handleAddQuickTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTaskInput.trim()) return;
+    DailyLifeStore.addTask({
+      name: quickTaskInput.trim(),
+      priority: 'medium',
+      date: todayStr
+    });
+    setQuickTaskInput('');
+    showToast('Tarea agregada para hoy', 'success');
+  };
+
   const handleOpenAddTask = () => {
     setEditingTask(null);
     setTaskForm({
@@ -312,43 +325,24 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
     if (editingTask) {
       DailyLifeStore.updateTask(editingTask.id, {
         name: taskForm.name.trim(),
-        description: taskForm.description.trim() || undefined,
-        priority: taskForm.priority,
-        date: taskForm.date,
-        sendToChiefOfStaff: taskForm.sendToChiefOfStaff
+        date: todayStr
       });
-      if (taskForm.sendToChiefOfStaff) {
-        DailyLifeStore.sendTaskToChiefOfStaff({
-          ...editingTask,
-          name: taskForm.name.trim(),
-          priority: taskForm.priority,
-          date: taskForm.date
-        });
-        showToast('Enviado a Jefatura de Gabinete para asignación de espacio', 'success');
-      } else {
-        showToast('Tarea actualizada', 'success');
-      }
+      showToast('Tarea actualizada', 'success');
     } else {
-      const newTaskData: Omit<DailyTask, 'id' | 'status'> = {
+      DailyLifeStore.addTask({
         name: taskForm.name.trim(),
-        description: taskForm.description.trim() || undefined,
-        priority: taskForm.priority,
-        date: taskForm.date,
-        sendToChiefOfStaff: taskForm.sendToChiefOfStaff
-      };
-      DailyLifeStore.addTask(newTaskData);
-
-      if (taskForm.sendToChiefOfStaff) {
-        DailyLifeStore.sendTaskToChiefOfStaff({
-          id: 'temp',
-          status: 'pending',
-          ...newTaskData
-        });
-        showToast('Tarea creada y enviada a Jefatura de Gabinete', 'success');
-      } else {
-        showToast('Nueva tarea agregada', 'success');
-      }
+        priority: 'medium',
+        date: todayStr
+      });
+      showToast('Tarea agregada para hoy', 'success');
     }
+    setTaskForm({
+      name: '',
+      description: '',
+      priority: 'medium',
+      date: todayStr,
+      sendToChiefOfStaff: false
+    });
     setShowAddTaskModal(false);
   };
 
@@ -685,53 +679,72 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
 
         {/* SECCIÓN 2: 📋 TAREAS DE HOY */}
         <GlassPanel className="p-6 bg-white border-slate-200/80 shadow-sm space-y-5">
-          <div className="flex justify-between items-center border-b pb-3 border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-slate-100">
             <div className="flex items-center gap-2">
               <span className="text-xl">📋</span>
               <div>
-                <h2 className="font-bold text-slate-900 text-base">Tareas de hoy</h2>
-                <p className="text-xs text-slate-500">Acciones puntuales del día</p>
+                <h2 className="font-bold text-slate-900 text-base uppercase tracking-tight">TAREAS DE HOY</h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  {progressSummary.tasksCompleted}/{progressSummary.tasksTotal} completadas ({progressSummary.tasksPercent}%)
+                </p>
               </div>
             </div>
             <ExecutiveButton variant="primary" onClick={handleOpenAddTask}>
-              <Plus className="w-4 h-4 mr-1" /> Agregar Tarea
+              <Plus className="w-4 h-4 mr-1" /> + Tarea
             </ExecutiveButton>
           </div>
 
-          {/* Warning for Overdue Tasks */}
-          {overdueTasks.length > 0 && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-rose-800">
-                <AlertCircle className="w-4 h-4 text-rose-600" />
-                <span>Tareas vencidas de días anteriores ({overdueTasks.length})</span>
-              </div>
-              <div className="space-y-1.5">
-                {overdueTasks.map(ot => (
-                  <div key={ot.id} className="flex justify-between items-center text-xs bg-white/80 p-2 rounded-lg border border-rose-200/60">
-                    <span className="font-medium text-slate-900 truncate">🔴 Vencida — {ot.name}</span>
-                    <button
-                      onClick={() => handleToggleTask(ot.id)}
-                      className="text-[11px] text-emerald-700 font-bold hover:underline"
-                    >
-                      Completar
-                    </button>
-                  </div>
-                ))}
+          {/* Quick Task Creation Input */}
+          <form onSubmit={handleAddQuickTask} className="flex gap-2">
+            <ExecutiveInput
+              value={quickTaskInput}
+              onChange={e => setQuickTaskInput(e.target.value)}
+              placeholder="Ej: Terminar informe de Anatomía"
+              className="flex-1"
+            />
+            <ExecutiveButton type="submit" variant="primary">
+              Agregar tarea
+            </ExecutiveButton>
+          </form>
+
+          {/* Progress Bar */}
+          {progressSummary.tasksTotal > 0 && (
+            <div className="space-y-1">
+              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    progressSummary.tasksPercent === 100
+                      ? 'bg-emerald-500'
+                      : progressSummary.tasksPercent >= 50
+                      ? 'bg-amber-500'
+                      : 'bg-sky-500'
+                  }`}
+                  style={{ width: `${progressSummary.tasksPercent}%` }}
+                />
               </div>
             </div>
+          )}
+
+          {/* Celebration Message */}
+          {progressSummary.tasksTotal > 0 && progressSummary.tasksCompleted === progressSummary.tasksTotal && (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs flex items-center justify-center gap-2"
+            >
+              <span>🎉 ¡Felicidades! Completaste todas tus tareas de hoy.</span>
+            </motion.div>
           )}
 
           {/* Tasks Checklist */}
           {todayTasks.length === 0 ? (
             <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl space-y-2">
               <span className="text-3xl block">📋</span>
-              <p className="text-xs font-medium">No hay tareas programadas para hoy.</p>
-              <ExecutiveButton variant="secondary" onClick={handleOpenAddTask}>
-                + Crear tarea de hoy
-              </ExecutiveButton>
+              <p className="text-xs font-medium">No hay tareas creadas para hoy.</p>
+              <p className="text-[11px] text-slate-400">Escribe arriba o presiona "+ Tarea" para agregar una acción a realizar hoy.</p>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {todayTasks.map(t => {
                 const isCompleted = t.status === 'completed';
                 return (
@@ -740,85 +753,42 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                     layout
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                    className={`p-3 rounded-xl border transition-all duration-200 flex items-center justify-between gap-3 ${
                       isCompleted
                         ? 'bg-slate-50 border-slate-200 text-slate-500'
-                        : 'bg-slate-50/80 border-slate-200 text-slate-900 hover:border-slate-300'
+                        : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300 shadow-2xs'
                     }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <button
                         type="button"
                         onClick={() => handleToggleTask(t.id)}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0 ${
+                        className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 text-xs font-bold ${
                           isCompleted
-                            ? 'bg-slate-800 text-white shadow-sm'
-                            : 'border-2 border-slate-300 text-transparent hover:border-slate-800'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'border-2 border-slate-300 text-slate-400 hover:border-slate-700 hover:text-slate-700'
                         }`}
                       >
-                        <Check className="w-4 h-4 stroke-[3]" />
+                        {isCompleted ? '☑' : '☐'}
                       </button>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-bold text-sm truncate ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                            {t.name}
-                          </span>
-
-                          {/* Priority Badge */}
-                          {t.priority === 'high' && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
-                              Alta
-                            </span>
-                          )}
-                          {t.priority === 'medium' && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                              Media
-                            </span>
-                          )}
-                          {t.priority === 'low' && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                              Baja
-                            </span>
-                          )}
-                        </div>
-                        {t.description && <p className="text-[11px] text-slate-500 truncate mt-0.5">{t.description}</p>}
-                      </div>
+                      <span className={`font-semibold text-sm truncate ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                        {t.name}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleSendTaskToCabinet(t)}
-                        className="p-1.5 text-slate-400 hover:text-amber-700 rounded-lg hover:bg-amber-50 transition-colors"
-                        title="Solicitar espacio en agenda a Jefatura de Gabinete"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEditTask(t)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-                        title="Editar tarea"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
                       <button
                         onClick={() => handleDeleteTask(t.id)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
                         title="Eliminar tarea"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </motion.div>
                 );
               })}
-            </div>
-          )}
-
-          {futureTasksCount > 0 && (
-            <div className="text-[11px] text-slate-500 text-center pt-2 border-t border-slate-100 flex items-center justify-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{futureTasksCount} tarea(s) programada(s) para días futuros</span>
             </div>
           )}
         </GlassPanel>
@@ -1091,71 +1061,18 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
       <ExecutiveModal
         isOpen={showAddTaskModal}
         onClose={() => setShowAddTaskModal(false)}
-        title={editingTask ? 'Editar Tarea' : '📋 Crear Nueva Tarea'}
+        title={editingTask ? 'Editar Tarea' : '📋 Agregar Tarea'}
       >
         <ExecutiveForm onSubmit={handleSaveTask}>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Título de la tarea</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">¿Qué tarea quieres realizar hoy?</label>
               <ExecutiveInput
                 value={taskForm.name}
                 onChange={e => setTaskForm({ ...taskForm, name: e.target.value })}
-                placeholder="ej. Organizar documentos, Terminar trabajo..."
+                placeholder="Ej: Terminar informe de Anatomía"
+                autoFocus
                 required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Descripción opcional</label>
-              <ExecutiveInput
-                value={taskForm.description}
-                onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
-                placeholder="Detalles adicionales..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Fecha de cumplimiento</label>
-                <ExecutiveInput
-                  type="date"
-                  value={taskForm.date}
-                  onChange={e => setTaskForm({ ...taskForm, date: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Prioridad</label>
-                <select
-                  value={taskForm.priority}
-                  onChange={e =>
-                    setTaskForm({
-                      ...taskForm,
-                      priority: e.target.value as 'low' | 'medium' | 'high'
-                    })
-                  }
-                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-medium"
-                >
-                  <option value="low">Baja 🟢</option>
-                  <option value="medium">Media 🟡</option>
-                  <option value="high">Alta 🔴</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between">
-              <div className="space-y-0.5 pr-2">
-                <span className="text-xs font-bold text-slate-900 block">Coordinar con Jefatura de Gabinete</span>
-                <span className="text-[11px] text-slate-600 block">
-                  Envía esta tarea a Jefatura de Gabinete para que busque un espacio disponible en tu agenda.
-                </span>
-              </div>
-              <input
-                type="checkbox"
-                checked={taskForm.sendToChiefOfStaff}
-                onChange={e => setTaskForm({ ...taskForm, sendToChiefOfStaff: e.target.checked })}
-                className="w-5 h-5 rounded text-amber-600 focus:ring-amber-500 border-slate-300"
               />
             </div>
 
@@ -1164,7 +1081,7 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
                 Cancelar
               </ExecutiveButton>
               <ExecutiveButton type="submit" variant="primary">
-                Guardar Tarea
+                Agregar tarea
               </ExecutiveButton>
             </div>
           </div>
@@ -1372,26 +1289,38 @@ export const DailyLifeView: React.FC<Props> = ({ data }) => {
             </div>
 
             {/* Tareas en esa fecha */}
-            <div className="space-y-1.5 border-t pt-3">
-              <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                <span>📋</span> Tareas del Día
+            <div className="space-y-2 border-t pt-3">
+              <h4 className="font-bold text-slate-900 text-xs flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><span>📋</span> Tareas del Día ({selectedHistoryRecord.tasksCount?.completed || 0}/{selectedHistoryRecord.tasksCount?.total || 0})</span>
+                <span className="text-slate-600 font-mono text-[11px] font-bold">{selectedHistoryRecord.tasksCount?.percent || 0}% cumplimiento</span>
               </h4>
-              <div className="space-y-1">
-                {(selectedHistoryRecord.tasksDetail || []).length === 0 ? (
-                  <p className="text-slate-400 text-[11px]">Sin tareas registradas en esta fecha.</p>
-                ) : (
-                  (selectedHistoryRecord.tasksDetail || []).map(td => (
-                    <div
-                      key={td.id}
-                      className={`p-2 rounded-lg flex items-center justify-between border ${
-                        td.completed ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-amber-50 border-amber-200 text-slate-900'
-                      }`}
-                    >
-                      <span>{td.name}</span>
-                      <span className="font-bold">{td.completed ? '☑ Completada' : '☐ Pendiente'}</span>
-                    </div>
-                  ))
-                )}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex justify-between text-[11px] font-semibold text-slate-700 pb-1.5 border-b border-slate-200">
+                  <span>Total: {selectedHistoryRecord.tasksCount?.total || 0}</span>
+                  <span className="text-emerald-700">Completadas: {selectedHistoryRecord.tasksCount?.completed || 0}</span>
+                  <span className="text-rose-700">No completadas: {(selectedHistoryRecord.tasksCount?.total || 0) - (selectedHistoryRecord.tasksCount?.completed || 0)}</span>
+                </div>
+                <div className="space-y-1">
+                  {(selectedHistoryRecord.tasksDetail || []).length === 0 ? (
+                    <p className="text-slate-400 text-[11px]">Sin tareas registradas en esta fecha.</p>
+                  ) : (
+                    (selectedHistoryRecord.tasksDetail || []).map(td => (
+                      <div
+                        key={td.id}
+                        className={`p-2 rounded-lg flex items-center justify-between border ${
+                          td.completed ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-white border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <span className={`text-xs font-medium ${td.completed ? 'line-through text-slate-500' : ''}`}>
+                          {td.completed ? '☑ ' : '☐ '} {td.name}
+                        </span>
+                        <span className={`text-[10px] font-bold ${td.completed ? 'text-emerald-700' : 'text-amber-700'}`}>
+                          {td.completed ? 'Completada' : 'No completada'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 

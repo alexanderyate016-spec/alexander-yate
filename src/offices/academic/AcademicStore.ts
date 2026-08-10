@@ -102,17 +102,20 @@ export const AcademicStore = {
   },
 
   // PROFESSORS FOR A SUBJECT
-  addProfessor(subjectId: string, professor: Omit<SubjectProfessor, 'id'>) {
+  addProfessor(subjectId: string, professor: Omit<SubjectProfessor, 'id'>): SubjectProfessor | undefined {
+    let createdProf: SubjectProfessor | undefined;
     storeInstance.updateState(draft => {
       const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
       if (sub) {
         if (!sub.professors) sub.professors = [];
         const id = 'prof_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-        sub.professors.push({ ...professor, id });
+        createdProf = { ...professor, id };
+        sub.professors.push(createdProf);
         // Update professor summary string
         sub.professor = sub.professors.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(', ');
       }
     });
+    return createdProf;
   },
 
   updateProfessor(subjectId: string, professorId: string, updates: Partial<SubjectProfessor>) {

@@ -1004,7 +1004,7 @@ export const AcademicCalculations = {
     const progress = this.calculateSubjectProgress(subject);
     return {
       status: progress.status,
-      average: progress.promedioAcumuladoEvaluado,
+      average: progress.notaAcumuladaMateria,
       notaAcumulada: progress.notaAcumuladaMateria,
       hasGrades: progress.hasGrades
     };
