@@ -76,7 +76,7 @@ class CasaBlancaStore {
         vidaDiaria: {
           habits: parsed?.offices?.vidaDiaria?.habits || initial.offices.vidaDiaria.habits || [],
           tasks: parsed?.offices?.vidaDiaria?.tasks || initial.offices.vidaDiaria.tasks || [],
-          routines: parsed?.offices?.vidaDiaria?.routines || initial.offices.vidaDiaria.routines || [],
+          routines: Array.isArray(parsed?.offices?.vidaDiaria?.routines) ? parsed.offices.vidaDiaria.routines : [],
           objectives: parsed?.offices?.vidaDiaria?.objectives || initial.offices.vidaDiaria.objectives || [],
           timePlans: parsed?.offices?.vidaDiaria?.timePlans || initial.offices.vidaDiaria.timePlans || [],
           lastActiveDate: parsed?.offices?.vidaDiaria?.lastActiveDate || '',

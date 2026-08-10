@@ -70,33 +70,8 @@ export const DailyLifeStore = {
           }
         ];
       }
-      if (!data.routines || data.routines.length === 0) {
-        data.routines = [
-          {
-            id: 'rtn_morning',
-            name: 'Rutina de mañana',
-            timeOfDay: 'morning',
-            emoji: '☀️',
-            steps: [
-              { id: 'st_1', title: 'Levantarse a las 06:30', completedToday: true },
-              { id: 'st_2', title: 'Higiene y aseo personal', completedToday: true },
-              { id: 'st_3', title: 'Desayuno nutritivo', completedToday: true },
-              { id: 'st_4', title: 'Prepararme para salir', completedToday: false }
-            ]
-          },
-          {
-            id: 'rtn_evening',
-            name: 'Rutina de noche',
-            timeOfDay: 'evening',
-            emoji: '🌙',
-            steps: [
-              { id: 'st_5', title: 'Preparar cosas del día siguiente', completedToday: false },
-              { id: 'st_6', title: 'Higiene nocturna', completedToday: false },
-              { id: 'st_7', title: 'Desconexión de pantallas', completedToday: false },
-              { id: 'st_8', title: 'Acostarse a las 23:00', completedToday: false }
-            ]
-          }
-        ];
+      if (!data.routines) {
+        data.routines = [];
       }
       if (!data.tasks || data.tasks.length === 0) {
         data.tasks = [

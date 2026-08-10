@@ -2,6 +2,18 @@ import { checkColombianHoliday, HolidayInfo } from '../utils/colombianHolidays';
 
 export type DayPeriod = 'dawn' | 'morning' | 'midday' | 'sunset' | 'dusk' | 'night';
 
+export interface SpecialDateInfo {
+  id: string;
+  isSpecial: boolean;
+  name: string;
+  greeting: string;
+  emoji: string;
+  badgeBg: string;
+  badgeText: string;
+  borderColor: string;
+  accentBg: string;
+}
+
 export interface DayPeriodInfo {
   period: DayPeriod;
   icon: string;
@@ -9,6 +21,7 @@ export interface DayPeriodInfo {
   greeting: string;
   shortGreeting: string;
   colombianHoliday: HolidayInfo;
+  specialDateInfo?: SpecialDateInfo | null;
   holidayGreeting?: string;
   atmosphere: {
     bgGradient: string;
@@ -37,13 +50,97 @@ export class TimeService {
   }
 
   /**
+   * Determine special dates (Navidad, San Valentín, Año Nuevo, etc.)
+   */
+  static getSpecialDate(date: Date = new Date(), userName: string = 'Alex'): SpecialDateInfo | null {
+    const month = date.getMonth(); // 0-indexed (0 = Jan, 1 = Feb, ..., 11 = Dec)
+    const day = date.getDate();
+
+    // 1. Navidad (Dec 20 - Dec 26)
+    if (month === 11 && day >= 20 && day <= 26) {
+      return {
+        id: 'navidad',
+        isSpecial: true,
+        name: 'Navidad',
+        greeting: `¡Feliz Navidad, ${userName}! 🎄`,
+        emoji: '🎄',
+        badgeBg: 'bg-emerald-950/80',
+        badgeText: 'text-emerald-200 border-emerald-500/40',
+        borderColor: 'border-emerald-500/40',
+        accentBg: 'from-emerald-900/40 via-red-950/30 to-amber-900/20'
+      };
+    }
+
+    // 2. San Valentín (Feb 14)
+    if (month === 1 && day === 14) {
+      return {
+        id: 'san_valentin',
+        isSpecial: true,
+        name: 'San Valentín',
+        greeting: `Feliz San Valentín, ${userName}. ❤️`,
+        emoji: '❤️',
+        badgeBg: 'bg-rose-950/80',
+        badgeText: 'text-rose-200 border-rose-500/40',
+        borderColor: 'border-rose-500/40',
+        accentBg: 'from-rose-900/40 via-pink-950/30 to-amber-900/20'
+      };
+    }
+
+    // 3. Año Nuevo (Dec 31, Jan 1, Jan 2)
+    if ((month === 11 && day === 31) || (month === 0 && day <= 2)) {
+      return {
+        id: 'ano_nuevo',
+        isSpecial: true,
+        name: 'Año Nuevo',
+        greeting: `¡Feliz Año Nuevo, ${userName}! 🎆`,
+        emoji: '🎆',
+        badgeBg: 'bg-amber-950/80',
+        badgeText: 'text-amber-200 border-amber-500/40',
+        borderColor: 'border-amber-500/40',
+        accentBg: 'from-amber-900/40 via-purple-950/30 to-sky-900/20'
+      };
+    }
+
+    // 4. Halloween (Oct 31)
+    if (month === 9 && day === 31) {
+      return {
+        id: 'halloween',
+        isSpecial: true,
+        name: 'Halloween',
+        greeting: `¡Feliz Halloween, ${userName}! 🎃`,
+        emoji: '🎃',
+        badgeBg: 'bg-orange-950/80',
+        badgeText: 'text-orange-200 border-orange-500/40',
+        borderColor: 'border-orange-500/40',
+        accentBg: 'from-orange-900/40 via-purple-950/30 to-slate-900/20'
+      };
+    }
+
+    // 5. Día de la Independencia (Jul 20)
+    if (month === 6 && day === 20) {
+      return {
+        id: 'independencia',
+        isSpecial: true,
+        name: 'Día de la Independencia',
+        greeting: `¡Feliz Día de la Independencia, ${userName}! 🇨🇴`,
+        emoji: '🇨🇴',
+        badgeBg: 'bg-yellow-950/80',
+        badgeText: 'text-yellow-200 border-yellow-500/40',
+        borderColor: 'border-yellow-500/40',
+        accentBg: 'from-yellow-900/30 via-blue-950/30 to-red-950/20'
+      };
+    }
+
+    return null;
+  }
+
+  /**
    * Determine day period according to exact thresholds:
-   * 🌅 Amanecer: 05:00–07:59 (300 - 479 mins)
-   * ☀️ Mañana: 08:00–11:59 (480 - 719 mins)
-   * 🌤 Mediodía: 12:00–16:59 (720 - 1019 mins)
-   * 🌇 Atardecer: 17:00–19:29 (1020 - 1169 mins)
-   * 🌆 Crepúsculo: 19:30–20:59 (1170 - 1259 mins)
-   * 🌙 Noche: 21:00–04:59 (1260 - 299 mins)
+   * 🌅 Amanecer: 05:00–07:59
+   * ☀️ Mañana: 08:00–11:59
+   * 🌤 Mediodía/Tarde: 12:00–16:59
+   * 🌇 Atardecer: 17:00–19:29
+   * 🌆 Crepúsculo / Noche: 19:30–04:59
    */
   static getDayPeriod(date: Date = new Date()): DayPeriod {
     const hours = date.getHours();
@@ -72,6 +169,7 @@ export class TimeService {
     const period = this.getDayPeriod(date);
     const dateStr = this.formatDateISO(date);
     const holiday = checkColombianHoliday(dateStr);
+    const specialDateInfo = this.getSpecialDate(date, userName);
 
     let icon = '☀️';
     let label = 'Mañana';
@@ -93,7 +191,7 @@ export class TimeService {
       case 'dawn':
         icon = '🌅';
         label = 'Amanecer';
-        greeting = `Buenos días, ${userName}. Luz cálida y suave sobre el despacho.`;
+        greeting = `Buenos días, ${userName}.`;
         shortGreeting = 'Amanecer';
         bgGradient = 'from-amber-100/60 via-rose-50/50 to-orange-100/40';
         appBgClass = 'bg-[#fffaf5] text-amber-950';
@@ -110,7 +208,7 @@ export class TimeService {
       case 'morning':
         icon = '☀️';
         label = 'Mañana';
-        greeting = `Buenos días, ${userName}. Jornada activa y llena de energía.`;
+        greeting = `Buenos días, ${userName}.`;
         shortGreeting = 'Mañana';
         bgGradient = 'from-sky-50 via-blue-50/50 to-slate-50';
         appBgClass = 'bg-[#f0f9ff] text-slate-900';
@@ -126,8 +224,8 @@ export class TimeService {
 
       case 'midday':
         icon = '🌤️';
-        label = 'Mediodía';
-        greeting = `Buenas tardes, ${userName}. Máxima iluminación y claridad sobre la oficina.`;
+        label = 'Tarde';
+        greeting = `Buenas tardes, ${userName}.`;
         shortGreeting = 'Mediodía';
         bgGradient = 'from-slate-50 via-white to-sky-50/30';
         appBgClass = 'bg-slate-50 text-slate-900';
@@ -144,7 +242,7 @@ export class TimeService {
       case 'sunset':
         icon = '🌇';
         label = 'Atardecer';
-        greeting = `Buenas tardes, ${userName}. Cálidos tonos dorados al horizonte.`;
+        greeting = `Buenas tardes, ${userName}.`;
         shortGreeting = 'Atardecer';
         bgGradient = 'from-amber-100/70 via-orange-100/50 to-rose-100/40';
         appBgClass = 'bg-[#fff7ed] text-amber-950';
@@ -161,7 +259,7 @@ export class TimeService {
       case 'dusk':
         icon = '🌆';
         label = 'Crepúsculo';
-        greeting = `Buenas noches, ${userName}. Suave transición hacia el descanso.`;
+        greeting = `Buenas noches, ${userName}.`;
         shortGreeting = 'Crepúsculo';
         bgGradient = 'from-indigo-950 via-purple-950/80 to-slate-900';
         appBgClass = 'bg-[#1e1b4b] text-slate-100';
@@ -178,7 +276,7 @@ export class TimeService {
       case 'night':
         icon = '🌙';
         label = 'Noche';
-        greeting = `Buenas noches, ${userName}. Entorno nocturno elegante y descansado.`;
+        greeting = `Buenas noches, ${userName}.`;
         shortGreeting = 'Noche';
         bgGradient = 'from-slate-950 via-blue-950 to-slate-900';
         appBgClass = 'bg-[#090d16] text-slate-100';
@@ -194,7 +292,9 @@ export class TimeService {
     }
 
     let holidayGreeting: string | undefined = undefined;
-    if (holiday.isHoliday && holiday.name) {
+    if (specialDateInfo) {
+      holidayGreeting = specialDateInfo.greeting;
+    } else if (holiday.isHoliday && holiday.name) {
       if (period === 'night' || period === 'dusk') {
         holidayGreeting = `Buenas noches, ${userName}. Hoy ha sido festivo nacional: ${holiday.name}.`;
       } else {
@@ -209,6 +309,7 @@ export class TimeService {
       greeting,
       shortGreeting,
       colombianHoliday: holiday,
+      specialDateInfo,
       holidayGreeting,
       atmosphere: {
         bgGradient,
