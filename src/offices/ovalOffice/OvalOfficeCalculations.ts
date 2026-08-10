@@ -4,6 +4,7 @@ import { DailyLifeSync } from '../dailyLife/DailyLifeSync';
 import { FinancialSync } from '../financial/FinancialSync';
 import { SocialSync } from '../social/SocialSync';
 import { MedicalSync } from '../medical/MedicalSync';
+import { ChiefOfStaffSync } from '../chiefOfStaff/ChiefOfStaffSync';
 import { getWeekDaysForDate, getTodayDateString, addDaysToDateStr, getDaysDifference, COLOMBIAN_NATIONAL_HOLIDAYS } from '../../utils/dates';
 
 export interface AgendaItem {
@@ -98,17 +99,21 @@ export const OvalOfficeCalculations = {
       ...DailyLifeSync.projectDailyLifeEvents(state.offices.vidaDiaria, targetDateStr),
       ...FinancialSync.projectFinancialEvents(state.offices.financiera, targetDateStr),
       ...SocialSync.projectSocialEvents(state.offices.vidaSocial, targetDateStr),
-      ...MedicalSync.projectMedicalEvents(state.offices.medica, targetDateStr)
+      ...MedicalSync.projectMedicalEvents(state.offices.medica, targetDateStr),
+      ...ChiefOfStaffSync.getCabinetEventsForDate(state, targetDateStr)
     ];
 
+    // Filter out cancelled events
+    const activeEvents = events.filter(e => e.status !== 'cancelled' && e.status !== 'Cancelada' && e.rawObject?.status !== 'cancelled' && e.rawObject?.status !== 'Cancelada');
+
     // Sort chronologically by startTime
-    events.sort((a, b) => {
+    activeEvents.sort((a, b) => {
       const timeA = a.startTime || '00:00';
       const timeB = b.startTime || '00:00';
       return timeA.localeCompare(timeB);
     });
 
-    return events;
+    return activeEvents;
   },
 
   // Timed events for the entire 7-day week (Unificado total)
