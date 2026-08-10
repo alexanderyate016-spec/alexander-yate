@@ -94,26 +94,7 @@ export const OvalOfficeCalculations = {
 
   // Timed events unificados para un día específico (Horario + Agenda) para ocupación y detección de conflictos
   getUnifiedEventsForDate(state: MasterState, targetDateStr: string): UnifiedExecutiveEvent[] {
-    const events: UnifiedExecutiveEvent[] = [
-      ...AcademicSync.projectAcademicEvents(state.offices.academica, targetDateStr),
-      ...DailyLifeSync.projectDailyLifeEvents(state.offices.vidaDiaria, targetDateStr),
-      ...FinancialSync.projectFinancialEvents(state.offices.financiera, targetDateStr),
-      ...SocialSync.projectSocialEvents(state.offices.vidaSocial, targetDateStr),
-      ...MedicalSync.projectMedicalEvents(state.offices.medica, targetDateStr),
-      ...ChiefOfStaffSync.getCabinetEventsForDate(state, targetDateStr)
-    ];
-
-    // Filter out cancelled events
-    const activeEvents = events.filter(e => e.status !== 'cancelled' && e.status !== 'Cancelada' && e.rawObject?.status !== 'cancelled' && e.rawObject?.status !== 'Cancelada');
-
-    // Sort chronologically by startTime
-    activeEvents.sort((a, b) => {
-      const timeA = a.startTime || '00:00';
-      const timeB = b.startTime || '00:00';
-      return timeA.localeCompare(timeB);
-    });
-
-    return activeEvents;
+    return ChiefOfStaffSync.getUnifiedEventsForDate(state, targetDateStr);
   },
 
   // Timed events for the entire 7-day week (Unificado total)

@@ -164,29 +164,41 @@ export const WeeklyCalendarAppleWidget: React.FC<Props> = ({
                           wd.isToday ? 'bg-purple-500/5 dark:bg-purple-900/10' : ''
                         }`}
                       >
-                        {slotEvents.map(se => (
-                          <div
-                            key={se.id}
-                            title={`${se.title} (${se.startTime}${se.endTime ? ' - ' + se.endTime : ''})`}
-                            className={`p-1.5 rounded-xl border mb-1 transition-all shadow-2xs ${getOfficeStyle(se.sourceOffice)}`}
-                          >
-                            <div className="flex items-center justify-between text-[10px] font-mono font-semibold opacity-80 mb-0.5">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-2.5 h-2.5 shrink-0" />
-                                {se.startTime}
-                              </span>
-                              {se.endTime && <span>{se.endTime}</span>}
-                            </div>
-                            <div className="font-extrabold text-[11px] leading-tight line-clamp-2">
-                              {se.title}
-                            </div>
-                            {se.subtitle && (
-                              <div className="text-[9px] opacity-75 truncate mt-0.5">
-                                {se.subtitle}
+                        {slotEvents.map(se => {
+                          const isCancelled = se.status === 'cancelled' || se.status === 'Cancelada' || se.rawObject?.status === 'cancelled';
+                          return (
+                            <div
+                              key={se.id}
+                              title={`${se.title} (${se.startTime}${se.endTime ? ' - ' + se.endTime : ''})${isCancelled ? ' [CANCELADA]' : ''}`}
+                              className={`p-1.5 rounded-xl border mb-1 transition-all shadow-2xs ${
+                                isCancelled
+                                  ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 border-l-4 border-l-rose-500 opacity-65'
+                                  : getOfficeStyle(se.sourceOffice)
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-mono font-semibold opacity-80 mb-0.5">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                                  {se.startTime}
+                                </span>
+                                {se.endTime && <span>{se.endTime}</span>}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                              <div className={`font-extrabold text-[11px] leading-tight line-clamp-2 ${isCancelled ? 'line-through text-rose-800 dark:text-rose-300' : ''}`}>
+                                {se.title}
+                              </div>
+                              {isCancelled && (
+                                <div className="mt-1 inline-block text-[8px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/60 border border-rose-300 dark:border-rose-700 px-1 py-0.2 rounded">
+                                  ❌ Cancelada
+                                </div>
+                              )}
+                              {!isCancelled && se.subtitle && (
+                                <div className="text-[9px] opacity-75 truncate mt-0.5">
+                                  {se.subtitle}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </td>
                     );
                   })}

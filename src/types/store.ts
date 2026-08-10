@@ -996,6 +996,15 @@ export interface ChiefOfStaffOfficeData {
   events: ChiefOfStaffEvent[];
   resolvedConflicts?: CabinetConflictResolution[];
   instructionHistory?: CabinetInstructionLog[];
+  cancelledEventIds?: string[];
+  cancelledEventsByDate?: Record<string, string[]>;
+  cancelledOccurrences?: Array<{
+    id: string;
+    date: string;
+    filter?: 'all' | 'classes' | 'academic' | 'medical' | 'social';
+    titleKeyword?: string;
+    createdAt?: string;
+  }>;
 }
 
 // -------------------------------------------------------------

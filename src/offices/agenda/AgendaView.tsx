@@ -3,6 +3,7 @@ import { MasterState, ChiefOfStaffEvent, UnifiedExecutiveEvent } from '../../typ
 import { ChiefOfStaffStore } from '../chiefOfStaff/ChiefOfStaffStore';
 import { ChiefOfStaffSync } from '../chiefOfStaff/ChiefOfStaffSync';
 import { showToast } from '../../components/executive';
+import { ExecutiveCalendar, CalendarEvent } from '../../components/executive/ExecutiveCalendar';
 import {
   getTodayDateString,
   addDaysToDateStr,
@@ -86,6 +87,9 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
   const [formDescription, setFormDescription] = useState('');
   const [formReminderMinutes, setFormReminderMinutes] = useState<number>(30);
   const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high'>('medium');
+
+  // Bulk Cancellation Modal state
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   // Raw Agenda Events
   const rawEvents = state.offices.jefaturaGabinete?.events || [];
@@ -212,6 +216,92 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
     );
   };
 
+  const BulkCancelModal = () => {
+    if (!isCancelModalOpen) return null;
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+        <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold shrink-0">
+                <X className="w-6 h-6 stroke-[3]" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Cancelar Actividades del Día</h3>
+                <p className="text-xs text-slate-500 font-medium">Fecha: {formatFriendlyDate(selectedDate)}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsCancelModalOpen(false)}
+              className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
+            <p className="font-bold flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              Regla Ejecutiva de Cancelación:
+            </p>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Las actividades no serán borradas de la base de datos. Cambiarán su estado a <strong>CANCELADA</strong> (atenuadas y tachadas) manteniendo su fecha, horario e historial intacto. No generarán alertas ni contarán como compromisos activos.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'classes');
+                showToast(`Se registraron como CANCELADAS las clases para ${formatFriendlyDate(selectedDate)}`, 'info');
+                setIsCancelModalOpen(false);
+              }}
+              className="w-full p-4 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
+            >
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 group-hover:text-rose-900">
+                  📚 Cancelar únicamente las Clases de este Día
+                </h4>
+                <p className="text-[11px] text-slate-500 group-hover:text-rose-700 mt-0.5">
+                  Marca las clases académicas como canceladas sin alterar los compromisos personales o citas.
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-600 shrink-0" />
+            </button>
+
+            <button
+              onClick={() => {
+                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'all');
+                showToast(`Se registraron como CANCELADAS TODAS las actividades para ${formatFriendlyDate(selectedDate)}`, 'info');
+                setIsCancelModalOpen(false);
+              }}
+              className="w-full p-4 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
+            >
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 group-hover:text-rose-900">
+                  🚨 Cancelar TODAS las Actividades de este Día
+                </h4>
+                <p className="text-[11px] text-slate-500 group-hover:text-rose-700 mt-0.5">
+                  Marca todas las clases, compromisos, citas y planes de este día como cancelados.
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-600 shrink-0" />
+            </button>
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setIsCancelModalOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Build upcoming list of all active raw agenda events + projected unified events
   const getUpcomingEvents = () => {
     const allEvents: Array<{
@@ -318,13 +408,24 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
             </p>
           </div>
 
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="px-5 py-3 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg hover:shadow-amber-400/20 transition-all flex items-center justify-center gap-2 shrink-0 self-start md:self-center"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>+ Crear Evento</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
+            <button
+              onClick={() => setIsCancelModalOpen(true)}
+              className="px-4 py-3 text-xs font-bold text-rose-950 bg-rose-200 hover:bg-rose-300 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 border border-rose-300/60"
+              title="Cancelar actividades del día manteniendo registro e historial"
+            >
+              <X className="w-4 h-4 text-rose-800 stroke-[3]" />
+              <span>❌ Cancelar Actividades</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenAddModal()}
+              className="px-5 py-3 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg hover:shadow-amber-400/20 transition-all flex items-center justify-center gap-2 shrink-0"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>+ Crear Evento</span>
+            </button>
+          </div>
         </div>
 
         {/* Metric Badges */}
@@ -461,15 +562,22 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                 const rawMatch = activeRawEvents.find(r => r.id === evt.id);
                 const isEditableAgenda = !!rawMatch;
                 const catObj = CATEGORIES.find(c => c.id === evt.type || c.id === rawMatch?.category);
+                const isCancelled = evt.status === 'cancelled' || evt.status === 'Cancelada' || evt.rawObject?.status === 'cancelled';
 
                 return (
                   <div
                     key={evt.id}
-                    className="p-5 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className={`p-5 rounded-2xl shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 border ${
+                      isCancelled
+                        ? 'bg-rose-50/60 border-rose-200/80 opacity-75'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
                   >
                     <div className="flex items-start gap-4">
                       {/* Time badge */}
-                      <div className="px-3.5 py-2 rounded-xl bg-slate-900 text-white font-mono text-xs font-bold shrink-0 text-center space-y-0.5">
+                      <div className={`px-3.5 py-2 rounded-xl font-mono text-xs font-bold shrink-0 text-center space-y-0.5 ${
+                        isCancelled ? 'bg-rose-900/80 text-rose-100' : 'bg-slate-900 text-white'
+                      }`}>
                         <div className="text-[11px] text-amber-300 font-semibold">{evt.startTime}</div>
                         <div className="text-[10px] text-slate-400">a {evt.endTime}</div>
                       </div>
@@ -485,17 +593,27 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                             {catObj ? catObj.label : (evt.officeLabel || 'Evento')}
                           </span>
 
-                          {isEditableAgenda && (
+                          {isCancelled && (
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300 rounded-md">
+                              ❌ CANCELADA
+                            </span>
+                          )}
+
+                          {isEditableAgenda && !isCancelled && (
                             <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-900 rounded-md">
                               Agenda Directa
                             </span>
                           )}
                         </div>
 
-                        <h3 className="text-sm font-bold text-slate-900 leading-snug">{evt.title}</h3>
+                        <h3 className={`text-sm font-bold leading-snug ${isCancelled ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                          {evt.title}
+                        </h3>
 
                         {evt.subtitle && evt.subtitle !== evt.title && (
-                          <p className="text-xs text-slate-600 line-clamp-2">{evt.subtitle}</p>
+                          <p className={`text-xs line-clamp-2 ${isCancelled ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
+                            {evt.subtitle}
+                          </p>
                         )}
 
                         <div className="flex items-center gap-4 text-xs text-slate-500 pt-1 flex-wrap">
@@ -506,7 +624,7 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                             </span>
                           )}
 
-                          {rawMatch?.reminderMinutes !== undefined && rawMatch.reminderMinutes > 0 && (
+                          {rawMatch?.reminderMinutes !== undefined && rawMatch.reminderMinutes > 0 && !isCancelled && (
                             <span className="flex items-center gap-1 text-amber-700 font-medium">
                               <Bell className="w-3.5 h-3.5 shrink-0" />
                               Recordatorio {REMINDER_OPTIONS.find(r => r.value === rawMatch.reminderMinutes)?.label || `${rawMatch.reminderMinutes} min antes`}
@@ -517,30 +635,54 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                     </div>
 
                     {/* Actions */}
-                    {isEditableAgenda && rawMatch ? (
-                      <div className="flex items-center gap-2 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                    <div className="flex items-center gap-2 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                      {isCancelled ? (
                         <button
-                          onClick={() => handleOpenEditModal(rawMatch)}
-                          className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-all"
-                          title="Editar evento"
+                          onClick={() => {
+                            ChiefOfStaffStore.uncancelEvent(evt.id, selectedDate);
+                            showToast('Actividad reactivada en la agenda', 'success');
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl flex items-center gap-1 transition-all"
+                          title="Reactivar esta actividad"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          Editar
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Reactivar
                         </button>
+                      ) : (
                         <button
-                          onClick={() => setDeletingEvent({ id: rawMatch.id, title: rawMatch.title })}
-                          className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl flex items-center gap-1 transition-all"
-                          title="Eliminar evento"
+                          onClick={() => {
+                            ChiefOfStaffStore.cancelEvent(evt.id, selectedDate);
+                            showToast('Actividad registrada como CANCELADA', 'info');
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl flex items-center gap-1 transition-all"
+                          title="Cancelar esta actividad manteniendo su registro"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Eliminar
+                          <X className="w-3.5 h-3.5 text-rose-600" />
+                          Cancelar
                         </button>
-                      </div>
-                    ) : (
-                      <div className="text-[11px] text-slate-400 italic self-end md:self-center shrink-0">
-                        Proyectado desde {evt.officeLabel || 'Oficina'}
-                      </div>
-                    )}
+                      )}
+
+                      {isEditableAgenda && rawMatch && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEditModal(rawMatch)}
+                            className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-all"
+                            title="Editar evento"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => setDeletingEvent({ id: rawMatch.id, title: rawMatch.title })}
+                            className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl flex items-center gap-1 transition-all"
+                            title="Eliminar permanentemente de la agenda"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -555,113 +697,55 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Programación Semanal
+                Horario Semanal Unificado
               </h2>
               <p className="text-xs text-slate-500">
-                Vista de 7 días para {formatFriendlyDate(weekDays[0].dateStr)} al {formatFriendlyDate(weekDays[6].dateStr)}
+                Estructura visual exacta de la agenda para la semana del {formatFriendlyDate(weekDays[0].dateStr)} al {formatFriendlyDate(weekDays[6].dateStr)}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-            {weekDays.map(day => {
-              const dayEvents = ChiefOfStaffSync.getUnifiedEventsForDate(state, day.dateStr);
-
-              return (
-                <div
-                  key={day.dateStr}
-                  className={`bg-white border rounded-2xl p-3 space-y-3 transition-all flex flex-col justify-between ${
-                    day.isToday ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500/20' : 'border-slate-200'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    {/* Day Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                          {day.dayShort}
-                        </span>
-                        <span className={`text-sm font-black ${day.isToday ? 'text-indigo-900' : 'text-slate-800'}`}>
-                          {day.dayNumberStr}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleOpenAddModal(day.dateStr)}
-                        className="p-1 text-slate-400 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-all"
-                        title="Agregar evento este día"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Day Events */}
-                    {dayEvents.length === 0 ? (
-                      <p className="text-[11px] text-slate-400 italic py-4 text-center">
-                        Sin eventos
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {dayEvents.map(evt => {
-                          const rawMatch = activeRawEvents.find(r => r.id === evt.id);
-                          const catObj = CATEGORIES.find(c => c.id === evt.type || c.id === rawMatch?.category);
-
-                          return (
-                            <div
-                              key={evt.id}
-                              className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1 hover:border-slate-300 transition-all text-xs"
-                            >
-                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono font-bold">
-                                <span>{evt.startTime} - {evt.endTime}</span>
-                                {rawMatch && (
-                                  <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" title="Evento de Agenda" />
-                                )}
-                              </div>
-
-                              <div className="font-bold text-slate-900 line-clamp-2 leading-tight">
-                                {evt.title}
-                              </div>
-
-                              {catObj && (
-                                <span className="inline-block text-[9px] font-semibold text-slate-600">
-                                  {catObj.defaultEmoji} {catObj.label.replace(/^[^\s]+\s/, '')}
-                                </span>
-                              )}
-
-                              {rawMatch && (
-                                <div className="flex items-center justify-end gap-1 pt-1 border-t border-slate-100 mt-1">
-                                  <button
-                                    onClick={() => handleOpenEditModal(rawMatch)}
-                                    className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-md"
-                                    title="Editar"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => setDeletingEvent({ id: rawMatch.id, title: rawMatch.title })}
-                                    className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-md"
-                                    title="Eliminar"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => handleOpenAddModal(day.dateStr)}
-                    className="w-full py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-center transition-all mt-2"
-                  >
-                    + Añadir
-                  </button>
-                </div>
-              );
+          <ExecutiveCalendar
+            events={weekDays.flatMap(day => {
+              const unified = ChiefOfStaffSync.getUnifiedEventsForDate(state, day.dateStr);
+              return unified.map(u => ({
+                id: u.id,
+                title: u.title,
+                date: day.dateStr,
+                startTime: u.startTime || '09:00',
+                endTime: u.endTime || '10:00',
+                classroom: u.rawObject?.location || u.rawObject?.classroom,
+                subtitle: u.subtitle,
+                officeLabel: u.officeLabel,
+                color: u.color,
+                status: u.status,
+                completed: Boolean(u.rawObject?.completed || u.rawObject?.isCompleted),
+                sourceOffice: u.sourceOffice,
+                raw: u.rawObject
+              }));
             })}
-          </div>
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            onAddActivity={(dateStr) => handleOpenAddModal(dateStr)}
+            onDeleteActivity={(evtId) => {
+              const found = activeRawEvents.find(r => r.id === evtId);
+              if (found) setDeletingEvent({ id: found.id, title: found.title });
+            }}
+            onCancelActivity={(evt) => {
+              if (evt.status === 'cancelled' || evt.status === 'Cancelada') {
+                ChiefOfStaffStore.uncancelEvent(evt.id, evt.date || selectedDate);
+                showToast('Actividad reactivada en la agenda', 'success');
+              } else {
+                ChiefOfStaffStore.cancelEvent(evt.id, evt.date || selectedDate);
+                showToast('Actividad registrada como CANCELADA', 'info');
+              }
+            }}
+            onEditActivity={(evt) => {
+              const rawMatch = activeRawEvents.find(r => r.id === evt.id);
+              if (rawMatch) handleOpenEditModal(rawMatch);
+            }}
+            onNavigateToOffice={onNavigateToOffice}
+          />
         </div>
       )}
 
@@ -961,6 +1045,9 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal />
+
+      {/* Bulk Cancel Modal */}
+      <BulkCancelModal />
     </div>
   );
 };

@@ -90,8 +90,6 @@ export class ChiefOfStaffSync {
     const results: UnifiedExecutiveEvent[] = [];
 
     cabinetEvents.forEach(evt => {
-      if (evt.status === 'cancelled') return;
-
       let applies = false;
       if (!evt.isRecurring) {
         if (evt.date === dateStr) applies = true;
@@ -130,6 +128,7 @@ export class ChiefOfStaffSync {
           location: evt.location,
           travelTimeMinutes: evt.travelTimeMinutes,
           prepTimeMinutes: evt.prepTimeMinutes,
+          status: evt.status || 'active',
           rawObject: evt
         });
       }
@@ -151,25 +150,57 @@ export class ChiefOfStaffSync {
       ...this.getCabinetEventsForDate(state, dateStr)
     ];
 
-    // Filter out items that have been cancelled or overridden in cabinet
-    const resolvedConflicts = state.offices.jefaturaGabinete?.resolvedConflicts || [];
-    const cancelledEventIds = new Set<string>();
+    const jefatura = state.offices.jefaturaGabinete;
+    const resolvedConflicts = jefatura?.resolvedConflicts || [];
+    const conflictCancelledIds = new Set<string>();
 
     resolvedConflicts.forEach(rc => {
-      if (rc.actionTaken.includes('cancelled_A')) cancelledEventIds.add(rc.eventAId);
-      if (rc.actionTaken.includes('cancelled_B')) cancelledEventIds.add(rc.eventBId);
+      if (rc.actionTaken.includes('cancelled_A')) conflictCancelledIds.add(rc.eventAId);
+      if (rc.actionTaken.includes('cancelled_B')) conflictCancelledIds.add(rc.eventBId);
     });
 
-    const filtered = rawEvents.filter(e => !cancelledEventIds.has(e.id));
+    const userCancelledEventIds = new Set<string>(jefatura?.cancelledEventIds || []);
+    const dateCancelledIds = new Set<string>(jefatura?.cancelledEventsByDate?.[dateStr] || []);
+    const occurrenceRules = jefatura?.cancelledOccurrences || [];
+
+    // Map each event, setting status to 'cancelled' if matched by any cancellation rule or status
+    const eventsProcessed = rawEvents.map(e => {
+      let isCancelled = false;
+
+      if (e.status === 'cancelled' || e.status === 'Cancelada' || e.rawObject?.status === 'cancelled' || e.rawObject?.status === 'Cancelada' || e.rawObject?.academicActivity?.status === 'Cancelada') {
+        isCancelled = true;
+      } else if (conflictCancelledIds.has(e.id) || userCancelledEventIds.has(e.id) || dateCancelledIds.has(e.id)) {
+        isCancelled = true;
+      } else if (occurrenceRules.length > 0) {
+        const matchesOccurrence = occurrenceRules.some(occ => {
+          if (occ.date !== dateStr) return false;
+          if (occ.filter === 'all') return true;
+          if (occ.filter === 'classes' || occ.filter === 'academic') {
+            return e.type === 'class' || e.sourceOffice === 'academica' || e.title.toLowerCase().includes('clase');
+          }
+          if (occ.filter === 'medical') return e.sourceOffice === 'medica';
+          if (occ.filter === 'social') return e.sourceOffice === 'vidaSocial';
+          return false;
+        });
+        if (matchesOccurrence) {
+          isCancelled = true;
+        }
+      }
+
+      return {
+        ...e,
+        status: isCancelled ? 'cancelled' : (e.status || 'active')
+      };
+    });
 
     // Sort chronologically by startTime
-    filtered.sort((a, b) => {
+    eventsProcessed.sort((a, b) => {
       const timeA = timeToMinutes(a.startTime);
       const timeB = timeToMinutes(b.startTime);
       return timeA - timeB;
     });
 
-    return filtered;
+    return eventsProcessed;
   }
 
   /**

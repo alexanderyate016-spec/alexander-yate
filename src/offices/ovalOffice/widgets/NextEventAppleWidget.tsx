@@ -9,8 +9,13 @@ interface Props {
 }
 
 export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateToOffice }) => {
+  // Filter out cancelled events first
+  const activeEvents = events.filter(
+    e => e.status !== 'cancelled' && e.status !== 'Cancelada' && e.rawObject?.status !== 'cancelled' && e.rawObject?.status !== 'Cancelada'
+  );
+
   // Sort events chronologically and pick the first one that is in the future or ongoing today
-  const sortedEvents = [...events].sort((a, b) => {
+  const sortedEvents = [...activeEvents].sort((a, b) => {
     const timeA = a.startTime || '00:00';
     const timeB = b.startTime || '00:00';
     return timeA.localeCompare(timeB);

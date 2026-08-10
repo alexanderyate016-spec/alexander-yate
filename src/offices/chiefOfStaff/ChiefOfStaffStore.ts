@@ -79,6 +79,107 @@ export class ChiefOfStaffStore {
       if (index !== -1) {
         draft.offices.jefaturaGabinete.events[index].status = status;
       }
+      if (status === 'cancelled') {
+        if (!draft.offices.jefaturaGabinete.cancelledEventIds) {
+          draft.offices.jefaturaGabinete.cancelledEventIds = [];
+        }
+        if (!draft.offices.jefaturaGabinete.cancelledEventIds.includes(id)) {
+          draft.offices.jefaturaGabinete.cancelledEventIds.push(id);
+        }
+      }
+    });
+  }
+
+  /**
+   * Cancel any event by ID (standalone or projected)
+   */
+  public static cancelEvent(id: string, dateStr?: string) {
+    storeInstance.updateState(draft => {
+      const cabinetEvents = draft.offices.jefaturaGabinete?.events || [];
+      const index = cabinetEvents.findIndex(e => e.id === id);
+      if (index !== -1) {
+        draft.offices.jefaturaGabinete.events[index].status = 'cancelled';
+      }
+
+      if (!draft.offices.jefaturaGabinete.cancelledEventIds) {
+        draft.offices.jefaturaGabinete.cancelledEventIds = [];
+      }
+      if (!draft.offices.jefaturaGabinete.cancelledEventIds.includes(id)) {
+        draft.offices.jefaturaGabinete.cancelledEventIds.push(id);
+      }
+
+      if (dateStr) {
+        if (!draft.offices.jefaturaGabinete.cancelledEventsByDate) {
+          draft.offices.jefaturaGabinete.cancelledEventsByDate = {};
+        }
+        const dateList = draft.offices.jefaturaGabinete.cancelledEventsByDate[dateStr] || [];
+        if (!dateList.includes(id)) {
+          draft.offices.jefaturaGabinete.cancelledEventsByDate[dateStr] = [...dateList, id];
+        }
+      }
+    });
+  }
+
+  /**
+   * Uncancel / Restore an event by ID
+   */
+  public static uncancelEvent(id: string, dateStr?: string) {
+    storeInstance.updateState(draft => {
+      const cabinetEvents = draft.offices.jefaturaGabinete?.events || [];
+      const index = cabinetEvents.findIndex(e => e.id === id);
+      if (index !== -1) {
+        draft.offices.jefaturaGabinete.events[index].status = 'active';
+      }
+
+      if (draft.offices.jefaturaGabinete.cancelledEventIds) {
+        draft.offices.jefaturaGabinete.cancelledEventIds = draft.offices.jefaturaGabinete.cancelledEventIds.filter(eId => eId !== id);
+      }
+
+      if (dateStr && draft.offices.jefaturaGabinete.cancelledEventsByDate?.[dateStr]) {
+        draft.offices.jefaturaGabinete.cancelledEventsByDate[dateStr] = draft.offices.jefaturaGabinete.cancelledEventsByDate[dateStr].filter(eId => eId !== id);
+      }
+    });
+  }
+
+  /**
+   * Bulk cancel activities for a date (e.g. "Cancelar las clases de hoy" or "Cancelar todo")
+   */
+  public static cancelAllEventsForDate(
+    dateStr: string,
+    filterType: 'all' | 'classes' | 'academic' | 'medical' | 'social' = 'all'
+  ) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.jefaturaGabinete.cancelledOccurrences) {
+        draft.offices.jefaturaGabinete.cancelledOccurrences = [];
+      }
+
+      // Check if rule already exists
+      const exists = draft.offices.jefaturaGabinete.cancelledOccurrences.some(
+        c => c.date === dateStr && c.filter === filterType
+      );
+
+      if (!exists) {
+        draft.offices.jefaturaGabinete.cancelledOccurrences.push({
+          id: `canc_occ_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          date: dateStr,
+          filter: filterType,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // Also mark all cabinet events for this date as cancelled
+      const cabinetEvents = draft.offices.jefaturaGabinete?.events || [];
+      cabinetEvents.forEach(e => {
+        if (e.date === dateStr) {
+          if (filterType === 'all') {
+            e.status = 'cancelled';
+          } else if (filterType === 'classes' || filterType === 'academic') {
+            if (e.category === 'academic' || e.sourceOffice === 'academica') {
+              e.status = 'cancelled';
+            }
+          }
+        }
+      });
     });
   }
 
@@ -188,10 +289,20 @@ export class ChiefOfStaffStore {
         }
       });
       actionSummary = `✓ Permiso concedido y registrado en la agenda para el ${targetDateStr}. Evento ajustado hasta las ${formattedTime}.`;
-    } else if (textLower.includes('no tengo clase') || textLower.includes('sin clase') || textLower.includes('cancela la clase')) {
-      // e.g. "Ese día no tengo clase"
-      actionSummary = `✓ Entendido. Se marcaron las sesiones de clase para ${targetDateStr} como omitidas/canceladas en la agenda de tiempo.`;
-    } else if (textLower.includes('reprograma') || textLower.includes('mover') || textLower.includes('para mañana')) {
+    } else if (textLower.includes('no tengo clase') || textLower.includes('sin clase') || textLower.includes('cancela la clase') || textLower.includes('cancelar clases') || textLower.includes('cancelaron las clases') || textLower.includes('cancelaron las clases de hoy')) {
+      this.cancelAllEventsForDate(targetDateStr, 'classes');
+      actionSummary = `✓ Entendido. Se marcaron todas las clases de la fecha ${targetDateStr} como CANCELADAS en la agenda, manteniendo la estructura original e historial.`;
+    } else if (textLower.includes('cancelar todo') || textLower.includes('cancelar las actividades') || textLower.includes('cancelar actividades de hoy')) {
+      this.cancelAllEventsForDate(targetDateStr, 'all');
+      actionSummary = `✓ Entendido, Señor Presidente. Se registraron como CANCELADAS todas las actividades para ${targetDateStr}.`;
+    } else if (textLower.includes('cancelar') || textLower.includes('cancela')) {
+      if (textLower.includes('clase') || textLower.includes('clases')) {
+        this.cancelAllEventsForDate(targetDateStr, 'classes');
+        actionSummary = `✓ Se ordenó la cancelación de las clases de ${targetDateStr}. Permanece el historial atenuado en la agenda.`;
+      } else {
+        this.cancelAllEventsForDate(targetDateStr, 'all');
+        actionSummary = `✓ Entendido, Señor Presidente. Se ordenó la cancelación de las actividades indicadas para ${targetDateStr}.`;
+      }
       // e.g. "Reprograma la cita para mañana"
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);

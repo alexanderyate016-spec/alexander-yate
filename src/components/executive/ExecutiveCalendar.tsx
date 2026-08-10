@@ -22,6 +22,7 @@ export interface CalendarEvent {
   priority?: 'low' | 'medium' | 'high';
   isHabit?: boolean;
   completed?: boolean;
+  status?: string;
   raw?: any;
 }
 
@@ -29,8 +30,8 @@ export interface ExecutiveCalendarProps {
   events: CalendarEvent[];
   selectedDate: string;
   onSelectDate: (dateStr: string) => void;
-  viewMode: 'week' | 'day';
-  onChangeViewMode: (mode: 'week' | 'day') => void;
+  viewMode?: 'week' | 'day';
+  onChangeViewMode?: (mode: 'week' | 'day') => void;
   onSelectEvent?: (event: CalendarEvent) => void;
   onAddActivity?: (dateStr?: string, hourStr?: string) => void;
   onEditActivity?: (event: CalendarEvent) => void;
@@ -497,7 +498,8 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                     {/* CONTINUOUS ADAPTIVE EVENT BLOCKS */}
                     {layout.renderableEvents.map((rEvt, idx) => {
                       const evt = rEvt.event;
-                      const style = getAdaptiveActivityStyle(evt.color || '#3B82F6', period);
+                      const isCancelled = evt.status === 'cancelled' || evt.status === 'Cancelada' || evt.raw?.status === 'cancelled';
+                      const style = getAdaptiveActivityStyle(isCancelled ? '#EF4444' : (evt.color || '#3B82F6'), period);
 
                       // Calculate layout widths for overlapping side-by-side columns
                       const leftPercent = (rEvt.colIndex / rEvt.totalCols) * 96 + 2;
@@ -510,7 +512,9 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                           key={evt.id || idx}
                           onClick={(e) => handleEventClick(evt, e, rEvt.conflictingEvents)}
                           className={`absolute rounded-lg p-1.5 text-xs border shadow-xs hover:z-30 hover:scale-[1.02] transition-all cursor-pointer overflow-hidden flex flex-col justify-between ${
-                            rEvt.isConflict
+                            isCancelled
+                              ? 'bg-rose-50/80 border-rose-300 opacity-65 dark:bg-rose-950/40 dark:border-rose-800'
+                              : rEvt.isConflict
                               ? 'border-2 border-rose-500 bg-rose-50/90 shadow-md ring-2 ring-rose-300'
                               : ''
                           }`}
@@ -519,21 +523,21 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                             height: `${rEvt.heightPercent}%`,
                             left: `${leftPercent}%`,
                             width: `${widthPercent}%`,
-                            backgroundColor: rEvt.isConflict ? '#FFF1F2' : style.bg,
-                            borderColor: rEvt.isConflict ? '#E11D48' : style.border,
+                            backgroundColor: isCancelled ? '#FEF2F2' : (rEvt.isConflict ? '#FFF1F2' : style.bg),
+                            borderColor: isCancelled ? '#FCA5A5' : (rEvt.isConflict ? '#E11D48' : style.border),
                             borderLeftWidth: '4px',
-                            color: style.text
+                            color: isCancelled ? '#991B1B' : style.text
                           }}
                         >
                           <div>
-                            <div className="font-bold text-[11px] leading-tight truncate flex items-center justify-between gap-1" style={{ color: rEvt.isConflict ? '#9F1239' : style.titleColor }}>
-                              <span className="truncate flex items-center gap-1">
+                            <div className="font-bold text-[11px] leading-tight truncate flex items-center justify-between gap-1" style={{ color: isCancelled ? '#991B1B' : (rEvt.isConflict ? '#9F1239' : style.titleColor) }}>
+                              <span className={`truncate flex items-center gap-1 ${isCancelled ? 'line-through opacity-80' : ''}`}>
                                 {evt.completed && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
                                 <span className="truncate">{evt.title}</span>
                               </span>
 
                               {/* DISCRETE INDICATOR DOT FOR PENDING ACTIVITIES */}
-                              {hasActivitiesIndicator && (
+                              {hasActivitiesIndicator && !isCancelled && (
                                 <span
                                   className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-amber-600 shrink-0 animate-pulse shadow-xs"
                                   title={`${evt.raw.pendingActivitiesCount} actividades/evaluaciones pendientes en esta materia`}
@@ -541,8 +545,16 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                               )}
                             </div>
 
+                            {/* CANCELLED BADGE */}
+                            {isCancelled && (
+                              <div className="text-[9px] font-extrabold uppercase tracking-tight text-rose-800 bg-rose-100 border border-rose-300 px-1 py-0.5 rounded mt-0.5 flex items-center gap-0.5 w-fit">
+                                <X className="w-2.5 h-2.5 shrink-0" />
+                                <span>❌ Cancelada</span>
+                              </div>
+                            )}
+
                             {/* CONFLICT WARNING BADGE ON EVENT CARD */}
-                            {rEvt.isConflict && (
+                            {!isCancelled && rEvt.isConflict && (
                               <div className="text-[9px] font-extrabold uppercase tracking-tight text-rose-700 bg-rose-100 border border-rose-300 px-1 py-0.5 rounded mt-0.5 flex items-center gap-0.5 w-fit">
                                 <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
                                 <span>Conflicto</span>
@@ -789,6 +801,25 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
             )}
 
             <div className="flex flex-wrap justify-end gap-2 pt-3 border-t border-slate-100">
+              {/* CANCEL OR UN-CANCEL EVENT BUTTON */}
+              {onCancelActivity && (
+                <button
+                  onClick={() => {
+                    const evt = activeEventModal;
+                    setActiveEventModal(null);
+                    onCancelActivity(evt);
+                  }}
+                  className={`px-3 py-1.5 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors border ${
+                    activeEventModal.status === 'cancelled' || activeEventModal.status === 'Cancelada'
+                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-300'
+                  }`}
+                  title={activeEventModal.status === 'cancelled' ? 'Reactivar esta actividad' : 'Marcar como cancelada en la agenda'}
+                >
+                  {activeEventModal.status === 'cancelled' ? '✅ Reactivar actividad' : '❌ Cancelar esta actividad'}
+                </button>
+              )}
+
               {/* CANCEL SPECIFIC CLASS OCCURRENCE BUTTON */}
               {activeEventModal.raw?.type === 'class_session' && onCancelClassOccurrence && (
                 <button
