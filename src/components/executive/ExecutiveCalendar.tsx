@@ -538,20 +538,27 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                             color: isCancelled ? '#991B1B' : style.text
                           }}
                         >
-                          <div>
-                            <div className="font-bold text-[11px] leading-tight truncate flex items-center justify-between gap-1" style={{ color: isCancelled ? '#991B1B' : (rEvt.isConflict ? '#9F1239' : style.titleColor) }}>
-                              <span className={`truncate flex items-center gap-1 ${isCancelled ? 'line-through opacity-80' : ''}`}>
-                                {evt.completed && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
-                                <span className="truncate">{evt.title}</span>
+                          <div className="space-y-0.5">
+                            {/* TIME RANGE HEADER */}
+                            <div className="text-[10px] font-mono font-bold opacity-90 flex items-center justify-between gap-1 leading-none mb-1" style={{ color: style.subtext }}>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 shrink-0 opacity-80" />
+                                <span>{evt.startTime} – {evt.endTime}</span>
                               </span>
-
-                              {/* DISCRETE INDICATOR DOT FOR PENDING ACTIVITIES */}
                               {hasActivitiesIndicator && !isCancelled && (
                                 <span
                                   className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-amber-600 shrink-0 animate-pulse shadow-xs"
                                   title={`${evt.raw.pendingActivitiesCount} actividades/evaluaciones pendientes en esta materia`}
                                 />
                               )}
+                            </div>
+
+                            {/* TITLE */}
+                            <div className="font-extrabold text-[11px] leading-tight truncate flex items-center justify-between gap-1" style={{ color: isCancelled ? '#991B1B' : (rEvt.isConflict ? '#9F1239' : style.titleColor) }}>
+                              <span className={`truncate flex items-center gap-1 ${isCancelled ? 'line-through opacity-80' : ''}`}>
+                                {evt.completed && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
+                                <span className="truncate">{evt.title}</span>
+                              </span>
                             </div>
 
                             {/* CANCELLED BADGE */}
@@ -570,26 +577,29 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                               </div>
                             )}
 
-                            {evt.classroom && (
-                              <div className="text-[10px] truncate mt-0.5 opacity-90" style={{ color: style.subtext }}>
-                                Aula: {evt.classroom}
+                            {/* SUBTITLE / PROFESSOR */}
+                            {!isCancelled && evt.subtitle && (
+                              <div className="text-[10px] font-medium leading-snug line-clamp-2 opacity-90 mt-0.5" style={{ color: style.subtext }}>
+                                {evt.subtitle}
                               </div>
                             )}
-                            {evt.subtitle && (
-                              <div className="text-[10px] truncate mt-0.5 opacity-85" style={{ color: style.subtext }}>
-                                {evt.subtitle}
+
+                            {/* CLASSROOM */}
+                            {!isCancelled && evt.classroom && (
+                              <div className="text-[10px] truncate mt-0.5 opacity-90 font-medium" style={{ color: style.subtext }}>
+                                📍 Aula: {evt.classroom}
                               </div>
                             )}
                           </div>
 
-                          <div className="text-[10px] font-mono font-bold mt-1 opacity-90 flex justify-between items-center" style={{ color: style.subtext }}>
-                            <span>{evt.startTime} – {evt.endTime}</span>
-                            {evt.officeLabel && (
-                              <span className="text-[9px] px-1 rounded uppercase font-sans tracking-tight" style={{ backgroundColor: style.badgeBg, color: style.badgeText }}>
+                          {/* FOOTER OFFICE BADGE */}
+                          {evt.officeLabel && (
+                            <div className="mt-1 flex justify-end">
+                              <span className="text-[8.5px] px-1 py-0.2 rounded uppercase font-sans tracking-tight font-extrabold opacity-80" style={{ backgroundColor: style.badgeBg, color: style.badgeText }}>
                                 {evt.officeLabel}
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
