@@ -552,7 +552,7 @@ export const AcademicCalculations = {
       return [];
     }
 
-    const dayNum = getDayOfWeekNumber(dateStr);
+    const dayNum = getDayOfWeekNumber(dateStr); // 1 = Lunes, 7 = Domingo
     const schedules = subject.schedules || [];
     const professors = subject.professors || [];
 
@@ -575,41 +575,102 @@ export const AcademicCalculations = {
       };
     };
 
-    // 1. Find active period overrides for this subject on dateStr
-    const periodOverrides = schedules.filter(
-      s => s.type === 'period_override' && s.startDate <= dateStr && dateStr <= s.endDate
-    );
-    // Active period override if exists
-    const activeOverride = periodOverrides.length > 0 ? periodOverrides[periodOverrides.length - 1] : null;
+    // Helper to resolve professor(s) for a given session slot on dateStr and dayNum
+    const resolveProfessorsForSessionSlot = (slotDayNum: number, ruleProfId?: string, ruleProfIds?: string[]): { id: string; name: string; title: string }[] => {
+      // 1. Check if there are specific day professor assignments in subject.professors covering dateStr & matching slotDayNum
+      const specificDayProfs = professors.filter(p => {
+        if (p.assignmentMode !== 'specific_day' && !p.assignedDayOfWeek) return false;
+        const targetDay = p.assignedDayOfWeek || 1;
+        if (targetDay !== slotDayNum) return false;
 
-    // 1B. Check if any professors in subject.professors have an active period validity covering dateStr
-    const activeProfsInSub = professors.filter(
-      p => p.startDate && p.endDate && p.startDate <= dateStr && dateStr <= p.endDate
-    );
+        // Check date validity
+        if (p.startDate && p.endDate) {
+          return p.startDate <= dateStr && dateStr <= p.endDate;
+        }
+        if (p.startDate) {
+          return p.startDate <= dateStr;
+        }
+        if (p.endDate) {
+          return dateStr <= p.endDate;
+        }
+        return true;
+      });
+
+      if (specificDayProfs.length > 0) {
+        return specificDayProfs.map(p => ({ id: p.id, name: p.name, title: p.title || '' }));
+      }
+
+      // 1B. Check specific day schedule rules in subject.schedules
+      const specificDayRules = schedules.filter(s => {
+        if (!s.daysOfWeek || s.daysOfWeek.length === 0) return false;
+        if (!s.daysOfWeek.includes(slotDayNum)) return false;
+        const isValidDate = (!s.startDate || s.startDate <= dateStr) && (!s.endDate || dateStr <= s.endDate);
+        if (!isValidDate) return false;
+        return s.type === 'period_override' || (s.daysOfWeek.length === 1 && s.daysOfWeek[0] === slotDayNum);
+      });
+
+      const ruleProfsFromSpec: { id: string; name: string; title: string }[] = [];
+      specificDayRules.forEach(r => {
+        if (r.professorIds && r.professorIds.length > 0) {
+          r.professorIds.forEach(id => ruleProfsFromSpec.push(getProfInfo(id, r.professorName)));
+        } else if (r.professorId) {
+          ruleProfsFromSpec.push(getProfInfo(r.professorId, r.professorName));
+        }
+      });
+      if (ruleProfsFromSpec.length > 0) {
+        return ruleProfsFromSpec;
+      }
+
+      // 2. Check "all_classes" professor assignments in subject.professors covering dateStr
+      const allClassesProfs = professors.filter(p => {
+        if (p.assignmentMode === 'specific_day' || p.assignedDayOfWeek) return false;
+        if (p.startDate && p.endDate) {
+          return p.startDate <= dateStr && dateStr <= p.endDate;
+        }
+        if (p.startDate) {
+          return p.startDate <= dateStr;
+        }
+        if (p.endDate) {
+          return dateStr <= p.endDate;
+        }
+        return true;
+      });
+
+      if (allClassesProfs.length > 0) {
+        return allClassesProfs.map(p => ({ id: p.id, name: p.name, title: p.title || '' }));
+      }
+
+      // 3. Check general period overrides in schedules
+      const periodOverrides = schedules.filter(
+        s => s.type === 'period_override' && (!s.startDate || s.startDate <= dateStr) && (!s.endDate || dateStr <= s.endDate)
+      );
+      if (periodOverrides.length > 0) {
+        const lastOverride = periodOverrides[periodOverrides.length - 1];
+        if (lastOverride.professorIds && lastOverride.professorIds.length > 0) {
+          return lastOverride.professorIds.map(id => getProfInfo(id, lastOverride.professorName));
+        }
+        if (lastOverride.professorId) {
+          return [getProfInfo(lastOverride.professorId, lastOverride.professorName)];
+        }
+      }
+
+      // 4. Rule explicitly provided profs
+      if (ruleProfIds && ruleProfIds.length > 0) {
+        return ruleProfIds.map(id => getProfInfo(id));
+      }
+      if (ruleProfId) {
+        return [getProfInfo(ruleProfId)];
+      }
+
+      // 5. Default fallback to subject's first professor or summary string
+      if (professors.length > 0) {
+        return [{ id: professors[0].id, name: professors[0].name, title: professors[0].title || '' }];
+      }
+
+      return [{ id: 'prof_default', name: subject.professor || 'Profesor por asignar', title: '' }];
+    };
 
     const rawSessions: ResolvedAcademicSession[] = [];
-
-    // Helper to determine professor IDs for a rule, giving priority to period overrides
-    const resolveProfIds = (overrideForRule: SubjectScheduleRule | null, ruleProfIds?: string[], defaultProfId?: string): string[] => {
-      if (overrideForRule) {
-        if (overrideForRule.professorIds && overrideForRule.professorIds.length > 0) {
-          return overrideForRule.professorIds;
-        }
-        if (overrideForRule.professorId) {
-          return [overrideForRule.professorId];
-        }
-      }
-      if (activeProfsInSub.length > 0) {
-        return activeProfsInSub.map(p => p.id);
-      }
-      if (ruleProfIds && ruleProfIds.length > 0) {
-        return ruleProfIds;
-      }
-      if (defaultProfId) {
-        return [defaultProfId];
-      }
-      return [subject.professor || 'prof_default'];
-    };
 
     // 2. Candidate rules for dateStr
     // A) Single date rules on dateStr
@@ -630,8 +691,7 @@ export const AcademicCalculations = {
 
     // Process single date rules
     singleDateRules.forEach(rule => {
-      const profIds = resolveProfIds(activeOverride, rule.professorIds, rule.professorId);
-      const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
+      const ruleProfs = resolveProfessorsForSessionSlot(dayNum, rule.professorId, rule.professorIds);
       const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
 
       rawSessions.push({
@@ -656,12 +716,7 @@ export const AcademicCalculations = {
 
     // Process recurring rules
     recurringRules.forEach(rule => {
-      const overrideForThisRule = activeOverride && (!activeOverride.applyToScheduleId || activeOverride.applyToScheduleId === rule.id)
-        ? activeOverride
-        : null;
-
-      const profIds = resolveProfIds(overrideForThisRule, rule.professorIds, rule.professorId);
-      const ruleProfs = profIds.map(id => getProfInfo(id, rule.professorName));
+      const ruleProfs = resolveProfessorsForSessionSlot(dayNum, rule.professorId, rule.professorIds);
       const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
 
       rawSessions.push({
@@ -669,8 +724,8 @@ export const AcademicCalculations = {
         subjectId: subject.id,
         subjectName: subject.name,
         subjectColor: subject.color || '#3B82F6',
-        classroom: (overrideForThisRule && overrideForThisRule.classroom) ? overrideForThisRule.classroom : (rule.classroom || subject.classroom),
-        modality: (overrideForThisRule && overrideForThisRule.modality) ? overrideForThisRule.modality : (rule.modality || 'presencial'),
+        classroom: rule.classroom || subject.classroom,
+        modality: rule.modality || 'presencial',
         date: dateStr,
         startTime: rule.startTime || '08:00',
         endTime: rule.endTime || '10:00',
@@ -679,8 +734,8 @@ export const AcademicCalculations = {
         professorTitle: ruleProfs[0]?.title || '',
         professors: ruleProfs,
         scheduleId: rule.id,
-        scheduleType: (overrideForThisRule || activeProfsInSub.length > 0) ? 'period_override' : 'recurring',
-        notes: (overrideForThisRule && overrideForThisRule.notes) ? overrideForThisRule.notes : rule.notes
+        scheduleType: 'recurring',
+        notes: rule.notes
       });
     });
 
@@ -688,8 +743,7 @@ export const AcademicCalculations = {
     if (subject.scheduleSessions && subject.scheduleSessions.length > 0) {
       subject.scheduleSessions.forEach(ses => {
         if (ses.day === dayNum) {
-          const profIds = resolveProfIds(activeOverride, ses.professorId ? [ses.professorId] : undefined, ses.professorId);
-          const ruleProfs = profIds.map(id => getProfInfo(id, ses.professorName));
+          const ruleProfs = resolveProfessorsForSessionSlot(dayNum, ses.professorId);
           const summaryProfName = ruleProfs.map(p => `${p.title ? p.title + ' ' : ''}${p.name}`).join(' + ');
 
           rawSessions.push({
@@ -707,7 +761,7 @@ export const AcademicCalculations = {
             professorTitle: ruleProfs[0]?.title || '',
             professors: ruleProfs,
             scheduleId: ses.id,
-            scheduleType: (activeOverride || activeProfsInSub.length > 0) ? 'period_override' : 'legacy'
+            scheduleType: 'legacy'
           });
         }
       });

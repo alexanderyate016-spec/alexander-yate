@@ -33,6 +33,9 @@ export interface SubjectProfessor {
   notes?: string;
   startDate?: string; // YYYY-MM-DD
   endDate?: string;   // YYYY-MM-DD
+  assignmentMode?: 'all_classes' | 'specific_day';
+  assignedDayOfWeek?: number; // 1 = Lunes, 2 = Martes, ..., 7 = Domingo
+  validityType?: 'full_semester' | 'custom_dates';
 }
 
 export type AcademicScheduleType = 'recurring' | 'period_override' | 'single_date';

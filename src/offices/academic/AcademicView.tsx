@@ -228,6 +228,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [profNotes, setProfNotes] = useState('');
   const [profStartDate, setProfStartDate] = useState('');
   const [profEndDate, setProfEndDate] = useState('');
+  const [profAssignmentMode, setProfAssignmentMode] = useState<'all_classes' | 'specific_day'>('all_classes');
+  const [profAssignedDayOfWeek, setProfAssignedDayOfWeek] = useState<number>(1);
+  const [profValidityType, setProfValidityType] = useState<'full_semester' | 'custom_dates'>('full_semester');
 
   // Schedule Rule Modal State
   const [showScheduleRuleModal, setShowScheduleRuleModal] = useState(false);
@@ -551,7 +554,6 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   // Professor Handlers
   const handleOpenProfessorModal = (subjectId: string, prof?: SubjectProfessor) => {
     setProfSubjectId(subjectId);
-    const sub = subjects.find(s => s.id === subjectId);
     const activeSem = currentSemester;
     const defaultStart = activeSem?.startDate || todayStr;
     const defaultEnd = activeSem?.endDate || '';
@@ -564,8 +566,11 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setProfPhone(prof.phone || '');
       setProfDepartment(prof.department || '');
       setProfNotes(prof.notes || '');
-      setProfStartDate(prof.startDate || '');
-      setProfEndDate(prof.endDate || '');
+      setProfAssignmentMode(prof.assignmentMode || (prof.assignedDayOfWeek ? 'specific_day' : 'all_classes'));
+      setProfAssignedDayOfWeek(prof.assignedDayOfWeek || 1);
+      setProfValidityType(prof.validityType || (prof.startDate === defaultStart && prof.endDate === defaultEnd ? 'full_semester' : (prof.startDate || prof.endDate ? 'custom_dates' : 'full_semester')));
+      setProfStartDate(prof.startDate || defaultStart);
+      setProfEndDate(prof.endDate || defaultEnd);
     } else {
       setEditingProfessor(null);
       setProfName('');
@@ -574,6 +579,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setProfPhone('');
       setProfDepartment('');
       setProfNotes('');
+      setProfAssignmentMode('all_classes');
+      setProfAssignedDayOfWeek(1);
+      setProfValidityType('full_semester');
       setProfStartDate(defaultStart);
       setProfEndDate(defaultEnd);
     }
@@ -587,15 +595,22 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       return;
     }
 
-    const profPayload = {
+    const activeSem = currentSemester;
+    const finalStart = profValidityType === 'full_semester' ? (activeSem?.startDate || profStartDate || todayStr) : profStartDate;
+    const finalEnd = profValidityType === 'full_semester' ? (activeSem?.endDate || profEndDate || '2099-12-31') : profEndDate;
+
+    const profPayload: Omit<SubjectProfessor, 'id'> = {
       name: profName.trim(),
       title: profTitle.trim(),
       email: profEmail.trim(),
       phone: profPhone.trim(),
       department: profDepartment.trim(),
       notes: profNotes.trim(),
-      startDate: profStartDate || undefined,
-      endDate: profEndDate || undefined,
+      assignmentMode: profAssignmentMode,
+      assignedDayOfWeek: profAssignmentMode === 'specific_day' ? profAssignedDayOfWeek : undefined,
+      validityType: profValidityType,
+      startDate: finalStart || undefined,
+      endDate: finalEnd || undefined,
     };
 
     let targetProfId = editingProfessor?.id;
@@ -610,7 +625,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     }
 
     // Automatically synchronize a period_override rule if dates are set
-    if (profStartDate && profEndDate && targetProfId) {
+    if (finalStart && finalEnd && targetProfId) {
       const sub = subjects.find(s => s.id === profSubjectId);
       if (sub) {
         const fullName = `${profTitle ? profTitle + ' ' : ''}${profName.trim()}`;
@@ -618,19 +633,27 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
           s => s.type === 'period_override' && (s.professorId === targetProfId || s.professorIds?.includes(targetProfId))
         );
 
+        const days = profAssignmentMode === 'specific_day' ? [profAssignedDayOfWeek] : [1, 2, 3, 4, 5, 6, 7];
+
+        const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const dayLabel = dayNames[profAssignedDayOfWeek - 1] || 'Lunes';
+
         const rulePayload: Omit<SubjectScheduleRule, 'id' | 'subjectId'> = {
           type: 'period_override',
           professorId: targetProfId,
           professorName: fullName,
           professorIds: [targetProfId],
           professorNames: [fullName],
+          daysOfWeek: days,
           startTime: '',
           endTime: '',
           classroom: sub.classroom || '',
           modality: 'presencial',
-          startDate: profStartDate,
-          endDate: profEndDate,
-          notes: `Asignación por período para ${fullName}`
+          startDate: finalStart,
+          endDate: finalEnd,
+          notes: profAssignmentMode === 'specific_day'
+            ? `Asignación para los ${dayLabel} para ${fullName}`
+            : `Asignación por período para ${fullName}`
         };
 
         if (existingRule) {
@@ -1787,9 +1810,25 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                               </span>
                             </div>
 
-                            {/* Contact info, Notes & Period Validity */}
+                             {/* Contact info, Notes & Period Validity */}
                             <div className="space-y-1.5 text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100">
-                              {(prof.startDate || prof.endDate) && (
+                              <div className="flex flex-wrap gap-1 mb-1">
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-900 border border-blue-100 rounded text-[10px] font-bold">
+                                  {prof.assignmentMode === 'specific_day' || prof.assignedDayOfWeek
+                                    ? `Día Específico: ${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][(prof.assignedDayOfWeek || 1) - 1]}`
+                                    : 'Todas las clases'}
+                                </span>
+                                {prof.validityType === 'full_semester' ? (
+                                  <span className="px-2 py-0.5 bg-purple-50 text-purple-900 border border-purple-100 rounded text-[10px] font-bold">
+                                    Todo el semestre
+                                  </span>
+                                ) : (prof.startDate || prof.endDate) ? (
+                                  <span className="px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-100 rounded text-[10px] font-bold">
+                                    {prof.startDate || 'Inicio'} → {prof.endDate || 'Fin'}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {(prof.startDate || prof.endDate) && prof.validityType !== 'full_semester' && (
                                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-900 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100">
                                   <Calendar className="w-3 h-3 text-purple-700 shrink-0" />
                                   <span>Vigencia: {prof.startDate || 'Inicio'} → {prof.endDate || 'Fin'}</span>
@@ -3434,35 +3473,128 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 />
               </div>
 
-              {/* Período de Asignación / Vigencia Automática */}
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+              {/* Modalidad de Asignación y Vigencia */}
+              <div className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-xl space-y-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-purple-700 shrink-0" />
-                  <span className="font-bold text-purple-900 text-xs">Período de Asignación a la Materia (Vigencia)</span>
+                  <span className="font-bold text-purple-900 text-xs">Modalidad de Asignación de Clases</span>
                 </div>
-                <p className="text-[11px] text-purple-800 leading-relaxed">
-                  Al definir un período para este profesor, el sistema lo asignará automáticamente a <strong>todas las clases y horas programadas</strong> para esta materia (mañana, tarde o noche) entre las fechas indicadas, sin volver a pedirte días ni horas.
-                </p>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div>
-                    <label className="font-bold text-purple-900 block text-[11px] mb-1">Desde (Inicio)</label>
-                    <input
-                      type="date"
-                      value={profStartDate}
-                      onChange={e => setProfStartDate(e.target.value)}
-                      className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-purple-900 block text-[11px] mb-1">Hasta (Fin)</label>
-                    <input
-                      type="date"
-                      value={profEndDate}
-                      onChange={e => setProfEndDate(e.target.value)}
-                      className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
-                    />
+
+                {/* Modalidad: Todas las clases vs Día específico */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-purple-900 block text-[11px]">¿Qué clases impartirá este docente?</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setProfAssignmentMode('all_classes')}
+                      className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        profAssignmentMode === 'all_classes'
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-purple-200 hover:bg-purple-100/50'
+                      }`}
+                    >
+                      <span className="font-bold text-[11px]">Todas las clases</span>
+                      <span className={`text-[9px] mt-0.5 ${profAssignmentMode === 'all_classes' ? 'text-purple-100' : 'text-slate-500'}`}>
+                        Todas las sesiones semanales del horario
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setProfAssignmentMode('specific_day')}
+                      className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        profAssignmentMode === 'specific_day'
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-purple-200 hover:bg-purple-100/50'
+                      }`}
+                    >
+                      <span className="font-bold text-[11px]">Día específico</span>
+                      <span className={`text-[9px] mt-0.5 ${profAssignmentMode === 'specific_day' ? 'text-purple-100' : 'text-slate-500'}`}>
+                        Solo un día de la semana
+                      </span>
+                    </button>
                   </div>
                 </div>
+
+                {/* Selección de día específico */}
+                {profAssignmentMode === 'specific_day' && (
+                  <div className="pt-1">
+                    <label className="font-bold text-purple-900 block text-[11px] mb-1">Día de la semana asignado</label>
+                    <select
+                      value={profAssignedDayOfWeek}
+                      onChange={e => setProfAssignedDayOfWeek(parseInt(e.target.value, 10))}
+                      className="w-full p-2 bg-white border border-purple-300 rounded-lg text-purple-950 font-bold text-xs"
+                    >
+                      <option value={1}>Lunes</option>
+                      <option value={2}>Martes</option>
+                      <option value={3}>Miércoles</option>
+                      <option value={4}>Jueves</option>
+                      <option value={5}>Viernes</option>
+                      <option value={6}>Sábado</option>
+                      <option value={7}>Domingo</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Vigencia: Todo el semestre vs Rango de fechas */}
+                <div className="space-y-1.5 pt-1 border-t border-purple-200/60">
+                  <label className="font-bold text-purple-900 block text-[11px]">Vigencia de la asignación</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${
+                      profValidityType === 'full_semester'
+                        ? 'bg-purple-100 border-purple-500 font-bold text-purple-950'
+                        : 'bg-white border-purple-200 text-slate-700'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="profValidityType"
+                        checked={profValidityType === 'full_semester'}
+                        onChange={() => setProfValidityType('full_semester')}
+                        className="accent-purple-600"
+                      />
+                      <span>Todo el semestre</span>
+                    </label>
+
+                    <label className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer transition-all ${
+                      profValidityType === 'custom_dates'
+                        ? 'bg-purple-100 border-purple-500 font-bold text-purple-950'
+                        : 'bg-white border-purple-200 text-slate-700'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="profValidityType"
+                        checked={profValidityType === 'custom_dates'}
+                        onChange={() => setProfValidityType('custom_dates')}
+                        className="accent-purple-600"
+                      />
+                      <span>Entre dos fechas</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Fechas para rango personalizado */}
+                {profValidityType === 'custom_dates' && (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="font-bold text-purple-900 block text-[11px] mb-1">Desde (Inicio)</label>
+                      <input
+                        type="date"
+                        value={profStartDate}
+                        onChange={e => setProfStartDate(e.target.value)}
+                        className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-purple-900 block text-[11px] mb-1">Hasta (Fin)</label>
+                      <input
+                        type="date"
+                        value={profEndDate}
+                        onChange={e => setProfEndDate(e.target.value)}
+                        className="w-full p-2 bg-white border border-purple-200 rounded-lg text-slate-900 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
