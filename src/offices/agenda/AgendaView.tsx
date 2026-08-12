@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MasterState, ChiefOfStaffEvent, UnifiedExecutiveEvent } from '../../types/store';
 import { ChiefOfStaffStore } from '../chiefOfStaff/ChiefOfStaffStore';
 import { ChiefOfStaffSync } from '../chiefOfStaff/ChiefOfStaffSync';
@@ -90,6 +90,17 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
   // Bulk Cancellation Modal state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
+  // Real-time clock for personal secretary
+  const [nowDate, setNowDate] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowDate(new Date());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const secretaryState = ChiefOfStaffSync.buildRealTimeSecretaryState(state, selectedDate, nowDate);
 
   // Raw Agenda Events
   const rawEvents = state.offices.jefaturaGabinete?.events || [];
@@ -390,57 +401,237 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header & Resumen Ejecutivo de la Agenda */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
+      {/* 1. SECRETARÍA PERSONAL - DASHBOARD EN TIEMPO REAL */}
+      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 space-y-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+        {/* Bar Top: Saludo, Hora Real, Selector Fecha & Controles */}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Oficina de Agenda Executiva</span>
+              <span>Oficina de Agenda • Secretaría Personal</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Gestión Integral de Eventos y Compromisos
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              {secretaryState.greeting}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-              Planifica, visualiza y administra todos tus eventos. Crea compromisos individuales o consulta la sincronización unificada con las demás oficinas.
-            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Indicador de Hora Real */}
+            <div className="px-3.5 py-2 bg-slate-800/90 border border-slate-700 rounded-xl text-xs font-mono font-bold text-amber-300 flex items-center gap-1.5 shadow-xs">
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span>{secretaryState.timeStr}</span>
+              <span className="text-[10px] text-slate-400 font-sans font-medium">Hora del sistema</span>
+            </div>
+
+            {/* Selector de Fecha */}
+            <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-slate-700 text-xs">
+              <button
+                onClick={() => setSelectedDate(addDaysToDateStr(selectedDate, -1))}
+                className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-300 transition-all"
+                title="Día anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="bg-transparent text-slate-100 font-mono font-bold px-2 py-0.5 focus:outline-none cursor-pointer"
+              />
+              <button
+                onClick={() => setSelectedDate(addDaysToDateStr(selectedDate, 1))}
+                className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-300 transition-all"
+                title="Día siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              {selectedDate !== todayStr && (
+                <button
+                  onClick={() => setSelectedDate(todayStr)}
+                  className="px-2.5 py-1 text-[11px] font-bold bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 rounded-lg border border-indigo-500/30 ml-1 transition-all"
+                >
+                  Hoy
+                </button>
+              )}
+            </div>
+
+            {/* Estado de Conflictos */}
+            {secretaryState.hasConflicts ? (
+              <div className="px-3.5 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                <AlertCircle className="w-4 h-4 text-rose-400" />
+                <span>{secretaryState.conflictsText}</span>
+              </div>
+            ) : (
+              <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{secretaryState.conflictsText}</span>
+              </div>
+            )}
+
+            {/* Botón Cancelar Actividades */}
             <button
               onClick={() => setIsCancelModalOpen(true)}
-              className="px-4 py-3 text-xs font-bold text-rose-950 bg-rose-200 hover:bg-rose-300 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 border border-rose-300/60"
-              title="Cancelar actividades del día manteniendo registro e historial"
+              className="px-3 py-2 text-xs font-bold text-rose-950 bg-rose-200 hover:bg-rose-300 rounded-xl transition-all flex items-center gap-1.5 border border-rose-300/60"
+              title="Cancelar actividades del día"
             >
-              <X className="w-4 h-4 text-rose-800 stroke-[3]" />
-              <span>❌ Cancelar Actividades</span>
+              <X className="w-3.5 h-3.5 text-rose-800 stroke-[3]" />
+              <span className="hidden sm:inline">Cancelar Día</span>
             </button>
 
+            {/* Botón Nuevo Evento */}
             <button
               onClick={() => handleOpenAddModal()}
-              className="px-5 py-3 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-2xl shadow-lg hover:shadow-amber-400/20 transition-all flex items-center justify-center gap-2 shrink-0"
+              className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition-all active:scale-95"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>+ Crear Evento</span>
+              <span>Nuevo Evento</span>
             </button>
           </div>
         </div>
 
-        {/* Metric Badges */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 mt-6 border-t border-slate-800 text-xs">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between">
-            <span className="text-slate-300 font-medium">Eventos Programados Hoy</span>
-            <span className="text-lg font-black text-amber-400">{unifiedEventsForSelectedDate.length}</span>
+        {/* Mensaje Principal de la Secretaria (Voz Ejecutiva) */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 text-slate-200 text-xs sm:text-sm leading-relaxed flex items-start gap-3.5">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0 mt-0.5">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between">
-            <span className="text-slate-300 font-medium">Eventos Propios Registrados</span>
-            <span className="text-lg font-black text-indigo-300">{activeRawEvents.length}</span>
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-white text-sm">{secretaryState.greeting}</h3>
+            <p className="text-slate-200 font-medium leading-relaxed">{secretaryState.summaryMessage}</p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between">
-            <span className="text-slate-300 font-medium">Próximos Compromisos</span>
-            <span className="text-lg font-black text-emerald-400">{upcomingList.length}</span>
+        </div>
+
+        {/* 4 Indicadores del Dashboard */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Hoy */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Hoy</span>
+            <div className="text-2xl font-black text-white mt-1 flex items-baseline gap-1.5">
+              {secretaryState.totalToday}
+              <span className="text-xs text-slate-400 font-medium">compromisos</span>
+            </div>
+            <span className="text-[11px] text-slate-400 mt-1">Total del día</span>
+          </div>
+
+          {/* Completados */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Completados</span>
+            <div className="text-2xl font-black text-emerald-400 mt-1 flex items-baseline gap-1.5">
+              {secretaryState.completedTodayCount}
+              <span className="text-xs text-slate-400 font-medium">/ {secretaryState.totalToday}</span>
+            </div>
+            <span className="text-[11px] text-emerald-300 mt-1 font-medium">
+              {secretaryState.totalToday > 0
+                ? `${Math.round((secretaryState.completedTodayCount / secretaryState.totalToday) * 100)}% finalizado`
+                : 'Sin actividades'}
+            </span>
+          </div>
+
+          {/* Ahora */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+            <div className="text-slate-400 text-[11px] font-bold uppercase tracking-wider flex items-center justify-between">
+              <span>Ahora</span>
+              {!secretaryState.currentActivity.isFreeTime && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              )}
+            </div>
+            <div className="text-sm font-bold text-amber-300 mt-1 truncate">
+              {secretaryState.currentNowText}
+            </div>
+            <span className="text-[11px] text-slate-400 mt-1 truncate">
+              {secretaryState.currentActivity.isFreeTime
+                ? 'Tiempo libre'
+                : `${secretaryState.currentActivity.startTime} – ${secretaryState.currentActivity.endTime}`}
+            </span>
+          </div>
+
+          {/* Próximo */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Próximo</span>
+            <div className="text-sm font-bold text-indigo-300 mt-1 truncate">
+              {secretaryState.nextEventText}
+            </div>
+            <span className="text-[11px] text-slate-400 mt-1">Siguiente en agenda</span>
+          </div>
+        </div>
+
+        {/* AHORA, DESPUÉS & PRÓXIMO ESPACIO LIBRE Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-1">
+          {/* Tarjeta AHORA */}
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base">{secretaryState.currentActivity.emoji}</span>
+                <h3 className="text-xs font-black uppercase tracking-wider text-amber-400">AHORA</h3>
+              </div>
+              {!secretaryState.currentActivity.isFreeTime && secretaryState.currentActivity.remainingMins !== undefined && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  Quedan {secretaryState.currentActivity.remainingMins} min
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-white">
+                {secretaryState.currentActivity.title}
+              </h4>
+              <p className="text-xs text-slate-300 mt-0.5">
+                {secretaryState.currentActivity.isFreeTime
+                  ? secretaryState.currentActivity.location
+                  : `${secretaryState.currentActivity.startTime} – ${secretaryState.currentActivity.endTime} ${secretaryState.currentActivity.location ? '• ' + secretaryState.currentActivity.location : ''}`}
+              </p>
+            </div>
+
+            <div className="pt-2 border-t border-slate-700/60 flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium">Próximo espacio libre:</span>
+              <span className="font-mono font-bold text-emerald-400 text-[11px]">
+                {secretaryState.nextFreeGapText}
+              </span>
+            </div>
+          </div>
+
+          {/* Sección DESPUÉS (Ocupa 2 columnas) */}
+          <div className="lg:col-span-2 bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-700/60 pb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-indigo-400" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-indigo-300">DESPUÉS</h3>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {secretaryState.afterActivities.length} actividades siguientes
+              </span>
+            </div>
+
+            {secretaryState.afterActivities.length === 0 ? (
+              <div className="text-xs text-slate-400 py-3 italic">
+                No tienes más actividades programadas para el resto del día.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                {secretaryState.afterActivities.map(item => (
+                  <div
+                    key={item.id}
+                    className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 flex items-center justify-between gap-2 hover:border-indigo-500/40 transition-all"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
+                          {item.time}
+                        </span>
+                        <span className="text-xs font-bold text-white truncate">{item.title}</span>
+                      </div>
+                      {item.location && (
+                        <div className="text-[10px] text-slate-400 truncate pl-0.5">
+                          📍 {item.location}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

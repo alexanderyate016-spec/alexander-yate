@@ -81,6 +81,53 @@ export function formatMinutesHuman(mins: number): string {
   return `${hours} h ${remainder} min`;
 }
 
+export function formatTime12h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  let h = parseInt(parts[0], 10);
+  if (isNaN(h)) return timeStr;
+  const m = parts[1] || '00';
+  const ampm = h >= 12 ? 'p. m.' : 'a. m.';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+export interface RealTimeSecretaryState {
+  timeStr: string;
+  greeting: string;
+  summaryMessage: string;
+  totalToday: number;
+  completedTodayCount: number;
+  currentNowText: string;
+  nextEventText: string;
+  nextFreeGapText: string;
+  currentActivity: {
+    id?: string;
+    title: string;
+    emoji: string;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    isFreeTime: boolean;
+    isCommute?: boolean;
+    remainingMins?: number;
+  };
+  afterActivities: Array<{
+    id: string;
+    time: string;
+    rawTime: string;
+    title: string;
+    subtitle?: string;
+    category?: string;
+    location?: string;
+  }>;
+  conflictsCount: number;
+  conflictsText: string;
+  hasConflicts: boolean;
+  conflicts: ScheduleConflict[];
+}
+
 export class ChiefOfStaffSync {
   /**
    * Gather standalone Cabinet events for a given date, handling recurrence
@@ -463,18 +510,18 @@ export class ChiefOfStaffSync {
     }));
 
     const isToday = targetDateStr === getTodayDateString();
-    const greeting = isToday ? 'Buenos días, Señor Presidente.' : `Informe para la fecha: ${targetDateStr}`;
+    const greeting = isToday ? 'Buenos días, Alex.' : `Informe para la fecha: ${targetDateStr}`;
 
-    let summaryText = `Hoy tiene ${events.length} compromisos en su agenda. `;
+    let summaryText = `Hoy tienes ${events.length} compromisos en tu agenda. `;
     if (conflicts.length > 0) {
-      summaryText += `Se detectó ${conflicts.length} conflicto${conflicts.length > 1 ? 's' : ''} de horario que requiere su decisión. `;
+      summaryText += `Se detectó ${conflicts.length} conflicto${conflicts.length > 1 ? 's' : ''} de horario que requiere tu atención. `;
     } else {
-      summaryText += `Su agenda se encuentra libre de traslapes. `;
+      summaryText += `Tu agenda se encuentra libre de traslapes. `;
     }
     if (importantTasks.length > 0) {
-      summaryText += `Tiene ${importantTasks.length} tarea${importantTasks.length > 1 ? 's' : ''} de alta prioridad. `;
+      summaryText += `Tienes ${importantTasks.length} tarea${importantTasks.length > 1 ? 's' : ''} de alta prioridad. `;
     }
-    summaryText += `Su primera actividad inicia a las ${firstActivityTime}. Su próximo espacio libre es a las ${firstFreeGap}.`;
+    summaryText += `Tu primera actividad inicia a las ${firstActivityTime}. Tu próximo espacio libre es a las ${firstFreeGap}.`;
 
     return {
       greeting,
@@ -487,6 +534,214 @@ export class ChiefOfStaffSync {
       conflicts,
       priorities,
       freeTimeGaps: freeGaps
+    };
+  }
+
+  /**
+   * Calculates the real-time personal secretary state based on system time and agenda events
+   */
+  public static buildRealTimeSecretaryState(
+    state: MasterState,
+    targetDateStr: string,
+    overrideDateObj?: Date
+  ): RealTimeSecretaryState {
+    const nowDate = overrideDateObj || new Date();
+    const currentHour = nowDate.getHours();
+    const currentMinsNum = currentHour * 60 + nowDate.getMinutes();
+    const isToday = targetDateStr === getTodayDateString();
+
+    // 1. Greeting according to real system time
+    let greeting = 'Buenos días, Alex.';
+    if (currentHour >= 12 && currentHour < 19) {
+      greeting = 'Buenas tardes, Alex.';
+    } else if (currentHour >= 19 || currentHour < 5) {
+      greeting = 'Buenas noches, Alex.';
+    }
+
+    // 2. Events for target date (excluding cancelled ones)
+    const allEventsForDate = this.getUnifiedEventsForDate(state, targetDateStr);
+    const activeEvents = allEventsForDate.filter(e => e.status !== 'cancelled');
+
+    // Sort chronologically
+    activeEvents.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+    // Calculate conflict detection on active events
+    const conflicts = this.detectConflicts(activeEvents);
+    const hasConflicts = conflicts.length > 0;
+    const conflictsText = hasConflicts
+      ? `⚠️ ${conflicts.length} conflicto${conflicts.length > 1 ? 's' : ''} requiere${conflicts.length > 1 ? 'n' : ''} atención`
+      : '✓ Agenda sin conflictos';
+
+    const totalToday = activeEvents.length;
+
+    // Completed events today
+    const completedEvents = activeEvents.filter(e => {
+      if (e.status === 'completed') return true;
+      if (!isToday) return false;
+      const endMins = timeToMinutes(e.endTime);
+      return endMins <= currentMinsNum;
+    });
+    const completedTodayCount = completedEvents.length;
+
+    // Currently running event
+    const currentEvent = isToday
+      ? activeEvents.find(e => {
+          const startMins = timeToMinutes(e.startTime);
+          const endMins = timeToMinutes(e.endTime);
+          return startMins <= currentMinsNum && endMins > currentMinsNum;
+        })
+      : undefined;
+
+    // Upcoming events starting after now (if today) or all active events if future
+    const upcomingEvents = isToday
+      ? activeEvents.filter(e => timeToMinutes(e.startTime) > currentMinsNum)
+      : activeEvents;
+
+    const firstActivity = activeEvents[0];
+    const nextEvent = upcomingEvents[0];
+
+    // Current Activity object (AHORA)
+    let currentActivityObj = {
+      title: 'Tiempo libre',
+      emoji: '☕',
+      startTime: '',
+      endTime: '',
+      location: 'No tienes actividades programadas en este momento.',
+      isFreeTime: true,
+      isCommute: false,
+      remainingMins: undefined as number | undefined
+    };
+
+    if (currentEvent) {
+      const isCommute = currentEvent.type === 'commute' || currentEvent.sourceOffice === 'commute' || currentEvent.title.toLowerCase().includes('desplazamiento') || currentEvent.title.toLowerCase().includes('en camino');
+      currentActivityObj = {
+        id: currentEvent.id,
+        title: currentEvent.title,
+        emoji: isCommute ? '🚌' : (currentEvent.rawObject?.emoji || '🧠'),
+        startTime: currentEvent.startTime || '',
+        endTime: currentEvent.endTime || '',
+        location: currentEvent.location || '',
+        isFreeTime: false,
+        isCommute,
+        remainingMins: timeToMinutes(currentEvent.endTime) - currentMinsNum
+      };
+    }
+
+    // Current Now text for indicator
+    const currentNowText = currentEvent ? currentEvent.title : 'Tiempo libre';
+
+    // Next Event text for indicator
+    const nextEventText = nextEvent
+      ? `${nextEvent.title} · ${formatTime12h(nextEvent.startTime)}`
+      : 'Ninguno';
+
+    // DESPUÉS (upcoming events list after current)
+    const afterActivities = upcomingEvents.map(e => ({
+      id: e.id,
+      time: formatTime12h(e.startTime),
+      rawTime: e.startTime || '',
+      title: e.title,
+      subtitle: e.subtitle,
+      category: e.officeLabel,
+      location: e.location
+    }));
+
+    // PRÓXIMO ESPACIO LIBRE
+    let nextFreeGapText = 'Tiempo libre por el resto del día.';
+    if (activeEvents.length === 0) {
+      nextFreeGapText = 'Tiempo libre por el resto del día.';
+    } else if (upcomingEvents.length === 0 && isToday) {
+      // Check tomorrow
+      const tomorrowStr = addDaysToDateStr(targetDateStr, 1);
+      const tomorrowActiveEvents = this.getUnifiedEventsForDate(state, tomorrowStr).filter(e => e.status !== 'cancelled');
+      if (tomorrowActiveEvents.length > 0) {
+        const firstTomorrow = tomorrowActiveEvents[0];
+        nextFreeGapText = `Mañana · ${formatTime12h(firstTomorrow.startTime)}`;
+      } else {
+        nextFreeGapText = 'Tiempo libre por el resto del día.';
+      }
+    } else if (isToday) {
+      if (currentEvent) {
+        // Currently in event. Find gap between current event end and next event start
+        const currentEndMins = timeToMinutes(currentEvent.endTime);
+        if (nextEvent) {
+          const nextStartMins = timeToMinutes(nextEvent.startTime);
+          if (nextStartMins > currentEndMins) {
+            const gapMins = nextStartMins - currentEndMins;
+            nextFreeGapText = `${formatTime12h(currentEvent.endTime)} – ${formatTime12h(nextEvent.startTime)} · ${gapMins} min`;
+          } else {
+            nextFreeGapText = 'Sin espacios libres inmediatos entre eventos.';
+          }
+        } else {
+          nextFreeGapText = `Tiempo libre a partir de las ${formatTime12h(currentEvent.endTime)}`;
+        }
+      } else if (nextEvent) {
+        // Currently in free time before next event
+        const nextStartMins = timeToMinutes(nextEvent.startTime);
+        const freeMins = nextStartMins - currentMinsNum;
+        if (freeMins > 0) {
+          nextFreeGapText = `${formatTime12h(minutesToTime(currentMinsNum))} – ${formatTime12h(nextEvent.startTime)} · ${freeMins} min`;
+        }
+      }
+    }
+
+    // Dynamic Summary Message (Secretary Voice)
+    let summaryMessage = '';
+    if (currentHour >= 5 && currentHour < 12) {
+      // Morning
+      if (totalToday === 0) {
+        summaryMessage = 'Buenos días, Alex. Hoy no tienes compromisos programados en tu agenda. Disfruta de tu día libre.';
+      } else if (firstActivity && timeToMinutes(firstActivity.startTime) > currentMinsNum) {
+        const freeBeforeMins = timeToMinutes(firstActivity.startTime) - currentMinsNum;
+        summaryMessage = `Buenos días, Alex. Hoy tienes ${totalToday} compromiso${totalToday > 1 ? 's' : ''} en tu agenda. Tu primera actividad comienza a las ${formatTime12h(firstActivity.startTime)}. Tienes ${formatMinutesHuman(Math.max(0, freeBeforeMins))} libres antes de comenzar.`;
+      } else if (currentEvent) {
+        summaryMessage = `Buenos días, Alex. Hoy tienes ${totalToday} compromisos. Actualmente estás en "${currentEvent.title}". ${nextEvent ? 'Tu próxima actividad comienza a las ' + formatTime12h(nextEvent.startTime) + '.' : ''}`;
+      } else {
+        summaryMessage = `Buenos días, Alex. Has completado ${completedTodayCount} de ${totalToday} compromisos esta mañana.`;
+      }
+    } else if (currentHour >= 12 && currentHour < 19) {
+      // Afternoon
+      if (totalToday === 0) {
+        summaryMessage = 'Buenas tardes, Alex. No tienes actividades programadas para hoy.';
+      } else if (upcomingEvents.length === 0) {
+        summaryMessage = `Buenas tardes, Alex. Has completado tus ${totalToday} compromisos de hoy. No tienes más actividades programadas.`;
+      } else if (nextEvent) {
+        const freeMins = currentEvent
+          ? timeToMinutes(nextEvent.startTime) - timeToMinutes(currentEvent.endTime)
+          : timeToMinutes(nextEvent.startTime) - currentMinsNum;
+        summaryMessage = `Buenas tardes, Alex. Has completado ${completedTodayCount} compromiso${completedTodayCount !== 1 ? 's' : ''} hoy. Tu próxima actividad comienza a las ${formatTime12h(nextEvent.startTime)} y tienes ${formatMinutesHuman(Math.max(0, freeMins))} libres.`;
+      } else {
+        summaryMessage = `Buenas tardes, Alex. Has completado ${completedTodayCount} compromisos hoy. No tienes más actividades pendientes.`;
+      }
+    } else {
+      // Night
+      if (completedTodayCount >= totalToday && totalToday > 0) {
+        summaryMessage = 'Buenas noches, Alex. Terminaste todos tus compromisos de hoy. No tienes más actividades programadas.';
+      } else if (totalToday === 0) {
+        summaryMessage = 'Buenas noches, Alex. No tuviste compromisos programados hoy.';
+      } else {
+        const pendingCount = totalToday - completedTodayCount;
+        summaryMessage = `Buenas noches, Alex. Hoy tuviste ${totalToday} compromiso${totalToday > 1 ? 's' : ''}. Completaste ${completedTodayCount} y tienes ${pendingCount} pendiente${pendingCount > 1 ? 's' : ''}.`;
+      }
+    }
+
+    const timeStr = `${currentHour.toString().padStart(2, '0')}:${nowDate.getMinutes().toString().padStart(2, '0')}`;
+
+    return {
+      timeStr,
+      greeting,
+      summaryMessage,
+      totalToday,
+      completedTodayCount,
+      currentNowText,
+      nextEventText,
+      nextFreeGapText,
+      currentActivity: currentActivityObj,
+      afterActivities,
+      conflictsCount: conflicts.length,
+      conflictsText,
+      hasConflicts,
+      conflicts
     };
   }
 
