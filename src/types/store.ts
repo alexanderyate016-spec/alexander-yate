@@ -614,6 +614,25 @@ export interface NutritionRecord {
   estimatedCalories?: number;
 }
 
+export interface ActivityLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time?: string; // HH:mm
+  type: 'ejercicio' | 'caminata' | 'actividad' | 'pasos';
+  minutes?: number;
+  steps?: number;
+  notes?: string;
+}
+
+export interface HeartRateLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  bpm: number;
+  context?: 'reposo' | 'ejercicio' | 'post_ejercicio' | 'general';
+  notes?: string;
+}
+
 export interface MedicationItem {
   id: string;
   name: string;
@@ -626,6 +645,7 @@ export interface MedicationItem {
   notes?: string;
   status?: 'active' | 'completed' | 'paused';
   lastTakenTime?: string;
+  takenDates?: string[]; // YYYY-MM-DD dates when taken
 }
 
 export interface MedicalAppointment {
@@ -683,7 +703,7 @@ export interface ImmunizationRecord {
 
 export interface MedicalOfficeData {
   healthRecords: HealthRecord[];
-  nutritionRecords: NutritionRecord[];
+  nutritionRecords?: NutritionRecord[];
   medications: MedicationItem[];
   appointments: MedicalAppointment[];
   medicalExams: MedicalExam[];
@@ -693,8 +713,12 @@ export interface MedicalOfficeData {
   waterLogs?: WaterIntakeLog[];
   sleepRecords?: SleepRecord[];
   napRecords?: NapRecord[];
+  activityLogs?: ActivityLog[];
+  heartRateLogs?: HeartRateLog[];
   dailyWaterTargetLiters?: number;
   sleepTargetHours?: number;
+  activityTargetMinutes?: number;
+  stepsTarget?: number;
 }
 
 // -------------------------------------------------------------

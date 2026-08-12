@@ -218,5 +218,197 @@ export const MedicalCalculations = {
     }
 
     return alerts;
+  },
+
+  // Actividad diaria (ejercicio / pasos)
+  getActivityMetrics(data: MedicalOfficeData, targetDateStr?: string) {
+    const today = targetDateStr || new Date().toISOString().split('T')[0];
+    const logs = (data.activityLogs || []).filter(a => a.date === today);
+
+    const totalMinutes = logs.reduce((sum, a) => sum + (a.minutes || 0), 0);
+    const totalSteps = logs.reduce((sum, a) => sum + (a.steps || 0), 0);
+
+    const targetMinutes = data.activityTargetMinutes || 60;
+    const targetSteps = data.stepsTarget || 8000;
+
+    const minutesPct = Math.min(100, Math.round((totalMinutes / targetMinutes) * 100));
+    const stepsPct = Math.min(100, Math.round((totalSteps / targetSteps) * 100));
+
+    return {
+      todayMinutes: totalMinutes,
+      targetMinutes,
+      minutesPct,
+      todaySteps: totalSteps,
+      targetSteps,
+      stepsPct,
+      logs
+    };
+  },
+
+  // Frecuencia cardíaca
+  getHeartRateMetrics(data: MedicalOfficeData) {
+    const logs = [...(data.heartRateLogs || [])].sort((a, b) => {
+      const dateTimeA = `${a.date} ${a.time}`;
+      const dateTimeB = `${b.date} ${b.time}`;
+      return dateTimeB.localeCompare(dateTimeA);
+    });
+
+    const latest = logs.length > 0 ? logs[0] : null;
+    const previous = logs.length > 1 ? logs[1] : null;
+
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (latest && previous) {
+      if (latest.bpm > previous.bpm + 2) trend = 'up';
+      else if (latest.bpm < previous.bpm - 2) trend = 'down';
+    }
+
+    return {
+      latestBpm: latest ? latest.bpm : null,
+      latestDate: latest ? latest.date : null,
+      latestTime: latest ? latest.time : null,
+      context: latest ? latest.context : null,
+      trend,
+      history: logs.slice(0, 10)
+    };
+  },
+
+  // Historial de Salud Consolidado
+  getConsolidatedTimeline(data: MedicalOfficeData) {
+    const events: Array<{
+      id: string;
+      date: string;
+      time?: string;
+      icon: string;
+      title: string;
+      subtitle: string;
+      category: 'peso' | 'agua' | 'sueño' | 'cita' | 'examen' | 'vacuna' | 'actividad' | 'corazon';
+      rawDate: string;
+    }> = [];
+
+    // 1. Health Records (Weight)
+    (data.healthRecords || []).forEach(r => {
+      if (r.weightKg) {
+        events.push({
+          id: `timeline_w_${r.id}`,
+          date: r.date,
+          time: '08:00',
+          icon: '⚖️',
+          title: 'Peso registrado',
+          subtitle: `${r.weightKg} kg ${r.notes ? '• ' + r.notes : ''}`,
+          category: 'peso',
+          rawDate: r.date
+        });
+      }
+    });
+
+    // 2. Water Logs
+    const waterByDate: Record<string, number> = {};
+    (data.waterLogs || []).forEach(w => {
+      waterByDate[w.date] = (waterByDate[w.date] || 0) + (w.amountMl || 0);
+    });
+    Object.entries(waterByDate).forEach(([d, ml]) => {
+      if (ml >= 1000) {
+        events.push({
+          id: `timeline_wat_${d}`,
+          date: d,
+          time: '18:00',
+          icon: '💧',
+          title: 'Registro de Hidratación',
+          subtitle: `${(ml / 1000).toFixed(1)} L de agua consumidos`,
+          category: 'agua',
+          rawDate: d
+        });
+      }
+    });
+
+    // 3. Sleep Records
+    (data.sleepRecords || []).forEach(s => {
+      if (s.durationMinutes > 0) {
+        events.push({
+          id: `timeline_slp_${s.id}`,
+          date: s.date,
+          time: s.wakeTime || '07:00',
+          icon: '😴',
+          title: 'Sueño registrado',
+          subtitle: `${formatMinutesToText(s.durationMinutes)} (Dormido: ${s.bedTime} → ${s.wakeTime})`,
+          category: 'sueño',
+          rawDate: s.date
+        });
+      }
+    });
+
+    // 4. Appointments
+    (data.appointments || []).forEach(a => {
+      events.push({
+        id: `timeline_apt_${a.id}`,
+        date: a.date,
+        time: a.startTime,
+        icon: '🩺',
+        title: `Consulta Médica: ${a.title}`,
+        subtitle: `${a.specialty} ${a.doctor ? '| Dr(a). ' + a.doctor : ''} (${a.status || 'Programada'})`,
+        category: 'cita',
+        rawDate: a.date
+      });
+    });
+
+    // 5. Medical Exams
+    (data.medicalExams || []).forEach(e => {
+      events.push({
+        id: `timeline_ex_${e.id}`,
+        date: e.date,
+        time: '09:00',
+        icon: '🔬',
+        title: `Examen: ${e.name}`,
+        subtitle: `Resultado: ${e.resultSummary || e.status || 'Completado'} ${e.doctor ? '| Dr. ' + e.doctor : ''}`,
+        category: 'examen',
+        rawDate: e.date
+      });
+    });
+
+    // 6. Immunizations
+    (data.immunizations || []).forEach(v => {
+      const dateToUse = v.lastApplicationDate || (v.applicationDates && v.applicationDates[0]) || '2026-08-01';
+      events.push({
+        id: `timeline_vac_${v.id}`,
+        date: dateToUse,
+        time: '10:00',
+        icon: '💉',
+        title: `Vacuna: ${v.name}`,
+        subtitle: `Dosis ${v.dosesReceived} de ${v.dosesRequired} (${v.preventsDisease || 'Inmunización'})`,
+        category: 'vacuna',
+        rawDate: dateToUse
+      });
+    });
+
+    // 7. Activity Logs
+    (data.activityLogs || []).forEach(act => {
+      events.push({
+        id: `timeline_act_${act.id}`,
+        date: act.date,
+        time: act.time || '17:00',
+        icon: '🏃',
+        title: `Actividad: ${act.type}`,
+        subtitle: `${act.minutes ? act.minutes + ' min' : ''} ${act.steps ? act.steps + ' pasos' : ''} ${act.notes ? '• ' + act.notes : ''}`,
+        category: 'actividad',
+        rawDate: act.date
+      });
+    });
+
+    // 8. Heart Rate Logs
+    (data.heartRateLogs || []).forEach(hr => {
+      events.push({
+        id: `timeline_hr_${hr.id}`,
+        date: hr.date,
+        time: hr.time,
+        icon: '❤️',
+        title: 'Frecuencia Cardíaca',
+        subtitle: `${hr.bpm} BPM (${hr.context || 'Medición'})`,
+        category: 'corazon',
+        rawDate: hr.date
+      });
+    });
+
+    // Sort descending by date
+    return events.sort((a, b) => b.rawDate.localeCompare(a.rawDate));
   }
 };

@@ -333,24 +333,61 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
         specialDates: []
       },
       medica: {
-        healthRecords: [],
+        healthRecords: [
+          { id: 'hr_1', date: '2026-08-11', weightKg: 70.2, notes: 'Registro matutino en ayunas' },
+          { id: 'hr_2', date: '2026-08-08', weightKg: 70.7, notes: 'Medición previa' },
+          { id: 'hr_3', date: '2026-08-01', weightKg: 71.2, notes: 'Inicio de mes' }
+        ],
         nutritionRecords: [],
-        medications: [],
-        appointments: [],
-        medicalExams: [],
+        medications: [
+          { id: 'med_1', name: 'Multivitamínico', dose: '1 Cápsula', schedule: 'Cada 24 horas', timeOfDay: '08:00', startDate: '2026-08-01', status: 'active', takenDates: ['2026-08-11'] },
+          { id: 'med_2', name: 'Omega 3', dose: '1000 mg', schedule: 'Cada 24 horas', timeOfDay: '13:00', startDate: '2026-08-01', status: 'active', takenDates: ['2026-08-11'] },
+          { id: 'med_3', name: 'Magnesio', dose: '400 mg', schedule: 'Cada noche', timeOfDay: '21:00', startDate: '2026-08-01', status: 'active', takenDates: [] }
+        ],
+        appointments: [
+          { id: 'apt_1', title: 'Consulta Médica General', specialty: 'Medicina General', doctor: 'Dr. Alejandro Restrepo', institution: 'Centro Médico Colsanitas', date: '2026-08-14', startTime: '10:30', endTime: '11:00', reason: 'Chequeo anual preventivo', status: 'Programada' }
+        ],
+        medicalExams: [
+          { id: 'ex_1', name: 'Hemograma Completo', date: '2026-08-10', doctor: 'Dr. Alejandro Restrepo', resultSummary: 'Parámetros dentro de rango normal (Hemoglobina 14.5 g/dL)', status: 'Completado' },
+          { id: 'ex_2', name: 'Perfil Lipídico', date: '2026-07-05', doctor: 'Dr. Alejandro Restrepo', resultSummary: 'Colesterol Total: 185 mg/dL, HDL: 55 mg/dL (Óptimo)', status: 'Completado' },
+          { id: 'ex_3', name: 'TSH (Tiroides)', date: '2026-06-15', doctor: 'Dr. Alejandro Restrepo', resultSummary: '2.1 uIU/mL (Eutiroideo)', status: 'Completado' }
+        ],
         conditions: [],
-        immunizations: [],
+        immunizations: [
+          { id: 'vac_1', name: 'Influenza Cepa 2026', preventsDisease: 'Gripe Estacional', dosesRequired: 1, dosesReceived: 1, applicationDates: ['2026-04-10'], lastApplicationDate: '2026-04-10', frequency: 'annual', nextDoseDate: '2027-04-10' },
+          { id: 'vac_2', name: 'COVID-19 Refuerzo Bivalente', preventsDisease: 'COVID-19', dosesRequired: 3, dosesReceived: 3, applicationDates: ['2025-11-15'], lastApplicationDate: '2025-11-15', frequency: 'annual' },
+          { id: 'vac_3', name: 'Tétanos y Difteria (Td)', preventsDisease: 'Tétanos', dosesRequired: 1, dosesReceived: 0, applicationDates: [], frequency: 'custom', nextDoseDate: '2026-09-15' }
+        ],
         customBottles: [
           { id: 'def_1', name: 'Vaso', capacityMl: 250 },
           { id: 'def_2', name: 'Botella Gym', capacityMl: 500 },
           { id: 'def_3', name: 'Botella 700ml', capacityMl: 700 },
           { id: 'def_4', name: 'Termo 1L', capacityMl: 1000 }
         ],
-        waterLogs: [],
-        sleepRecords: [],
+        waterLogs: [
+          { id: 'w_1', date: '2026-08-11', time: '08:30', amountMl: 500, containerType: 'Botella Gym (500 ml)' },
+          { id: 'w_2', date: '2026-08-11', time: '11:15', amountMl: 500, containerType: 'Botella Gym (500 ml)' },
+          { id: 'w_3', date: '2026-08-11', time: '14:30', amountMl: 400, containerType: 'Vaso (400 ml)' }
+        ],
+        sleepRecords: [
+          { id: 'slp_1', date: '2026-08-11', bedTime: '23:30', wakeTime: '07:00', durationMinutes: 450, quality: 5 },
+          { id: 'slp_2', date: '2026-08-10', bedTime: '23:15', wakeTime: '06:45', durationMinutes: 450, quality: 4 },
+          { id: 'slp_3', date: '2026-08-09', bedTime: '22:50', wakeTime: '07:00', durationMinutes: 490, quality: 5 },
+          { id: 'slp_4', date: '2026-08-08', bedTime: '00:10', wakeTime: '07:30', durationMinutes: 440, quality: 3 }
+        ],
         napRecords: [],
-        dailyWaterTargetLiters: 2.5,
-        sleepTargetHours: 8.0
+        activityLogs: [
+          { id: 'act_1', date: '2026-08-11', time: '07:30', type: 'caminata', minutes: 35, steps: 4200, notes: 'Caminata matutina en parque' }
+        ],
+        heartRateLogs: [
+          { id: 'hr_1', date: '2026-08-11', time: '08:00', bpm: 72, context: 'reposo', notes: 'Medición matutina' },
+          { id: 'hr_2', date: '2026-08-10', time: '08:00', bpm: 74, context: 'reposo' },
+          { id: 'hr_3', date: '2026-08-09', time: '08:00', bpm: 71, context: 'reposo' }
+        ],
+        dailyWaterTargetLiters: 2.0,
+        sleepTargetHours: 8.0,
+        activityTargetMinutes: 60,
+        stepsTarget: 8000
       },
       desarrolloPersonal: {
         journalEntries: [],

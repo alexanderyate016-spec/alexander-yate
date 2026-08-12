@@ -11,7 +11,9 @@ import {
   HealthCondition,
   WaterIntakeLog,
   SleepRecord,
-  NapRecord
+  NapRecord,
+  ActivityLog,
+  HeartRateLog
 } from '../../types/store';
 
 // Helper to compute duration in minutes handling midnight crossing
@@ -382,6 +384,68 @@ export const MedicalStore = {
   deleteCondition(id: string) {
     storeInstance.updateState(draft => {
       draft.offices.medica.conditions = (draft.offices.medica.conditions || []).filter(c => c.id !== id);
+    });
+  },
+
+  // TOGGLE MEDICATION TAKEN TODAY
+  toggleMedicationTaken(id: string, dateStr: string) {
+    storeInstance.updateState(draft => {
+      const idx = (draft.offices.medica.medications || []).findIndex(m => m.id === id);
+      if (idx !== -1) {
+        const med = draft.offices.medica.medications[idx];
+        if (!med.takenDates) med.takenDates = [];
+        if (med.takenDates.includes(dateStr)) {
+          med.takenDates = med.takenDates.filter(d => d !== dateStr);
+        } else {
+          med.takenDates.push(dateStr);
+        }
+      }
+    });
+  },
+
+  // ACTIVITY LOGS
+  addActivityLog(log: Omit<ActivityLog, 'id'>) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.activityLogs) draft.offices.medica.activityLogs = [];
+      const id = 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const newLog: ActivityLog = { ...log, id };
+      draft.offices.medica.activityLogs.push(newLog);
+    });
+  },
+
+  deleteActivityLog(id: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.activityLogs) return;
+      draft.offices.medica.activityLogs = draft.offices.medica.activityLogs.filter(a => a.id !== id);
+    });
+  },
+
+  setActivityTargetMinutes(mins: number) {
+    storeInstance.updateState(draft => {
+      draft.offices.medica.activityTargetMinutes = mins;
+    });
+  },
+
+  setStepsTarget(steps: number) {
+    storeInstance.updateState(draft => {
+      draft.offices.medica.stepsTarget = steps;
+    });
+  },
+
+  // HEART RATE LOGS
+  addHeartRateLog(log: Omit<HeartRateLog, 'id'>) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.heartRateLogs) draft.offices.medica.heartRateLogs = [];
+      const id = 'hr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const newLog: HeartRateLog = { ...log, id };
+      draft.offices.medica.heartRateLogs.push(newLog);
+    });
+  },
+
+  deleteHeartRateLog(id: string) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.medica.heartRateLogs) return;
+      draft.offices.medica.heartRateLogs = draft.offices.medica.heartRateLogs.filter(h => h.id !== id);
     });
   }
 };
