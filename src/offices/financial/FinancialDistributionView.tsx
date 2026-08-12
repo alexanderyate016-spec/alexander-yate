@@ -5,25 +5,11 @@ import {
   FinancialFundPlan,
   FinancialCategoryPlan,
   FinancialSubcategoryPlan,
-  CurrencyCode,
-  FinancialTransaction
+  CurrencyCode
 } from '../../types/store';
 import { FinancialStore } from './FinancialStore';
 import { FinancialCalculations } from './FinancialCalculations';
-import { getTodayDateString } from '../../utils/dates';
 import { formatCurrency } from '../../utils/formatters';
-import {
-  GlassPanel,
-  ExecutiveCard,
-  ExecutiveButton,
-  ExecutiveMetricCard,
-  ExecutiveBadge,
-  ExecutiveEmptyState,
-  ExecutiveInput,
-  ExecutiveSelect,
-  ExecutiveForm,
-  ExecutiveModal
-} from '../../components/executive';
 import {
   PieChart,
   Plus,
@@ -34,14 +20,18 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sparkles,
-  RefreshCw,
   Layers,
   DollarSign,
   Info,
-  TrendingDown,
-  TrendingUp,
+  ArrowRightLeft,
+  Zap,
   ShieldAlert,
-  X
+  X,
+  Wallet,
+  TrendingDown,
+  Percent,
+  Sliders,
+  Check
 } from 'lucide-react';
 
 interface Props {
@@ -50,24 +40,51 @@ interface Props {
   triggerToast: (msg: string, type?: 'success' | 'info' | 'warning' | 'danger' | 'error') => void;
 }
 
-// Utility component for progress bar
-function AnimatedProgressBar({ percent, color = 'emerald', height = 'h-2' }: { percent: number; color?: string; height?: string }) {
+// Visual color maps for categories
+const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; fill: string; ring: string }> = {
+  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', fill: '#10b981', ring: 'ring-emerald-500/40' },
+  purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', fill: '#a855f7', ring: 'ring-purple-500/40' },
+  amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', fill: '#f59e0b', ring: 'ring-amber-500/40' },
+  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', fill: '#3b82f6', ring: 'ring-blue-500/40' },
+  rose: { bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-400', fill: '#f43f5e', ring: 'ring-rose-500/40' },
+  indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', text: 'text-indigo-400', fill: '#6366f1', ring: 'ring-indigo-500/40' },
+  teal: { bg: 'bg-teal-500/10', border: 'border-teal-500/30', text: 'text-teal-400', fill: '#14b8a6', ring: 'ring-teal-500/40' },
+  cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-400', fill: '#06b6d4', ring: 'ring-cyan-500/40' }
+};
+
+const PALETTE_COLORS = ['emerald', 'purple', 'amber', 'blue', 'rose', 'indigo', 'teal', 'cyan'];
+
+function getCategoryTheme(colorName?: string, index: number = 0) {
+  const name = colorName && COLOR_CLASSES[colorName] ? colorName : PALETTE_COLORS[index % PALETTE_COLORS.length];
+  return { name, ...COLOR_CLASSES[name] };
+}
+
+// Progress bar component
+function AnimatedProgressBar({ percent, colorName = 'emerald', height = 'h-2.5' }: { percent: number; colorName?: string; height?: string }) {
   const clamped = Math.min(Math.max(percent, 0), 100);
-  const colorClasses: Record<string, string> = {
-    emerald: 'bg-gradient-to-r from-emerald-500 to-teal-400',
-    amber: 'bg-gradient-to-r from-amber-500 to-yellow-400',
-    rose: 'bg-gradient-to-r from-rose-500 to-red-400',
-    purple: 'bg-gradient-to-r from-purple-500 to-indigo-400',
-    blue: 'bg-gradient-to-r from-blue-500 to-cyan-400'
-  };
+  let barColorClass = 'bg-emerald-500';
+
+  if (percent > 100) {
+    barColorClass = 'bg-rose-500';
+  } else if (percent >= 80) {
+    barColorClass = 'bg-amber-500';
+  } else if (colorName === 'purple') {
+    barColorClass = 'bg-purple-500';
+  } else if (colorName === 'blue') {
+    barColorClass = 'bg-blue-500';
+  } else if (colorName === 'indigo') {
+    barColorClass = 'bg-indigo-500';
+  } else if (colorName === 'rose') {
+    barColorClass = 'bg-rose-500';
+  }
 
   return (
-    <div className={`w-full bg-slate-50 rounded-full overflow-hidden ${height} p-0.5 border border-slate-200 relative`}>
+    <div className={`w-full bg-slate-800/80 rounded-full overflow-hidden ${height} p-0.5 border border-slate-700/80 relative shadow-inner`}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={`h-full rounded-full ${colorClasses[color] || colorClasses.emerald} shadow-sm`}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className={`h-full rounded-full ${barColorClass} shadow-md`}
       />
     </div>
   );
@@ -84,47 +101,17 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
   const currency: CurrencyCode = plan.currency || 'COP';
   const mode = plan.incomeBaseMode || 'calculated';
 
-  // Calculate actual current month income (external_income)
+  // Calculate actual current month income
   const actualIncome = useMemo(() => {
     return FinancialCalculations.calculateActualMonthlyIncome(data.transactions || [], currency, todayStr);
   }, [data.transactions, currency, todayStr]);
 
-  // Determine base income used for plan calculations (NO HARDCODED DEFAULTS)
+  // Base income used for budget calculations
   const baseIncome = mode === 'manual'
     ? (plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : 0)
     : actualIncome;
 
-  // Expanded states
-  const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({
-    fund_necesarios: true,
-    fund_personales: true,
-    fund_ahorro: true
-  });
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-
-  // Modals state
-  const [isFundModalOpen, setIsFundModalOpen] = useState(false);
-  const [editingFund, setEditingFund] = useState<FinancialFundPlan | null>(null);
-  const [fundName, setFundName] = useState('');
-  const [fundPct, setFundPct] = useState<number | ''>(50);
-  const [fundColor, setFundColor] = useState('emerald');
-  const [fundEmoji, setFundEmoji] = useState('🏠');
-
-  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
-  const [targetFundForCat, setTargetFundForCat] = useState<string | null>(null);
-  const [editingCat, setEditingCat] = useState<{ fundId: string; cat: FinancialCategoryPlan } | null>(null);
-  const [catName, setCatName] = useState('');
-  const [catPct, setCatPct] = useState<number | ''>(50);
-  const [catEmoji, setCatEmoji] = useState('🚗');
-
-  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
-  const [targetCatForSub, setTargetCatForSub] = useState<{ fundId: string; catId: string } | null>(null);
-  const [editingSub, setEditingSub] = useState<{ fundId: string; catId: string; sub: FinancialSubcategoryPlan } | null>(null);
-  const [subName, setSubName] = useState('');
-  const [subPct, setSubPct] = useState<number | ''>(50);
-  const [subEmoji, setSubEmoji] = useState('⛽');
-
-  // Filter current month expense transactions
+  // Current month expenses filter
   const currentMonthExpenses = useMemo(() => {
     const currentMonthPrefix = todayStr.substring(0, 7);
     return (data.transactions || []).filter(
@@ -134,9 +121,9 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     );
   }, [data.transactions, currency, todayStr]);
 
-  // Compute spent amount for a specific category or subcategory
-  const calculateSpentForCategoryOrSub = (fundId: string, catId: string, catName: string, subName?: string) => {
-    const cNameLower = catName.toLowerCase();
+  // Calculate spent amount for a specific category / fund or subcategory
+  const calculateSpentForCategoryOrSub = (fundId: string, catId?: string, catName?: string, subName?: string) => {
+    const cNameLower = catName ? catName.toLowerCase() : null;
     const sNameLower = subName ? subName.toLowerCase() : null;
 
     return currentMonthExpenses.reduce((sum, t) => {
@@ -147,8 +134,10 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
           let match = false;
           if (sNameLower) {
             if ((s.description || '').toLowerCase().includes(sNameLower) || (s.categoryName || '').toLowerCase().includes(sNameLower)) match = true;
+          } else if (catId && cNameLower) {
+            if (s.budgetCategoryId === catId || (s.categoryName || '').toLowerCase() === cNameLower) match = true;
           } else {
-            if (s.budgetCategoryId === catId || (s.categoryName || '').toLowerCase() === cNameLower || !s.budgetCategoryId) match = true;
+            match = true;
           }
           return match ? sAcc + s.amount : sAcc;
         }, 0);
@@ -164,7 +153,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         ) {
           isMatch = true;
         }
-      } else {
+      } else if (catId && cNameLower) {
         if (t.budgetId) {
           if (t.budgetId === fundId && (t.budgetCategoryId === catId || t.categoryId === catId || (t.description || '').toLowerCase().includes(cNameLower))) {
             isMatch = true;
@@ -174,47 +163,106 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
             isMatch = true;
           }
         }
+      } else {
+        if (t.budgetId === fundId || (t.description || '').toLowerCase().includes((fundId || '').toLowerCase())) {
+          isMatch = true;
+        }
       }
 
       return isMatch ? sum + t.amount : sum;
     }, 0);
   };
 
-  // Fund validation sum
+  // Category Total Percentage
   const totalFundsPct = useMemo(() => {
     return (plan.funds || []).reduce((acc, f) => acc + (f.percentage || 0), 0);
   }, [plan.funds]);
 
-  // Toggle helpers
-  const toggleFundExpand = (fundId: string) => {
-    setExpandedFunds(prev => ({ ...prev, [fundId]: !prev[fundId] }));
-  };
+  // Overall Financial Stats for Budget
+  const totalAllocatedMoney = baseIncome * (totalFundsPct / 100);
 
-  const toggleCategoryExpand = (catId: string) => {
-    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
-  };
+  const totalSpentAllCategories = useMemo(() => {
+    return (plan.funds || []).reduce((acc, fund) => {
+      return acc + calculateSpentForCategoryOrSub(fund.id);
+    }, 0);
+  }, [plan.funds, currentMonthExpenses]);
 
-  // Fund Modal Handlers
-  const handleOpenAddFund = () => {
+  const totalAvailableMoney = totalAllocatedMoney - totalSpentAllCategories;
+
+  // Day of month pace metric
+  const dayOfMonth = useMemo(() => {
+    const d = new Date(todayStr + 'T12:00:00');
+    return isNaN(d.getDate()) ? 15 : d.getDate();
+  }, [todayStr]);
+
+  const daysInMonth = useMemo(() => {
+    const parts = todayStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      return new Date(year, month, 0).getDate();
+    }
+    return 30;
+  }, [todayStr]);
+
+  const monthElapsedPct = (dayOfMonth / daysInMonth) * 100;
+
+  // State for expands
+  const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({});
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+
+  // Modals state
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingFund, setEditingFund] = useState<FinancialFundPlan | null>(null);
+  const [fundName, setFundName] = useState('');
+  const [fundPct, setFundPct] = useState<number | ''>(15);
+  const [fundColor, setFundColor] = useState('emerald');
+  const [fundEmoji, setFundEmoji] = useState('🎓');
+
+  // Subcategory modal
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const [targetFundForSub, setTargetFundForSub] = useState<string | null>(null);
+  const [editingSub, setEditingSub] = useState<{ fundId: string; sub: FinancialCategoryPlan } | null>(null);
+  const [subName, setSubName] = useState('');
+  const [subEmoji, setSubEmoji] = useState('📚');
+  const [subPct, setSubPct] = useState<number | ''>(0);
+  const [useSubPct, setUseSubPct] = useState(false);
+
+  // Quick Expense Registration Modal
+  const [isQuickExpenseOpen, setIsQuickExpenseOpen] = useState(false);
+  const [expenseAmount, setExpenseAmount] = useState<number | ''>('');
+  const [expenseFundId, setExpenseFundId] = useState<string>('');
+  const [expenseSubId, setExpenseSubId] = useState<string>('');
+  const [expenseDescription, setExpenseDescription] = useState<string>('');
+  const [expenseAccountId, setExpenseAccountId] = useState<string>(data.accounts?.[0]?.id || '');
+
+  // Rebalance / Redistribution Modal
+  const [isRedistributeModalOpen, setIsRedistributeModalOpen] = useState(false);
+  const [redistributeIncreaseId, setRedistributeIncreaseId] = useState<string>('');
+  const [redistributeDecreaseId, setRedistributeDecreaseId] = useState<string>('');
+  const [redistributeAmountPct, setRedistributeAmountPct] = useState<number | ''>(5);
+
+  // Handlers for Category (Fund) Modal
+  const handleOpenAddCategory = () => {
     setEditingFund(null);
     setFundName('');
-    const remaining = Math.max(0, 100 - totalFundsPct);
-    setFundPct(remaining > 0 ? remaining : 10);
-    setFundColor('emerald');
-    setFundEmoji('💰');
-    setIsFundModalOpen(true);
+    const rem = Math.max(0, 100 - totalFundsPct);
+    setFundPct(rem > 0 ? rem : 10);
+    setFundColor(PALETTE_COLORS[(plan.funds.length) % PALETTE_COLORS.length]);
+    setFundEmoji('🏷️');
+    setIsCategoryModalOpen(true);
   };
 
-  const handleOpenEditFund = (fund: FinancialFundPlan) => {
+  const handleOpenEditCategory = (fund: FinancialFundPlan) => {
     setEditingFund(fund);
     setFundName(fund.name);
     setFundPct(fund.percentage);
     setFundColor(fund.color || 'emerald');
     setFundEmoji(fund.emoji || '🏠');
-    setIsFundModalOpen(true);
+    setIsCategoryModalOpen(true);
   };
 
-  const handleSaveFund = (e: React.FormEvent) => {
+  const handleSaveCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fundName.trim() || fundPct === '') return;
 
@@ -225,7 +273,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         color: fundColor,
         emoji: fundEmoji
       });
-      triggerToast('Fondo principal actualizado', 'success');
+      triggerToast('Categoría actualizada', 'success');
     } else {
       FinancialStore.addFund({
         name: fundName.trim(),
@@ -233,96 +281,49 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         color: fundColor,
         emoji: fundEmoji
       });
-      triggerToast('Fondo principal creado', 'success');
+      triggerToast('Categoría creada exitosamente', 'success');
     }
-    setIsFundModalOpen(false);
+    setIsCategoryModalOpen(false);
   };
 
-  // Category Modal Handlers
-  const handleOpenAddCat = (fundId: string) => {
-    const fund = plan.funds.find(f => f.id === fundId);
-    if (!fund) return;
-    setTargetFundForCat(fundId);
-    setEditingCat(null);
-    setCatName('');
-    const sumCatPct = (fund.categories || []).reduce((sum, c) => sum + (c.percentage || 0), 0);
-    const remCat = Math.max(0, 100 - sumCatPct);
-    setCatPct(remCat > 0 ? remCat : 25);
-    setCatEmoji('📁');
-    setIsCatModalOpen(true);
-  };
-
-  const handleOpenEditCat = (fundId: string, cat: FinancialCategoryPlan) => {
-    setTargetFundForCat(fundId);
-    setEditingCat({ fundId, cat });
-    setCatName(cat.name);
-    setCatPct(cat.percentage);
-    setCatEmoji(cat.emoji || '📁');
-    setIsCatModalOpen(true);
-  };
-
-  const handleSaveCat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!catName.trim() || catPct === '' || !targetFundForCat) return;
-
-    if (editingCat) {
-      FinancialStore.updateCategoryInFund(editingCat.fundId, editingCat.cat.id, {
-        name: catName.trim(),
-        percentage: Number(catPct),
-        emoji: catEmoji
-      });
-      triggerToast('Categoría actualizada', 'success');
-    } else {
-      FinancialStore.addCategoryToFund(targetFundForCat, {
-        name: catName.trim(),
-        percentage: Number(catPct),
-        emoji: catEmoji
-      });
-      triggerToast('Categoría agregada al fondo', 'success');
-    }
-    setIsCatModalOpen(false);
-  };
-
-  // Subcategory Modal Handlers
-  const handleOpenAddSub = (fundId: string, catId: string) => {
-    const fund = plan.funds.find(f => f.id === fundId);
-    const cat = fund?.categories.find(c => c.id === catId);
-    if (!cat) return;
-
-    setTargetCatForSub({ fundId, catId });
+  // Handlers for Subcategory Modal
+  const handleOpenAddSub = (fundId: string) => {
+    setTargetFundForSub(fundId);
     setEditingSub(null);
     setSubName('');
-    const sumSubPct = (cat.subcategories || []).reduce((sum, s) => sum + (s.percentage || 0), 0);
-    const remSub = Math.max(0, 100 - sumSubPct);
-    setSubPct(remSub > 0 ? remSub : 50);
     setSubEmoji('🔖');
+    setSubPct(0);
+    setUseSubPct(false);
     setIsSubModalOpen(true);
   };
 
-  const handleOpenEditSub = (fundId: string, catId: string, sub: FinancialSubcategoryPlan) => {
-    setTargetCatForSub({ fundId, catId });
-    setEditingSub({ fundId, catId, sub });
+  const handleOpenEditSub = (fundId: string, sub: FinancialCategoryPlan) => {
+    setTargetFundForSub(fundId);
+    setEditingSub({ fundId, sub });
     setSubName(sub.name);
-    setSubPct(sub.percentage);
     setSubEmoji(sub.emoji || '🔖');
+    setSubPct(sub.percentage || 0);
+    setUseSubPct(Boolean(sub.percentage && sub.percentage > 0));
     setIsSubModalOpen(true);
   };
 
   const handleSaveSub = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subName.trim() || subPct === '' || !targetCatForSub) return;
+    if (!subName.trim() || !targetFundForSub) return;
+
+    const finalPct = useSubPct && subPct !== '' ? Number(subPct) : 0;
 
     if (editingSub) {
-      FinancialStore.updateSubcategoryInCategory(editingSub.fundId, editingSub.catId, editingSub.sub.id, {
+      FinancialStore.updateCategoryInFund(editingSub.fundId, editingSub.sub.id, {
         name: subName.trim(),
-        percentage: Number(subPct),
+        percentage: finalPct,
         emoji: subEmoji
       });
       triggerToast('Subcategoría actualizada', 'success');
     } else {
-      FinancialStore.addSubcategoryToCategory(targetCatForSub.fundId, targetCatForSub.catId, {
+      FinancialStore.addCategoryToFund(targetFundForSub, {
         name: subName.trim(),
-        percentage: Number(subPct),
+        percentage: finalPct,
         emoji: subEmoji
       });
       triggerToast('Subcategoría agregada', 'success');
@@ -330,757 +331,1207 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     setIsSubModalOpen(false);
   };
 
+  // Quick Expense Handler
+  const handleOpenQuickExpense = (initialFundId?: string) => {
+    const selected = initialFundId || plan.funds?.[0]?.id || '';
+    setExpenseFundId(selected);
+    setExpenseSubId('');
+    setExpenseAmount('');
+    setExpenseDescription('');
+    setExpenseAccountId(data.accounts?.[0]?.id || '');
+    setIsQuickExpenseOpen(true);
+  };
+
+  const handleSaveQuickExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseAmount || Number(expenseAmount) <= 0 || !expenseFundId) {
+      triggerToast('Por favor ingresa un monto válido y selecciona categoría', 'warning');
+      return;
+    }
+
+    const fund = plan.funds.find(f => f.id === expenseFundId);
+    const sub = fund?.categories.find(c => c.id === expenseSubId);
+
+    const txDesc = expenseDescription.trim() || `${fund?.emoji || '💰'} ${fund?.name || 'Gasto'}${sub ? ' - ' + sub.name : ''}`;
+
+    FinancialStore.addTransaction({
+      date: todayStr,
+      description: txDesc,
+      amount: Number(expenseAmount),
+      nature: 'external_expense',
+      accountId: expenseAccountId || data.accounts?.[0]?.id || 'acc_default',
+      currency: currency,
+      budgetId: expenseFundId,
+      budgetCategoryId: expenseSubId || undefined,
+      categoryId: expenseFundId
+    });
+
+    triggerToast(`Gasto de ${formatCurrency(Number(expenseAmount), currency)} registrado en ${fund?.name || 'Presupuesto'}`, 'success');
+    setIsQuickExpenseOpen(false);
+  };
+
+  // Redistribution / Rebalance Handler
+  const handleOpenRedistribute = () => {
+    if (plan.funds.length < 2) {
+      triggerToast('Debes tener al menos 2 categorías para redistribuir', 'warning');
+      return;
+    }
+    setRedistributeIncreaseId(plan.funds[0].id);
+    setRedistributeDecreaseId(plan.funds[1].id);
+    setRedistributeAmountPct(5);
+    setIsRedistributeModalOpen(true);
+  };
+
+  const handleApplyRedistribution = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!redistributeIncreaseId || !redistributeDecreaseId || !redistributeAmountPct) return;
+    if (redistributeIncreaseId === redistributeDecreaseId) {
+      triggerToast('Selecciona dos categorías distintas', 'warning');
+      return;
+    }
+
+    const decFund = plan.funds.find(f => f.id === redistributeDecreaseId);
+    const incFund = plan.funds.find(f => f.id === redistributeIncreaseId);
+    if (!decFund || !incFund) return;
+
+    const amount = Number(redistributeAmountPct);
+    if (amount <= 0 || amount > decFund.percentage) {
+      triggerToast(`El porcentaje a reducir no puede exceder el ${decFund.percentage}% de ${decFund.name}`, 'warning');
+      return;
+    }
+
+    FinancialStore.rebalanceFunds(redistributeDecreaseId, redistributeIncreaseId, amount);
+    triggerToast(`Redistribuido ${amount}% de ${decFund.name} a ${incFund.name}`, 'success');
+    setIsRedistributeModalOpen(false);
+  };
+
+  // Toggle category expand
+  const toggleFundExpand = (fundId: string) => {
+    setExpandedFunds(prev => ({ ...prev, [fundId]: !prev[fundId] }));
+  };
+
+  // Donut chart arc generation
+  const donutArcs = useMemo(() => {
+    if (!plan.funds || plan.funds.length === 0) return [];
+    let currentAngle = 0;
+    const total = totalFundsPct > 0 ? totalFundsPct : 100;
+
+    return plan.funds.map((fund, idx) => {
+      const fundPct = fund.percentage || 0;
+      const angle = (fundPct / total) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+      currentAngle = endAngle;
+
+      const spent = calculateSpentForCategoryOrSub(fund.id);
+      const budget = baseIncome * (fundPct / 100);
+      const theme = getCategoryTheme(fund.color, idx);
+
+      return {
+        fund,
+        startAngle,
+        endAngle,
+        angle,
+        spent,
+        budget,
+        theme
+      };
+    });
+  }, [plan.funds, totalFundsPct, baseIncome, currentMonthExpenses]);
+
   return (
-    <div className="space-y-6">
-      {/* HEADER & LIVE VALIDATION PANEL */}
-      <GlassPanel accentColor="emerald" padding="md" className="relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-400 border border-emerald-200">
-                <PieChart className="w-5 h-5" />
-              </span>
-              <h3 className="text-xl font-serif font-bold text-white">
-                Plan de Distribución Financiera
-              </h3>
+    <div className="space-y-6 font-sans">
+      {/* 1. HEADER & HERO RESUMEN DE PRESUPUESTO */}
+      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-slate-800 space-y-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold">
+              <PieChart className="w-3.5 h-3.5" />
+              <span>Control de Presupuesto Mensual</span>
             </div>
-            <p className="text-xs text-slate-700">
-              Sistema jerárquico de planificación de ingresos a 3 niveles (Fondos Principales → Categorías → Subcategorías)
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              Gestión Dinámica de Dinero
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+              Organiza tus ingresos en categorías personalizadas, visualiza gastos en tiempo real y redistribuye tu presupuesto al instante.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <ExecutiveButton
-              variant="outline"
-              size="sm"
-              icon={<RefreshCw className="w-3.5 h-3.5 text-slate-700" />}
-              onClick={() => {
-                FinancialStore.resetDistributionPlanToDefault();
-                triggerToast('Plan restablecido al estándar 50/30/20', 'info');
-              }}
+          {/* TOP QUICK ACTION BUTTONS */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => handleOpenQuickExpense()}
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
-              Restablecer (50/30/20)
-            </ExecutiveButton>
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>＋ Registrar gasto</span>
+            </button>
 
-            <ExecutiveButton
-              variant="primary"
-              accentColor="emerald"
-              size="sm"
-              icon={<Plus className="w-4 h-4" />}
-              onClick={handleOpenAddFund}
+            <button
+              onClick={handleOpenRedistribute}
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-indigo-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+              title="Redistribuir porcentajes entre categorías"
             >
-              Nuevo Fondo Principal
-            </ExecutiveButton>
+              <ArrowRightLeft className="w-4 h-4 text-indigo-400" />
+              <span className="hidden sm:inline">Redistribuir</span>
+            </button>
+
+            <button
+              onClick={handleOpenAddCategory}
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4 text-slate-300" />
+              <span className="hidden sm:inline">Nueva Categoría</span>
+            </button>
           </div>
         </div>
 
-        {/* BASE INCOME CONFIG & VALIDATION STATUS BAR */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 items-center">
-          {/* BASE INCOME SELECTOR */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] uppercase font-bold text-slate-700 block">
-                Origen de la Base de Ingresos
-              </label>
-              <ExecutiveBadge variant="subtle" accentColor={mode === 'manual' ? 'amber' : 'emerald'}>
-                {mode === 'manual' ? 'Modo Manual' : 'Modo Automático'}
-              </ExecutiveBadge>
+        {/* METRICS ROW (5 INDICADORES CLAVE) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {/* Ingresos del Periodo */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1 relative group">
+            <div className="flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <span>Ingresos</span>
+              <button
+                onClick={() => {
+                  const newMode = mode === 'manual' ? 'calculated' : 'manual';
+                  FinancialStore.setDistributionIncomeBaseMode(newMode);
+                  triggerToast(`Modo cambiado a: ${newMode === 'manual' ? 'Manual' : 'Calculado desde ingresos'}`, 'info');
+                }}
+                className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all"
+                title="Cambiar origen de ingresos (Manual / Calculado)"
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+              </button>
             </div>
-
-            <select
-              value={mode}
-              onChange={e => {
-                const newMode = e.target.value as 'manual' | 'calculated';
-                FinancialStore.setDistributionIncomeBaseMode(newMode);
-                triggerToast(`Origen de base cambiado a: ${newMode === 'manual' ? 'Manual' : 'Calculado desde movimientos'}`, 'info');
-              }}
-              className="w-full bg-white text-xs font-semibold text-slate-900 p-2 rounded-lg border border-slate-200 focus:border-emerald-400 focus:outline-none"
-            >
-              <option value="calculated">Calculada automáticamente desde movimientos</option>
-              <option value="manual">Manual (Ingresar o modificar cifra)</option>
-            </select>
 
             {mode === 'manual' ? (
-              <div className="pt-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-amber-600">$</span>
-                  <input
-                    type="number"
-                    value={plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : ''}
-                    onChange={e => {
-                      const val = e.target.value === '' ? undefined : Number(e.target.value);
-                      FinancialStore.setDistributionBaseIncome(val);
-                    }}
-                    className="w-full bg-transparent text-slate-900 font-serif font-bold text-base focus:outline-none border-b border-amber-300 focus:border-amber-500"
-                    placeholder="Ingresa tu base de ingresos..."
-                  />
-                  {plan.monthlyBaseIncome !== undefined && (
-                    <button
-                      title="Eliminar cifra manual"
-                      onClick={() => {
-                        FinancialStore.setDistributionBaseIncome(undefined);
-                        triggerToast('Cifra manual eliminada', 'info');
-                      }}
-                      className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-500 block mt-1">
-                  Ingresado libremente. Puedes editarlo o eliminarlo cuando desees.
-                </span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-xs text-amber-400 font-bold">$</span>
+                <input
+                  type="number"
+                  value={plan.monthlyBaseIncome !== undefined ? plan.monthlyBaseIncome : ''}
+                  onChange={e => {
+                    const val = e.target.value === '' ? undefined : Number(e.target.value);
+                    FinancialStore.setDistributionBaseIncome(val);
+                  }}
+                  className="w-full bg-transparent text-lg font-black text-white focus:outline-none border-b border-amber-400/50 focus:border-amber-400 font-mono"
+                  placeholder="0"
+                />
               </div>
             ) : (
-              <div className="pt-1 flex justify-between items-center">
-                <div>
-                  <span className="text-xs text-slate-500 block">Base del Plan (Movimientos):</span>
-                  <strong className="text-base font-serif font-bold text-emerald-400">
-                    {formatCurrency(actualIncome, currency)}
-                  </strong>
-                </div>
-                <span className="text-[10px] text-slate-500 max-w-[130px] text-right">
-                  Suma de todos los ingresos externos en el período.
-                </span>
+              <div className="text-lg font-black text-emerald-400 font-mono mt-0.5 truncate">
+                {formatCurrency(baseIncome, currency)}
               </div>
             )}
+
+            <div className="text-[10px] text-slate-400 flex items-center gap-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${mode === 'manual' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+              <span>{mode === 'manual' ? 'Base Manual' : 'Calculado de Ingresos'}</span>
+            </div>
           </div>
 
-          {/* FUND TOTAL VALIDATION BAR */}
-          <div className="md:col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-700 font-medium flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-emerald-400" />
-                Suma de Fondos Principales (Nivel 1):
+          {/* % Total Distribuido */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Distribuido</span>
+            <div className="text-lg font-black font-mono mt-0.5 flex items-baseline gap-1">
+              <span className={totalFundsPct === 100 ? 'text-emerald-400' : totalFundsPct < 100 ? 'text-amber-400' : 'text-rose-400'}>
+                {totalFundsPct}%
               </span>
-              <div className="flex items-center gap-2">
-                {totalFundsPct === 100 ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-500/40 text-xs font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 100% Asignado (Perfecto)
-                  </span>
-                ) : totalFundsPct < 100 ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> {totalFundsPct}% Asignado (Falta {100 - totalFundsPct}%)
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> {totalFundsPct}% Asignado (Exceso {totalFundsPct - 100}%)
-                  </span>
-                )}
-              </div>
+              <span className="text-xs text-slate-400 font-normal">/ 100%</span>
             </div>
+            <div className="text-[10px] font-medium truncate">
+              {totalFundsPct === 100 ? (
+                <span className="text-emerald-400 font-semibold">✓ 100% Completo</span>
+              ) : totalFundsPct < 100 ? (
+                <span className="text-amber-400 font-semibold">⚠️ Falta {100 - totalFundsPct}%</span>
+              ) : (
+                <span className="text-rose-400 font-semibold">🚨 Excede {totalFundsPct - 100}%</span>
+              )}
+            </div>
+          </div>
 
-            <AnimatedProgressBar
-              percent={totalFundsPct}
-              color={totalFundsPct === 100 ? 'emerald' : totalFundsPct < 100 ? 'amber' : 'rose'}
-              height="h-3"
-            />
+          {/* Dinero Total Asignado */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Asignado</span>
+            <div className="text-lg font-black text-indigo-300 font-mono mt-0.5 truncate">
+              {formatCurrency(totalAllocatedMoney, currency)}
+            </div>
+            <div className="text-[10px] text-slate-400 truncate">
+              Monto distribuido
+            </div>
+          </div>
 
-            <div className="flex justify-between text-[11px] text-slate-500 font-mono">
-              <span>Total Planificado: <strong className="text-white">{formatCurrency(baseIncome * (totalFundsPct / 100), currency)}</strong></span>
-              <span>
-                {totalFundsPct < 100 ? `Disponible por asignar: ${formatCurrency(baseIncome * ((100 - totalFundsPct) / 100), currency)}` :
-                 totalFundsPct > 100 ? `Sobre-asignado por: ${formatCurrency(baseIncome * ((totalFundsPct - 100) / 100), currency)}` :
-                 'Distribución Completa 100%'}
-              </span>
+          {/* Dinero Gastado */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Gastado (Mes)</span>
+            <div className={`text-lg font-black font-mono mt-0.5 truncate ${totalSpentAllCategories > totalAllocatedMoney ? 'text-rose-400' : 'text-amber-300'}`}>
+              {formatCurrency(totalSpentAllCategories, currency)}
+            </div>
+            <div className="text-[10px] text-slate-400 truncate">
+              {totalAllocatedMoney > 0 ? `${Math.round((totalSpentAllCategories / totalAllocatedMoney) * 100)}% consumido` : '0%'}
+            </div>
+          </div>
+
+          {/* Dinero Disponible */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1 col-span-2 sm:col-span-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Disponible</span>
+            <div className={`text-lg font-black font-mono mt-0.5 truncate ${totalAvailableMoney < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {formatCurrency(totalAvailableMoney, currency)}
+            </div>
+            <div className="text-[10px] text-slate-400 truncate">
+              {totalAvailableMoney >= 0 ? 'Saldo para gastar' : 'Presupuesto superado'}
             </div>
           </div>
         </div>
-      </GlassPanel>
 
-      {/* LIST OF MAIN FUNDS (LEVEL 1) */}
-      {(!plan.funds || plan.funds.length === 0) ? (
-        <ExecutiveEmptyState
-          icon={<PieChart className="w-8 h-8 text-emerald-400" />}
-          title="Sin Fondos Principales Definidos"
-          description="Crea tu primer fondo principal (Ej: Gastos Necesarios 50%, Gastos Personales 30%, Ahorro 20%) para comenzar la planificación."
-          accentColor="emerald"
-          actionLabel="Crear Primer Fondo"
-          onAction={handleOpenAddFund}
-        />
-      ) : (
-        <div className="space-y-6">
-          {plan.funds.map(fund => {
-            const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
+        {/* VALIDATION WARNING BANNER IF % != 100 */}
+        {totalFundsPct !== 100 && (
+          <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-medium ${
+            totalFundsPct < 100
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className={`w-5 h-5 shrink-0 ${totalFundsPct < 100 ? 'text-amber-400' : 'text-rose-400'}`} />
+              <div>
+                <strong className="text-white block font-bold">
+                  {totalFundsPct < 100
+                    ? `Tienes un ${100 - totalFundsPct}% sin asignar (${formatCurrency(baseIncome * ((100 - totalFundsPct) / 100), currency)})`
+                    : `Has asignado un ${totalFundsPct - 100}% más de lo disponible (${formatCurrency(baseIncome * ((totalFundsPct - 100) / 100), currency)})`}
+                </strong>
+                <span className="text-slate-300 text-[11px]">
+                  Asegúrate de que la suma total de las categorías sea exactamente 100% para un balance adecuado.
+                </span>
+              </div>
+            </div>
 
-            // Compute categories for this fund
-            const categories = fund.categories || [];
-            const catPctSum = categories.reduce((s, c) => s + (c.percentage || 0), 0);
+            <button
+              onClick={handleOpenRedistribute}
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shrink-0 transition-all border border-white/20"
+            >
+              Ajustar Categorías
+            </button>
+          </div>
+        )}
+      </div>
 
-            // Compute total spent across categories in this fund
-            let fundSpent = 0;
-            categories.forEach(cat => {
-              const catSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name);
-              fundSpent += catSpent;
-            });
+      {/* 2. GRÁFICO CIRCULAR DE DISTRIBUCIÓN & RESUMEN VISUAL */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-indigo-600" />
+              Distribución Visual del Presupuesto
+            </h2>
+            <p className="text-xs text-slate-500">
+              Proporción de dinero asignada a cada categoría según tus ingresos ({formatCurrency(baseIncome, currency)})
+            </p>
+          </div>
 
-            const fundRemaining = fundTargetBudget - fundSpent;
-            const fundConsumedPct = fundTargetBudget > 0 ? (fundSpent / fundTargetBudget) * 100 : 0;
-            const isExpanded = Boolean(expandedFunds[fund.id]);
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+            {plan.funds.length} Categorías Activas
+          </span>
+        </div>
 
-            const colorTheme = fund.color || 'emerald';
+        {plan.funds.length === 0 ? (
+          <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+            <PieChart className="w-10 h-10 text-slate-400 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-sm">No tienes categorías en tu presupuesto</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Crea tu primera categoría (ej: Universidad 15%, Casa 30%, Alimentación 15%, Ahorro 20%) para ver tu gráfico interactivo.
+            </p>
+            <button
+              onClick={handleOpenAddCategory}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Crear Primera Categoría
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* DONUT CHART SVG (COL 5) */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
+              <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                  {donutArcs.map((arc, i) => {
+                    if (arc.angle <= 0) return null;
+                    const isHovered = hoveredCategory === arc.fund.id;
 
-            return (
-              <motion.div
-                key={fund.id}
-                layout
-                className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md overflow-hidden shadow-xl"
-              >
-                {/* FUND CARD HEADER */}
-                <div className="p-5 border-b border-slate-200 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl p-2 rounded-xl bg-slate-50 border border-slate-200">
-                        {fund.emoji || '🏠'}
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-serif font-bold text-white text-lg">{fund.name}</h4>
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            {fund.percentage}% del Ingreso
+                    // SVG arc calculations
+                    const r = 38;
+                    const cx = 50;
+                    const cy = 50;
+
+                    const startRad = (arc.startAngle * Math.PI) / 180;
+                    const endRad = (arc.endAngle * Math.PI) / 180;
+
+                    const x1 = cx + r * Math.cos(startRad);
+                    const y1 = cy + r * Math.sin(startRad);
+                    const x2 = cx + r * Math.cos(endRad);
+                    const y2 = cy + r * Math.sin(endRad);
+
+                    const largeArcFlag = arc.angle > 180 ? 1 : 0;
+
+                    const pathData = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
+
+                    return (
+                      <path
+                        key={arc.fund.id}
+                        d={pathData}
+                        fill="none"
+                        stroke={arc.theme.fill}
+                        strokeWidth={isHovered ? '16' : '12'}
+                        className="transition-all duration-300 cursor-pointer hover:opacity-90"
+                        onMouseEnter={() => setHoveredCategory(arc.fund.id)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                      />
+                    );
+                  })}
+                </svg>
+
+                {/* CENTER TEXT INSIDE DONUT */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 rounded-full pointer-events-none">
+                  {hoveredCategory ? (
+                    (() => {
+                      const hFund = plan.funds.find(f => f.id === hoveredCategory);
+                      if (!hFund) return null;
+                      const hBudget = baseIncome * ((hFund.percentage || 0) / 100);
+                      const hSpent = calculateSpentForCategoryOrSub(hFund.id);
+                      return (
+                        <div className="animate-fade-in space-y-0.5">
+                          <span className="text-xl">{hFund.emoji || '🏷️'}</span>
+                          <span className="text-xs font-black text-slate-900 block truncate max-w-[120px]">
+                            {hFund.name}
+                          </span>
+                          <span className="text-xs font-mono font-bold text-indigo-600 block">
+                            {hFund.percentage}% · {formatCurrency(hBudget, currency)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block font-mono">
+                            Gastado: {formatCurrency(hSpent, currency)}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 font-mono">
-                          Presupuesto Asignado: <strong className="text-slate-200">{formatCurrency(fundTargetBudget, currency)}</strong>
+                      );
+                    })()
+                  ) : (
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Presupuesto Total
+                      </span>
+                      <span className="text-base sm:text-lg font-black text-slate-900 font-mono block">
+                        {formatCurrency(totalAllocatedMoney, currency)}
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-600 block font-mono">
+                        {formatCurrency(totalSpentAllCategories, currency)} gastados
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* LEGEND & CATEGORY PILLS (COL 7) */}
+            <div className="lg:col-span-7 space-y-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                Desglose por Categorías
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                {plan.funds.map((fund, idx) => {
+                  const budget = baseIncome * ((fund.percentage || 0) / 100);
+                  const spent = calculateSpentForCategoryOrSub(fund.id);
+                  const remaining = budget - spent;
+                  const theme = getCategoryTheme(fund.color, idx);
+                  const isHovered = hoveredCategory === fund.id;
+
+                  return (
+                    <div
+                      key={fund.id}
+                      onMouseEnter={() => setHoveredCategory(fund.id)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        isHovered ? 'border-indigo-500 bg-indigo-50/50 shadow-sm' : 'border-slate-200 bg-slate-50/80 hover:bg-slate-100/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full shrink-0"
+                          style={{ backgroundColor: theme.fill }}
+                        />
+                        <span className="text-base shrink-0">{fund.emoji || '🏷️'}</span>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 truncate">{fund.name}</h4>
+                          <span className="text-[11px] text-slate-500 font-mono block truncate">
+                            {fund.percentage}% · {formatCurrency(budget, currency)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0 font-mono">
+                        <span className={`text-xs font-bold block ${remaining < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                          {formatCurrency(remaining, currency)}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">disponible</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. LISTADO DE TARJETAS DE CATEGORÍAS (MONEFY STYLE) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-indigo-600" />
+            Categorías del Presupuesto ({plan.funds.length})
+          </h2>
+
+          <button
+            onClick={handleOpenAddCategory}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Agregar Categoría
+          </button>
+        </div>
+
+        {plan.funds.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500 text-xs">
+            Sin categorías definidas. Haz clic en "Agregar Categoría" arriba.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {plan.funds.map((fund, idx) => {
+              const theme = getCategoryTheme(fund.color, idx);
+              const budget = baseIncome * ((fund.percentage || 0) / 100);
+              const spent = calculateSpentForCategoryOrSub(fund.id);
+              const available = budget - spent;
+              const consumedPct = budget > 0 ? (spent / budget) * 100 : 0;
+
+              // Budget status: Green <= 80%, Yellow 80-100%, Red > 100%
+              let statusLabel = '🟢 Dentro del presupuesto';
+              let statusBadgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+              if (consumedPct > 100) {
+                statusLabel = '🔴 Excedido';
+                statusBadgeClass = 'bg-rose-50 text-rose-800 border-rose-200';
+              } else if (consumedPct >= 80) {
+                statusLabel = '🟡 Cerca del límite';
+                statusBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+              }
+
+              // Rhythm insight: compare consumed % with month elapsed %
+              const isPaceFast = consumedPct > monthElapsedPct + 10 && consumedPct <= 100;
+              const isPaceExceeded = consumedPct > 100;
+
+              const subcategories = fund.categories || [];
+              const isExpanded = Boolean(expandedFunds[fund.id]);
+
+              return (
+                <motion.div
+                  key={fund.id}
+                  layout
+                  className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  {/* CATEGORY CARD HEADER */}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl border shadow-xs shrink-0"
+                          style={{ backgroundColor: `${theme.fill}15`, borderColor: `${theme.fill}40` }}
+                        >
+                          {fund.emoji || '🏷️'}
+                        </div>
+                        <div>
+                          <h3 className="font-extrabold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                            {fund.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              {fund.percentage}% · {formatCurrency(budget, currency)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* STATUS BADGE & ACTIONS */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenQuickExpense(fund.id)}
+                          className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-xl transition-all"
+                          title="Registrar gasto en esta categoría"
+                        >
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenEditCategory(fund)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
+                          title="Editar categoría"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            FinancialStore.deleteFund(fund.id);
+                            triggerToast('Categoría eliminada', 'info');
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Eliminar categoría"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* STATUS BADGE ROW */}
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${statusBadgeClass}`}>
+                        {statusLabel}
+                      </span>
+
+                      <span className="text-xs font-mono font-bold text-slate-600">
+                        {Math.round(consumedPct)}% Usado
+                      </span>
+                    </div>
+
+                    {/* METRICS & PROGRESS BAR */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex justify-between items-center text-xs font-mono">
+                        <span className="text-slate-500">
+                          Gastado: <strong className={spent > budget ? 'text-rose-600 font-bold' : 'text-slate-800'}>{formatCurrency(spent, currency)}</strong>
+                        </span>
+                        <span className="text-slate-500">
+                          Disponible: <strong className={available < 0 ? 'text-rose-600 font-bold' : 'text-emerald-700'}>{formatCurrency(available, currency)}</strong>
                         </span>
                       </div>
+
+                      <AnimatedProgressBar
+                        percent={consumedPct}
+                        colorName={fund.color}
+                        height="h-3"
+                      />
+                    </div>
+
+                    {/* SMART RHYTHM NOTE */}
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 leading-relaxed font-medium">
+                      <span>Has utilizado el <strong>{Math.round(consumedPct)}%</strong> de este presupuesto. </span>
+                      {isPaceExceeded ? (
+                        <span className="text-rose-600 font-bold block mt-0.5">
+                          🚨 Has superado el presupuesto por {formatCurrency(Math.abs(available), currency)}.
+                        </span>
+                      ) : isPaceFast ? (
+                        <span className="text-amber-700 font-medium block mt-0.5">
+                          ⚡ Llevas un ritmo acelerado para el día {dayOfMonth} del mes ({Math.round(consumedPct)}% gastado vs {Math.round(monthElapsedPct)}% del tiempo transcurrido).
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 font-medium block mt-0.5">
+                          ✅ Ritmo de gasto adecuado para la fecha actual (día {dayOfMonth} de {daysInMonth}).
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SUBCATEGORIES SECTION HEADER / TOGGLE */}
+                  <div className="border-t border-slate-100 bg-slate-50/60 p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <span>Subcategorías ({subcategories.length})</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {catPctSum === 100 ? (
-                        <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Categorías 100%
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-500/20 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Categorías {catPctSum}%
-                        </span>
+                      <button
+                        onClick={() => handleOpenAddSub(fund.id)}
+                        className="px-2.5 py-1 rounded-xl bg-white hover:bg-slate-100 text-indigo-600 font-bold text-xs border border-slate-200 flex items-center gap-1 transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Subcategoría
+                      </button>
+
+                      {subcategories.length > 0 && (
+                        <button
+                          onClick={() => toggleFundExpand(fund.id)}
+                          className="p-1 text-slate-500 hover:text-slate-800 transition-all"
+                          title={isExpanded ? 'Ocultar subcategorías' : 'Ver subcategorías'}
+                        >
+                          {isExpanded ? <ChevronUp className="w-5 h-5 text-indigo-600" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
                       )}
-
-                      <button
-                        onClick={() => handleOpenAddCat(fund.id)}
-                        className="px-2.5 py-1.5 text-xs font-bold bg-emerald-50 hover:bg-emerald-500/30 text-emerald-800 rounded-lg border border-emerald-200 flex items-center gap-1 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Categoría
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenEditFund(fund)}
-                        className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
-                        title="Editar fondo"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          FinancialStore.deleteFund(fund.id);
-                          triggerToast('Fondo principal eliminado', 'info');
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-100 transition-colors"
-                        title="Eliminar fondo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={() => toggleFundExpand(fund.id)}
-                        className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
-                        title={isExpanded ? 'Colapsar categorías' : 'Expandir categorías'}
-                      >
-                        {isExpanded ? <ChevronUp className="w-5 h-5 text-emerald-400" /> : <ChevronDown className="w-5 h-5" />}
-                      </button>
                     </div>
                   </div>
 
-                  {/* METRICS ROW */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] uppercase text-slate-500 block">Asignado (Nivel 1)</span>
-                      <strong className="text-sm text-white">{formatCurrency(fundTargetBudget, currency)}</strong>
-                    </div>
+                  {/* SUBCATEGORIES LIST (EXPANDABLE) */}
+                  <AnimatePresence>
+                    {isExpanded && subcategories.length > 0 && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="p-4 bg-slate-100/60 border-t border-slate-200 space-y-2.5"
+                      >
+                        {subcategories.map(sub => {
+                          const subSpent = calculateSpentForCategoryOrSub(fund.id, sub.id, fund.name, sub.name);
+                          const hasSubPct = sub.percentage && sub.percentage > 0;
+                          const subBudget = hasSubPct ? budget * (sub.percentage! / 100) : budget;
+                          const subAvailable = subBudget - subSpent;
 
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] uppercase text-slate-500 block">Ejecutado (Gastado)</span>
-                      <strong className={`text-sm ${fundSpent > fundTargetBudget ? 'text-rose-400' : 'text-amber-800'}`}>
-                        {formatCurrency(fundSpent, currency)}
-                      </strong>
-                    </div>
+                          return (
+                            <div
+                              key={sub.id}
+                              className="p-3 bg-white rounded-2xl border border-slate-200/80 space-y-1.5 shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between gap-2 text-xs">
+                                <div className="flex items-center gap-2 font-bold text-slate-800">
+                                  <span>{sub.emoji || '🔖'}</span>
+                                  <span>{sub.name}</span>
+                                  {hasSubPct && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-50 text-purple-700 border border-purple-200 font-bold">
+                                      {sub.percentage}% ({formatCurrency(subBudget, currency)})
+                                    </span>
+                                  )}
+                                </div>
 
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] uppercase text-slate-500 block">Disponible</span>
-                      <strong className={`text-sm ${fundRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}`}>
-                        {formatCurrency(fundRemaining, currency)}
-                      </strong>
-                    </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleOpenEditSub(fund.id, sub)}
+                                    className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      FinancialStore.deleteCategoryFromFund(fund.id, sub.id);
+                                      triggerToast('Subcategoría eliminada', 'info');
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-100"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
 
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-center">
-                      <div className="flex justify-between items-center text-[10px] uppercase text-slate-500">
-                        <span>Consumido</span>
-                        <strong className="text-emerald-800">{Math.round(fundConsumedPct)}%</strong>
-                      </div>
-                      <AnimatedProgressBar
-                        percent={fundConsumedPct}
-                        color={fundConsumedPct > 100 ? 'rose' : fundConsumedPct > 80 ? 'amber' : 'emerald'}
-                        height="h-2"
-                      />
-                    </div>
+                              <div className="flex justify-between items-center text-[11px] font-mono text-slate-500">
+                                <span>Gastado: <strong className="text-slate-800">{formatCurrency(subSpent, currency)}</strong></span>
+                                <span>Disponible: <strong className={subAvailable < 0 ? 'text-rose-600 font-bold' : 'text-emerald-700'}>{formatCurrency(subAvailable, currency)}</strong></span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL 1: CREAR / EDITAR CATEGORÍA */}
+      <AnimatePresence>
+        {isCategoryModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 border border-slate-200"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-indigo-600" />
+                  {editingFund ? 'Editar Categoría' : 'Nueva Categoría de Presupuesto'}
+                </h3>
+                <button
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCategory} className="space-y-4">
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Emoji
+                    </label>
+                    <input
+                      type="text"
+                      value={fundEmoji}
+                      onChange={e => setFundEmoji(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center text-xl focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="col-span-3">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Nombre de Categoría *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Universidad, Arriendo, Social, Alimentación"
+                      value={fundName}
+                      onChange={e => setFundName(e.target.value)}
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-semibold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
                   </div>
                 </div>
 
-                {/* CATEGORIES LIST (LEVEL 2) */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="p-5 bg-slate-50 space-y-4"
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Porcentaje (%) *
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="15"
+                      value={fundPct}
+                      onChange={e => setFundPct(e.target.value === '' ? '' : Number(e.target.value))}
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Color Visual
+                    </label>
+                    <select
+                      value={fundColor}
+                      onChange={e => setFundColor(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold text-slate-900 focus:border-indigo-500 focus:outline-none"
                     >
-                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                          Categorías Internas ({categories.length}) — Pertenecen únicamente al {fund.percentage}% de {fund.name}
-                        </h5>
+                      <option value="emerald">Verde Esmeralda</option>
+                      <option value="purple">Púrpura</option>
+                      <option value="amber">Ámbar</option>
+                      <option value="blue">Azul</option>
+                      <option value="rose">Rosa</option>
+                      <option value="indigo">Índigo</option>
+                      <option value="teal">Menta Teal</option>
+                      <option value="cyan">Cian</option>
+                    </select>
+                  </div>
+                </div>
 
-                        <button
-                          onClick={() => handleOpenAddCat(fund.id)}
-                          className="text-xs text-emerald-400 hover:text-emerald-800 font-bold flex items-center gap-1"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Agregar Categoría
-                        </button>
-                      </div>
+                {fundPct !== '' && (
+                  <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-100 text-xs font-mono text-indigo-900 space-y-1">
+                    <div className="flex justify-between font-bold">
+                      <span>Monto mensual calculado:</span>
+                      <span className="text-indigo-700">{formatCurrency(baseIncome * (Number(fundPct) / 100), currency)}</span>
+                    </div>
+                    <span className="text-[10px] text-indigo-600 block">
+                      Equivale al {fundPct}% de {formatCurrency(baseIncome, currency)}
+                    </span>
+                  </div>
+                )}
 
-                      {categories.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic py-2 text-center">
-                          No hay categorías internas creadas en este fondo. Presiona "+ Categoría" para añadir una.
-                        </p>
-                      ) : (
-                        <div className="space-y-3">
-                          {categories.map(cat => {
-                            // Category budget = Fund Target Budget * (cat.percentage / 100)
-                            const catBudget = fundTargetBudget * ((cat.percentage || 0) / 100);
-                            const effectivePctOfTotal = (fund.percentage * (cat.percentage || 0)) / 100;
-                            const catSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name);
-                            const catRemaining = catBudget - catSpent;
-                            const catConsumedPct = catBudget > 0 ? (catSpent / catBudget) * 100 : 0;
-                            const alertStatus = FinancialCalculations.getCategoryAlertStatus(catConsumedPct);
-
-                            const subcategories = cat.subcategories || [];
-                            const subPctSum = subcategories.reduce((s, sub) => s + (sub.percentage || 0), 0);
-                            const isCatExpanded = Boolean(expandedCategories[cat.id]);
-
-                            return (
-                              <div
-                                key={cat.id}
-                                className="p-4 bg-white/70 border border-slate-200 rounded-xl space-y-3 transition-all hover:border-emerald-200"
-                              >
-                                {/* ALERT BANNER IF APPLICABLE */}
-                                {alertStatus.level !== 'ok' && (
-                                  <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between font-medium ${alertStatus.alertClass}`}>
-                                    <span className="flex items-center gap-2 font-serif font-bold">
-                                      <span className="text-base">{alertStatus.emoji}</span>
-                                      {alertStatus.message}
-                                    </span>
-                                    <span className="text-[11px] font-mono font-bold opacity-90">
-                                      {Math.round(catConsumedPct)}% Consumido
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* CATEGORY HEADER ROW */}
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg">{cat.emoji || '📁'}</span>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-serif font-bold text-white text-base">{cat.name}</span>
-                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-blue-500/20 text-blue-300 border border-slate-200 font-bold">
-                                          {cat.percentage}% del fondo
-                                        </span>
-                                        <span className="text-[11px] text-slate-500 font-mono">
-                                          ({effectivePctOfTotal.toFixed(1)}% del ingreso total)
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 text-xs">
-                                    {subcategories.length > 0 && (
-                                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                        subPctSum === 100 ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'
-                                      }`}>
-                                        Subcats: {subPctSum}%
-                                      </span>
-                                    )}
-
-                                    <button
-                                      onClick={() => handleOpenAddSub(fund.id, cat.id)}
-                                      className="px-2 py-1 text-[11px] font-bold bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 rounded border border-purple-200 flex items-center gap-1"
-                                    >
-                                      <Plus className="w-3 h-3" /> Subcategoría
-                                    </button>
-
-                                    <button
-                                      onClick={() => handleOpenEditCat(fund.id, cat)}
-                                      className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100"
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </button>
-
-                                    <button
-                                      onClick={() => {
-                                        FinancialStore.deleteCategoryFromFund(fund.id, cat.id);
-                                        triggerToast('Categoría eliminada', 'info');
-                                      }}
-                                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-100"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-
-                                    {subcategories.length > 0 && (
-                                      <button
-                                        onClick={() => toggleCategoryExpand(cat.id)}
-                                        className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100"
-                                      >
-                                        {isCatExpanded ? <ChevronUp className="w-4 h-4 text-purple-400" /> : <ChevronDown className="w-4 h-4" />}
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* CATEGORY PROGRESS & NUMBERS */}
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center text-xs font-mono">
-                                    <span className="text-slate-700">
-                                      Asignado: <strong className="text-white">{formatCurrency(catBudget, currency)}</strong>
-                                    </span>
-                                    <span className="text-slate-700">
-                                      Utilizado: <strong className="text-amber-800">{formatCurrency(catSpent, currency)}</strong>
-                                    </span>
-                                    <span className="text-slate-700">
-                                      Disponible: <strong className={catRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}>{formatCurrency(catRemaining, currency)}</strong>
-                                    </span>
-                                    <span className="text-slate-500">
-                                      Consumo: <strong className="text-white">{Math.round(catConsumedPct)}%</strong>
-                                    </span>
-                                  </div>
-
-                                  <AnimatedProgressBar
-                                    percent={catConsumedPct}
-                                    color={catConsumedPct > 100 ? 'rose' : catConsumedPct > 80 ? 'amber' : 'emerald'}
-                                    height="h-2"
-                                  />
-                                </div>
-
-                                {/* LEVEL 3: SUBCATEGORIES LIST */}
-                                {subcategories.length > 0 && isCatExpanded && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3 pt-3 border-t border-slate-200 space-y-2 pl-4 border-l-2 border-purple-200"
-                                  >
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300 block mb-1">
-                                      Subcategorías (Nivel 3)
-                                    </span>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                      {subcategories.map(sub => {
-                                        // Subcategory budget = Category budget * (sub.percentage / 100)
-                                        const subBudget = catBudget * ((sub.percentage || 0) / 100);
-                                        const effSubPct = (effectivePctOfTotal * (sub.percentage || 0)) / 100;
-                                        const subSpent = calculateSpentForCategoryOrSub(fund.id, cat.id, cat.name, sub.name);
-                                        const subRemaining = subBudget - subSpent;
-                                        const subConsumed = subBudget > 0 ? (subSpent / subBudget) * 100 : 0;
-
-                                        return (
-                                          <div
-                                            key={sub.id}
-                                            className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1"
-                                          >
-                                            <div className="flex justify-between items-center text-xs">
-                                              <span className="font-serif font-bold text-white flex items-center gap-1">
-                                                <span>{sub.emoji || '🔖'}</span> {sub.name}
-                                              </span>
-                                              <div className="flex items-center gap-1">
-                                                <span className="text-[10px] font-mono text-purple-300 bg-purple-500/20 px-1.5 py-0.5 rounded">
-                                                  {sub.percentage}%
-                                                </span>
-                                                <button
-                                                  onClick={() => handleOpenEditSub(fund.id, cat.id, sub)}
-                                                  className="p-0.5 text-slate-500 hover:text-slate-900"
-                                                >
-                                                  <Edit2 className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                  onClick={() => {
-                                                    FinancialStore.deleteSubcategoryFromCategory(fund.id, cat.id, sub.id);
-                                                    triggerToast('Subcategoría eliminada', 'info');
-                                                  }}
-                                                  className="p-0.5 text-slate-500 hover:text-rose-400"
-                                                >
-                                                  <Trash2 className="w-3 h-3" />
-                                                </button>
-                                              </div>
-                                            </div>
-
-                                            <div className="text-[11px] font-mono text-slate-700 flex justify-between">
-                                              <span>Base: {formatCurrency(subBudget, currency)}</span>
-                                              <span className={subRemaining < 0 ? 'text-rose-400 font-bold' : 'text-emerald-800'}>
-                                                Disp: {formatCurrency(subRemaining, currency)}
-                                              </span>
-                                            </div>
-
-                                            <AnimatedProgressBar
-                                              percent={subConsumed}
-                                              color={subConsumed > 100 ? 'rose' : subConsumed > 80 ? 'amber' : 'purple'}
-                                              height="h-1.5"
-                                            />
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* CREATE / EDIT FUND MODAL */}
-      <ExecutiveModal
-        isOpen={isFundModalOpen}
-        onClose={() => setIsFundModalOpen(false)}
-        title={editingFund ? 'Editar Fondo Principal (Nivel 1)' : 'Nuevo Fondo Principal (Nivel 1)'}
-        accentColor="emerald"
-      >
-        <ExecutiveForm onSubmit={handleSaveFund}>
-          <div className="grid grid-cols-4 gap-2 items-center">
-            <ExecutiveInput
-              label="Emoji"
-              value={fundEmoji}
-              onChange={e => setFundEmoji(e.target.value)}
-              accentColor="emerald"
-            />
-            <div className="col-span-3">
-              <ExecutiveInput
-                label="Nombre del Fondo *"
-                placeholder="Ej: Gastos Necesarios / Gastos Personales"
-                value={fundName}
-                onChange={e => setFundName(e.target.value)}
-                accentColor="emerald"
-                required
-              />
-            </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+                  >
+                    {editingFund ? 'Guardar Cambios' : 'Crear Categoría'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
+        )}
+      </AnimatePresence>
 
-          <div className="grid grid-cols-2 gap-3">
-            <ExecutiveInput
-              label="Porcentaje Asignado del Ingreso Total (%) *"
-              type="number"
-              placeholder="50"
-              value={fundPct}
-              onChange={e => setFundPct(e.target.value === '' ? '' : Number(e.target.value))}
-              accentColor="emerald"
-              required
-            />
-
-            <ExecutiveSelect
-              label="Tema de Color"
-              value={fundColor}
-              onChange={e => setFundColor(e.target.value)}
-              accentColor="emerald"
-              options={[
-                { value: 'emerald', label: 'Verde Esmeralda' },
-                { value: 'amber', label: 'Ámbar Ejecutivo' },
-                { value: 'purple', label: 'Púrpura / Inversión' },
-                { value: 'blue', label: 'Azul Institucional' },
-                { value: 'rose', label: 'Rosa / Reserva' }
-              ]}
-            />
-          </div>
-
-          {/* REAL-TIME PREVIEW OF CALCULATED MONETARY VALUE */}
-          {fundPct !== '' && (
-            <div className="p-3 bg-slate-50 rounded-xl border border-emerald-200 text-xs font-mono space-y-1 text-slate-700">
-              <div className="flex justify-between">
-                <span>Monto mensual calculado:</span>
-                <strong className="text-emerald-400 font-bold text-sm">
-                  {formatCurrency(baseIncome * (Number(fundPct) / 100), currency)}
-                </strong>
+      {/* MODAL 2: CREAR / EDITAR SUBCATEGORÍA */}
+      <AnimatePresence>
+        {isSubModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 border border-slate-200"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-indigo-600" />
+                  {editingSub ? 'Editar Subcategoría' : 'Nueva Subcategoría'}
+                </h3>
+                <button
+                  onClick={() => setIsSubModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <span className="text-[10px] text-slate-500 block">
-                Basado en base de ingresos de {formatCurrency(baseIncome, currency)}
-              </span>
-            </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-3">
-            <ExecutiveButton variant="ghost" type="button" onClick={() => setIsFundModalOpen(false)}>
-              Cancelar
-            </ExecutiveButton>
-            <ExecutiveButton variant="primary" type="submit" accentColor="emerald">
-              {editingFund ? 'Guardar Cambios' : 'Crear Fondo'}
-            </ExecutiveButton>
-          </div>
-        </ExecutiveForm>
-      </ExecutiveModal>
+              <form onSubmit={handleSaveSub} className="space-y-4">
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Emoji
+                    </label>
+                    <input
+                      type="text"
+                      value={subEmoji}
+                      onChange={e => setSubEmoji(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center text-xl focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
 
-      {/* CREATE / EDIT CATEGORY MODAL */}
-      <ExecutiveModal
-        isOpen={isCatModalOpen}
-        onClose={() => setIsCatModalOpen(false)}
-        title={editingCat ? 'Editar Categoría' : 'Nueva Categoría (Nivel 2)'}
-        accentColor="blue"
-      >
-        <ExecutiveForm onSubmit={handleSaveCat}>
-          <div className="grid grid-cols-4 gap-2 items-center">
-            <ExecutiveInput
-              label="Emoji"
-              value={catEmoji}
-              onChange={e => setCatEmoji(e.target.value)}
-              accentColor="blue"
-            />
-            <div className="col-span-3">
-              <ExecutiveInput
-                label="Nombre de la Categoría *"
-                placeholder="Ej: Gasolina, Alimentación, Arriendo"
-                value={catName}
-                onChange={e => setCatName(e.target.value)}
-                accentColor="blue"
-                required
-              />
-            </div>
-          </div>
+                  <div className="col-span-3">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Nombre Subcategoría *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Matrícula, Transporte, Materiales"
+                      value={subName}
+                      onChange={e => setSubName(e.target.value)}
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-semibold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
-          <ExecutiveInput
-            label="Porcentaje Asignado dentro de su Fondo (%) *"
-            type="number"
-            placeholder="50"
-            value={catPct}
-            onChange={e => setCatPct(e.target.value === '' ? '' : Number(e.target.value))}
-            accentColor="blue"
-            required
-          />
+                {/* Option for internal percentage distribution */}
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useSubPct}
+                      onChange={e => setUseSubPct(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span>Asignar porcentaje interno dentro de la categoría</span>
+                  </label>
 
-          {catPct !== '' && targetFundForCat && (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono space-y-1 text-slate-700">
-              {(() => {
-                const targetFund = plan.funds.find(f => f.id === targetFundForCat);
-                if (!targetFund) return null;
-                const fBudget = baseIncome * ((targetFund.percentage || 0) / 100);
-                const cBudget = fBudget * (Number(catPct) / 100);
-                const effPct = (targetFund.percentage * Number(catPct)) / 100;
-
-                return (
-                  <>
-                    <div className="flex justify-between">
-                      <span>Monto mensual para esta categoría:</span>
-                      <strong className="text-blue-300 font-bold text-sm">{formatCurrency(cBudget, currency)}</strong>
+                  {useSubPct && (
+                    <div className="pt-2">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                        Porcentaje Interno (%)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="25"
+                        value={subPct}
+                        onChange={e => setSubPct(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                      />
                     </div>
+                  )}
+
+                  {!useSubPct && (
                     <span className="text-[10px] text-slate-500 block">
-                      Representa el {catPct}% de {targetFund.name} ({effPct.toFixed(1)}% del ingreso total)
+                      Por defecto esta subcategoría consume el presupuesto general de su categoría sin límite individual.
                     </span>
-                  </>
-                );
-              })()}
-            </div>
-          )}
+                  )}
+                </div>
 
-          <div className="flex justify-end gap-2 pt-3">
-            <ExecutiveButton variant="ghost" type="button" onClick={() => setIsCatModalOpen(false)}>
-              Cancelar
-            </ExecutiveButton>
-            <ExecutiveButton variant="primary" type="submit" accentColor="blue">
-              {editingCat ? 'Guardar Cambios' : 'Crear Categoría'}
-            </ExecutiveButton>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsSubModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+                  >
+                    {editingSub ? 'Guardar' : 'Agregar Subcategoría'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </ExecutiveForm>
-      </ExecutiveModal>
+        )}
+      </AnimatePresence>
 
-      {/* CREATE / EDIT SUBCATEGORY MODAL */}
-      <ExecutiveModal
-        isOpen={isSubModalOpen}
-        onClose={() => setIsSubModalOpen(false)}
-        title={editingSub ? 'Editar Subcategoría' : 'Nueva Subcategoría (Nivel 3)'}
-        accentColor="purple"
-      >
-        <ExecutiveForm onSubmit={handleSaveSub}>
-          <div className="grid grid-cols-4 gap-2 items-center">
-            <ExecutiveInput
-              label="Emoji"
-              value={subEmoji}
-              onChange={e => setSubEmoji(e.target.value)}
-              accentColor="purple"
-            />
-            <div className="col-span-3">
-              <ExecutiveInput
-                label="Nombre de Subcategoría *"
-                placeholder="Ej: Gasolina, Peajes, Parqueaderos"
-                value={subName}
-                onChange={e => setSubName(e.target.value)}
-                accentColor="purple"
-                required
-              />
-            </div>
-          </div>
+      {/* MODAL 3: REGISTRO RÁPIDO DE GASTO (`＋ Registrar gasto`) */}
+      <AnimatePresence>
+        {isQuickExpenseOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 border border-slate-200"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-emerald-500" />
+                  Registrar Gasto Rápido
+                </h3>
+                <button
+                  onClick={() => setIsQuickExpenseOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-          <ExecutiveInput
-            label="Porcentaje dentro de la Categoría (%) *"
-            type="number"
-            placeholder="50"
-            value={subPct}
-            onChange={e => setSubPct(e.target.value === '' ? '' : Number(e.target.value))}
-            accentColor="purple"
-            required
-          />
+              <form onSubmit={handleSaveQuickExpense} className="space-y-4">
+                {/* Monto */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    Monto ($) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-base font-bold text-slate-400">$</span>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={expenseAmount}
+                      onChange={e => setExpenseAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                      required
+                      autoFocus
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-8 pr-4 py-3 text-xl font-mono font-black text-slate-900 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
-          {subPct !== '' && targetCatForSub && (
-            <div className="p-3 bg-slate-50 rounded-xl border border-purple-200 text-xs font-mono space-y-1 text-slate-700">
-              {(() => {
-                const targetFund = plan.funds.find(f => f.id === targetCatForSub.fundId);
-                const targetCat = targetFund?.categories.find(c => c.id === targetCatForSub.catId);
-                if (!targetFund || !targetCat) return null;
+                {/* Categoría */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    Categoría del Presupuesto *
+                  </label>
+                  <select
+                    value={expenseFundId}
+                    onChange={e => {
+                      setExpenseFundId(e.target.value);
+                      setExpenseSubId('');
+                    }}
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Selecciona Categoría --</option>
+                    {plan.funds.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.emoji || '🏷️'} {f.name} ({f.percentage}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                const fBudget = baseIncome * ((targetFund.percentage || 0) / 100);
-                const cBudget = fBudget * ((targetCat.percentage || 0) / 100);
-                const sBudget = cBudget * (Number(subPct) / 100);
-
-                return (
-                  <>
-                    <div className="flex justify-between">
-                      <span>Monto mensual para subcategoría:</span>
-                      <strong className="text-purple-300 font-bold text-sm">{formatCurrency(sBudget, currency)}</strong>
+                {/* Subcategoría (Opcional) */}
+                {expenseFundId && (() => {
+                  const fund = plan.funds.find(f => f.id === expenseFundId);
+                  if (!fund || !fund.categories || fund.categories.length === 0) return null;
+                  return (
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                        Subcategoría (Opcional)
+                      </label>
+                      <select
+                        value={expenseSubId}
+                        onChange={e => setExpenseSubId(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold text-slate-900 focus:border-emerald-500 focus:outline-none"
+                      >
+                        <option value="">-- Sin subcategoría --</option>
+                        {fund.categories.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.emoji || '🔖'} {s.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <span className="text-[10px] text-slate-500 block">
-                      {subPct}% de {targetCat.name}
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
-          )}
+                  );
+                })()}
 
-          <div className="flex justify-end gap-2 pt-3">
-            <ExecutiveButton variant="ghost" type="button" onClick={() => setIsSubModalOpen(false)}>
-              Cancelar
-            </ExecutiveButton>
-            <ExecutiveButton variant="primary" type="submit" accentColor="purple">
-              {editingSub ? 'Guardar Cambios' : 'Crear Subcategoría'}
-            </ExecutiveButton>
+                {/* Descripción Nota */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    Descripción / Nota (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Pago de almuerzo, fotocopias, pasaje"
+                    value={expenseDescription}
+                    onChange={e => setExpenseDescription(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Cuenta de origen */}
+                {data.accounts && data.accounts.length > 0 && (
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                      Cuenta de Origen
+                    </label>
+                    <select
+                      value={expenseAccountId}
+                      onChange={e => setExpenseAccountId(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none"
+                    >
+                      {data.accounts.map(acc => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.name} ({formatCurrency(acc.balance, acc.currency)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickExpenseOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 text-xs font-extrabold bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" /> Guardar Gasto
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </ExecutiveForm>
-      </ExecutiveModal>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 4: REDISTRIBUIR PRESUPUESTO (`🔀 Redistribuir Presupuesto`) */}
+      <AnimatePresence>
+        {isRedistributeModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 border border-slate-200"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
+                  Redistribuir Presupuesto
+                </h3>
+                <button
+                  onClick={() => setIsRedistributeModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleApplyRedistribution} className="space-y-4">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Aumenta el presupuesto de una categoría restando el porcentaje exacto de otra categoría para mantener el total en 100%.
+                </p>
+
+                {/* Categoría a aumentar */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    1. Categoría a AUMENTAR
+                  </label>
+                  <select
+                    value={redistributeIncreaseId}
+                    onChange={e => setRedistributeIncreaseId(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                  >
+                    {plan.funds.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.emoji || '🏷️'} {f.name} (Actual: {f.percentage}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Porcentaje a transferir */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    2. Porcentaje a Transferir (%)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="5"
+                    value={redistributeAmountPct}
+                    onChange={e => setRedistributeAmountPct(e.target.value === '' ? '' : Number(e.target.value))}
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Categoría a reducir */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
+                    3. ¿De qué categoría restar el porcentaje?
+                  </label>
+                  <select
+                    value={redistributeDecreaseId}
+                    onChange={e => setRedistributeDecreaseId(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                  >
+                    {plan.funds
+                      .filter(f => f.id !== redistributeIncreaseId)
+                      .map(f => (
+                        <option key={f.id} value={f.id}>
+                          {f.emoji || '🏷️'} {f.name} (Actual: {f.percentage}%)
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* PREVIEW RESULT */}
+                {redistributeIncreaseId && redistributeDecreaseId && redistributeAmountPct !== '' && (
+                  <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-xs font-mono text-indigo-900 space-y-1">
+                    {(() => {
+                      const inc = plan.funds.find(f => f.id === redistributeIncreaseId);
+                      const dec = plan.funds.find(f => f.id === redistributeDecreaseId);
+                      const amt = Number(redistributeAmountPct);
+                      if (!inc || !dec) return null;
+                      return (
+                        <>
+                          <div className="flex justify-between">
+                            <span>{inc.name}:</span>
+                            <strong className="text-emerald-600">{inc.percentage}% → {inc.percentage + amt}%</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>{dec.name}:</span>
+                            <strong className="text-rose-600">{dec.percentage}% → {Math.max(0, dec.percentage - amt)}%</strong>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRedistributeModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" /> Aplicar Redistribución
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

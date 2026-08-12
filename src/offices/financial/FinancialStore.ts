@@ -478,6 +478,20 @@ export const FinancialStore = {
     });
   },
 
+  rebalanceFunds(reduceFundId: string, increaseFundId: string, transferPct: number) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.financiera.distributionPlan) return;
+      const funds = draft.offices.financiera.distributionPlan.funds;
+      const reduceFund = funds.find(f => f.id === reduceFundId);
+      const increaseFund = funds.find(f => f.id === increaseFundId);
+      if (reduceFund && increaseFund) {
+        const actualTransfer = Math.min(reduceFund.percentage, Math.max(0, transferPct));
+        reduceFund.percentage = Math.max(0, reduceFund.percentage - actualTransfer);
+        increaseFund.percentage = Math.min(100, increaseFund.percentage + actualTransfer);
+      }
+    });
+  },
+
   addCategoryToFund(fundId: string, category: { name: string; percentage: number; emoji?: string }) {
     storeInstance.updateState(draft => {
       if (!draft.offices.financiera.distributionPlan) return;
