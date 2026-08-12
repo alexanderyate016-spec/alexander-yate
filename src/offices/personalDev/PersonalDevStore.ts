@@ -42,7 +42,11 @@ export const PersonalDevStore = {
           importantDecision: entryData.importantDecision || '',
           gratefulFor: entryData.gratefulFor || '',
           freeReflection: entryData.freeReflection || '',
-          philosophicalAnswer: entryData.philosophicalAnswer || ''
+          philosophicalAnswer: entryData.philosophicalAnswer || '',
+          wentWell: entryData.wentWell || '',
+          overcame: entryData.overcame || '',
+          enjoyed: entryData.enjoyed || '',
+          contextualAnswer: entryData.contextualAnswer || ''
         };
         entries.unshift(newEntry);
       }

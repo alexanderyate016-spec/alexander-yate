@@ -736,8 +736,16 @@ export interface JournalEntry {
   improveTomorrow?: string; // ¿Qué debo mejorar?
   importantDecision?: string; // ¿Qué decisión importante tomé?
   gratefulFor?: string; // ¿Qué agradezco hoy?
-  freeReflection?: string; // Reflexión libre
+  freeReflection?: string; // Reflexión libre ("¿Qué quieres dejar de este día?")
   philosophicalAnswer?: string; // Respuesta a la pregunta filosófica del día
+
+  // Momentos del día (opcionales):
+  wentWell?: string; // ⭐ Algo que salió bien
+  overcame?: string; // 💪 Algo que superé
+  enjoyed?: string; // ❤️ Algo que disfruté
+
+  // Respuesta a la reflexión contextual del día:
+  contextualAnswer?: string;
 
   // Campos legacy para compatibilidad retroactiva:
   learned?: string;
