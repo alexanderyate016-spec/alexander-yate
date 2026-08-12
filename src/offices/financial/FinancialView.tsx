@@ -32,6 +32,7 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowLeft,
   TrendingUp,
   Plus,
   Trash2,
@@ -261,29 +262,62 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     return '💸';
   };
 
-  const formatRelativeTxDate = (dateStr?: string) => {
-    if (!dateStr) return 'Reciente';
-    if (dateStr === todayStr) return 'Hoy';
-    const yesterday = new Date(new Date(todayStr).getTime() - 86400000).toISOString().split('T')[0];
-    if (dateStr === yesterday) return 'Ayer';
+  const formatGroupDateHeader = (dateStr: string) => {
+    if (dateStr === todayStr) return 'HOY';
+    const yesterday = new Date(new Date(todayStr + 'T00:00:00').getTime() - 86400000).toISOString().split('T')[0];
+    if (dateStr === yesterday) return 'AYER';
     const parts = dateStr.split('-');
     if (parts.length === 3) {
-      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const dayNum = parseInt(parts[2], 10);
+      const monthsStandard = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
       const mIdx = parseInt(parts[1], 10) - 1;
-      return `${parts[2]} ${months[mIdx] || ''}`;
+      return `${dayNum} ${monthsStandard[mIdx] || ''}`;
     }
-    return dateStr;
+    return dateStr.toUpperCase();
   };
 
-  const recentTransactions = useMemo(() => {
-    const list = [...(data.transactions || [])];
-    list.sort((a, b) => {
+  const groupedTransactionsLast6Days = useMemo(() => {
+    const allSorted = [...(data.transactions || [])].sort((a, b) => {
       const dateComp = (b.date || '').localeCompare(a.date || '');
       if (dateComp !== 0) return dateComp;
       return (b.time || '').localeCompare(a.time || '');
     });
-    return list.slice(0, 6);
-  }, [data.transactions]);
+
+    // Calculate 6 recent calendar dates starting from today
+    const calendarDates: string[] = [];
+    const todayDate = new Date(todayStr + 'T00:00:00');
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(todayDate.getTime() - i * 86400000);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      calendarDates.push(`${yyyy}-${mm}-${dd}`);
+    }
+
+    // Find distinct transaction dates present in data
+    const distinctTxDates = Array.from(new Set(allSorted.map(tx => tx.date).filter(Boolean))) as string[];
+
+    // Select calendar dates with transactions, or fallback to top 6 distinct transaction dates
+    const txDatesInCalendar = calendarDates.filter(d => distinctTxDates.includes(d));
+    let targetDates = txDatesInCalendar;
+    if (targetDates.length === 0) {
+      targetDates = distinctTxDates.slice(0, 6);
+    }
+
+    const groups: { date: string; header: string; transactions: FinancialTransaction[] }[] = [];
+    targetDates.forEach(d => {
+      const txsInDay = allSorted.filter(tx => tx.date === d);
+      if (txsInDay.length > 0) {
+        groups.push({
+          date: d,
+          header: formatGroupDateHeader(d),
+          transactions: txsInDay
+        });
+      }
+    });
+
+    return groups;
+  }, [data.transactions, todayStr]);
 
   // AUTOMATIC DAILY YIELDS PROCESSOR ON MOUNT
   useEffect(() => {
@@ -858,116 +892,29 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
         searchPlaceholder="Buscar movimientos..."
       />
 
-      {/* 2. BARRA DE NAVEGACIÓN Y PESTAÑAS DE LA OFICINA */}
-      <div className="flex border-b border-slate-200 space-x-1 overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'dashboard'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Wallet className="w-4 h-4" />
-          Billetera
-        </button>
+      {/* NAVEGACIÓN Y CABECERA DE SUB-VISTAS (CUBRE CUANDO NO SE ESTÁ EN EL DASHBOARD) */}
+      {activeTab !== 'dashboard' && (
+        <div className="flex items-center justify-between bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 shadow-lg">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/30 font-bold text-xs transition-all active:scale-95 shadow-sm group"
+          >
+            <ArrowLeft className="w-4 h-4 text-purple-300 group-hover:-translate-x-0.5 transition-transform" />
+            <span>← Volver a Mi Billetera</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('accounts')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'accounts'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <CreditCard className="w-4 h-4" />
-          Cuentas ({data.accounts.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('budgets')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'budgets'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <PieChart className="w-4 h-4" />
-          Presupuestos ({data.budgets?.length || 0})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('expenses')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'expenses'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <ArrowDownRight className="w-4 h-4 text-rose-400" />
-          Gastos
-        </button>
-
-        <button
-          onClick={() => setActiveTab('income')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'income'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-          Ingresos
-        </button>
-
-        <button
-          onClick={() => setActiveTab('savings')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'savings'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <PiggyBank className="w-4 h-4 text-purple-400" />
-          Ahorros ({data.savings?.length || 0})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('obligations')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'obligations'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <Calendar className="w-4 h-4 text-amber-400" />
-          Obligaciones ({data.obligations?.length || 0})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('investments')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'investments'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4 text-blue-400" />
-          Inversiones ({data.investments?.length || 0})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('transactions')}
-          className={`px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-            activeTab === 'transactions'
-              ? 'border-emerald-400 bg-emerald-500/15 text-emerald-800 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white/5'
-          }`}
-        >
-          <DollarSign className="w-4 h-4" />
-          Movimientos ({data.transactions?.length || 0})
-        </button>
-      </div>
+          <span className="text-xs font-black uppercase tracking-wider text-slate-200 px-3.5 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-inner">
+            {activeTab === 'accounts' && '💳 Cuentas & Liquidez'}
+            {activeTab === 'budgets' && '🎯 Planes de Presupuesto'}
+            {activeTab === 'expenses' && '📉 Control de Gastos'}
+            {activeTab === 'income' && '📈 Registro de Ingresos'}
+            {activeTab === 'savings' && '🐷 Metas de Ahorro'}
+            {activeTab === 'obligations' && '🧾 Compromisos u Obligaciones'}
+            {activeTab === 'investments' && '📊 Portafolio de Inversión'}
+            {activeTab === 'transactions' && '💰 Historial de Movimientos'}
+          </span>
+        </div>
+      )}
 
       {/* TAB 0: BILLETERA DIGITAL (DASHBOARD PRINCIPAL) */}
       {activeTab === 'dashboard' && (
@@ -1093,170 +1040,469 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
             </div>
           </div>
 
-          {/* 3. RESUMEN FINANCIERO (TARJETAS DE UN VISTAZO SEGUIMIENTO JERÁRQUICO) */}
+          {/* 3. RESUMEN FINANCIERO: WIDGETS INTERACTIVOS DE MÓDULOS */}
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
               <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-700 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
-                Resumen Financiero Rápido
+                Resumen Financiero por Secciones
               </h3>
-              <span className="text-xs text-slate-500 font-medium">Situación de un vistazo</span>
+              <span className="text-xs text-slate-500 font-medium">Toca cualquier tarjeta para ingresar</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {/* 💰 Dinero Disponible */}
-              <div onClick={() => setActiveTab('accounts')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Disponible</span>
-                  <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-800">💰</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* WIDGET 1: 💳 CUENTAS */}
+              <div
+                onClick={() => setActiveTab('accounts')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-sm">
+                      💳
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-emerald-800 transition-colors">Cuentas</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {data.accounts.filter(a => !a.archived).length} activas
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Liquidez
+                  </span>
                 </div>
-                <div className="text-sm font-black font-mono text-slate-900 group-hover:text-emerald-800 transition-colors truncate">
-                  {showBalance ? formatCurrency(liquidNW.COP || 0, 'COP') : '$ •••'}
+
+                <div>
+                  <div className="text-xl font-black font-mono text-slate-900 group-hover:text-emerald-800 transition-colors">
+                    {showBalance ? formatCurrency(liquidNW.COP || 0, 'COP') : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Disponibles en bancos y efectivo
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Cuentas y liquidez</span>
+
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  {data.accounts.filter(a => !a.archived).slice(0, 2).map(acc => (
+                    <div key={acc.id} className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-600 truncate font-medium">{acc.name}</span>
+                      <span className="font-mono font-bold text-slate-800">
+                        {showBalance ? formatCurrency(FinancialCalculations.calculateAccountBalance(acc, data.transactions || []), acc.currency) : '$ •••'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* 📈 Ingresos */}
-              <div onClick={() => setActiveTab('income')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Ingresos</span>
-                  <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-800">📈</span>
+              {/* WIDGET 2: 🎯 PRESUPUESTOS */}
+              <div
+                onClick={() => setActiveTab('budgets')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-purple-50 text-purple-800 font-extrabold text-sm">
+                      🎯
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-purple-800 transition-colors">Presupuestos</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {budgetOptions.length} fondos
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full">
+                    {Math.round(budgetSummary.overallPct)}% usado
+                  </span>
                 </div>
-                <div className="text-sm font-black font-mono text-emerald-800 truncate">
-                  {showBalance ? `+${formatCurrency(incomeAnalytics.monthTotal, 'COP')}` : '$ •••'}
+
+                <div>
+                  <div className="text-xl font-black font-mono text-slate-900 group-hover:text-purple-800 transition-colors">
+                    {showBalance ? formatCurrency(Math.max(0, budgetSummary.totalAssigned - budgetSummary.totalSpent), 'COP') : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Disponible para gastar este mes
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Ingresos este mes</span>
+
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  <AnimatedProgressBar
+                    percent={budgetSummary.overallPct}
+                    color={budgetSummary.overallPct > 90 ? 'rose' : budgetSummary.overallPct > 70 ? 'amber' : 'purple'}
+                    height="h-2"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                    <span>Consumido: {Math.round(budgetSummary.overallPct)}%</span>
+                    <span>Restante: {showBalance ? formatCurrency(Math.max(0, budgetSummary.totalAssigned - budgetSummary.totalSpent), 'COP') : '$ •••'}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* 📉 Gastos */}
-              <div onClick={() => setActiveTab('expenses')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-rose-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Gastos</span>
-                  <span className="p-1 rounded-lg bg-rose-500/10 text-rose-800">📉</span>
+              {/* WIDGET 3: 📉 GASTOS */}
+              <div
+                onClick={() => setActiveTab('expenses')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-rose-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-rose-50 text-rose-800 font-extrabold text-sm">
+                      📉
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-rose-800 transition-colors">Gastos</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        Este mes
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-full">
+                    {expenseAnalytics.categoryList.length} categorías
+                  </span>
                 </div>
-                <div className="text-sm font-black font-mono text-rose-800 truncate">
-                  {showBalance ? `-${formatCurrency(expenseAnalytics.monthTotal, 'COP')}` : '$ •••'}
+
+                <div>
+                  <div className="text-xl font-black font-mono text-rose-800">
+                    {showBalance ? `-${formatCurrency(expenseAnalytics.monthTotal, 'COP')}` : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Total gastado en el período
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Gastos este mes</span>
+
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  {expenseAnalytics.categoryList.length === 0 ? (
+                    <span className="text-[10px] text-slate-400 italic">Sin gastos registrados</span>
+                  ) : (
+                    <div className="space-y-1">
+                      {expenseAnalytics.categoryList.slice(0, 2).map(cat => (
+                        <div key={cat.name} className="flex justify-between items-center text-[10px]">
+                          <span className="text-slate-600 truncate font-medium">{cat.name}</span>
+                          <span className="font-mono font-bold text-rose-700">
+                            {showBalance ? formatCurrency(cat.amount, 'COP') : '$ •••'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* 🎯 Presupuesto */}
-              <div onClick={() => setActiveTab('budgets')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-purple-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Presupuesto</span>
-                  <span className="p-1 rounded-lg bg-purple-500/10 text-purple-800">🎯</span>
+              {/* WIDGET 4: 📈 INGRESOS */}
+              <div
+                onClick={() => setActiveTab('income')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-sm">
+                      📈
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-emerald-800 transition-colors">Ingresos</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        Este mes
+                      </span>
+                    </div>
+                  </div>
+                  {hasHighYieldAccounts && (
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      + Rendimientos
+                    </span>
+                  )}
                 </div>
-                <div className="text-sm font-black font-mono text-slate-900 group-hover:text-purple-800 transition-colors truncate">
-                  {Math.round(budgetSummary.overallPct)}%
+
+                <div>
+                  <div className="text-xl font-black font-mono text-emerald-800">
+                    {showBalance ? `+${formatCurrency(incomeAnalytics.monthTotal, 'COP')}` : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Entradas y rendimientos generados
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Ejecutado</span>
+
+                <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500">Rendimientos mes:</span>
+                  <span className="font-mono font-bold text-emerald-800">
+                    {showBalance ? `+${formatCurrency(yieldsSummary.month, 'COP')}` : '$ •••'}
+                  </span>
+                </div>
               </div>
 
-              {/* 💳 Compromisos */}
-              <div onClick={() => setActiveTab('obligations')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Compromisos</span>
-                  <span className="p-1 rounded-lg bg-amber-500/10 text-amber-800">💳</span>
+              {/* WIDGET 5: 🐷 AHORROS */}
+              <div
+                onClick={() => setActiveTab('savings')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-purple-50 text-purple-800 font-extrabold text-sm">
+                      🐷
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-purple-800 transition-colors">Ahorros</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {data.savings?.length || 0} metas
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-full">
+                    {Math.round(savingsSummary.overallPct)}% alcanzado
+                  </span>
                 </div>
-                <div className="text-sm font-black font-mono text-amber-800 truncate">
-                  {(data.obligations || []).filter(o => !o.isPaid).length} pendientes
+
+                <div>
+                  <div className="text-xl font-black font-mono text-slate-900 group-hover:text-purple-800 transition-colors">
+                    {showBalance ? formatCurrency(savingsSummary.totalCurrent, 'COP') : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Meta acumulada total
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Por pagar</span>
+
+                <div className="pt-2 border-t border-slate-100 space-y-1">
+                  <AnimatedProgressBar
+                    percent={savingsSummary.overallPct}
+                    color="purple"
+                    height="h-2"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                    <span>Progreso: {Math.round(savingsSummary.overallPct)}%</span>
+                    <span>Objetivo: {showBalance ? formatCurrency(savingsSummary.totalTarget, 'COP') : '$ •••'}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* 📊 Balance Neto */}
-              <div onClick={() => setActiveTab('accounts')} className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 cursor-pointer transition-all shadow-sm group">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Balance</span>
-                  <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-800">📊</span>
+              {/* WIDGET 6: 🧾 OBLIGACIONES */}
+              {(() => {
+                const pendingObs = (data.obligations || []).filter(o => !o.isPaid);
+                const totalPendingAmt = pendingObs.reduce((acc, o) => acc + o.amount, 0);
+                const nextOb = pendingObs[0];
+
+                return (
+                  <div
+                    onClick={() => setActiveTab('obligations')}
+                    className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-2xl bg-amber-50 text-amber-800 font-extrabold text-sm">
+                          🧾
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-amber-800 transition-colors">Obligaciones</h4>
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            {pendingObs.length} pendientes
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
+                        Por pagar
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-xl font-black font-mono text-amber-800">
+                        {showBalance ? formatCurrency(totalPendingAmt, 'COP') : '$ •••'}
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        Compromisos a saldar
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 text-[10px]">
+                      {nextOb ? (
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-600 truncate font-semibold">Próxima: {nextOb.title}</span>
+                          <span className="font-mono font-bold text-amber-800">
+                            {showBalance ? formatCurrency(nextOb.amount, nextOb.currency) : '$ •••'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-emerald-800 font-bold">✨ ¡Todas al día!</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* WIDGET 7: 📊 INVERSIONES */}
+              <div
+                onClick={() => setActiveTab('investments')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-blue-50 text-blue-800 font-extrabold text-sm">
+                      📊
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-blue-800 transition-colors">Inversiones</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {data.investments?.length || 0} activos
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full">
+                    Portafolio
+                  </span>
                 </div>
-                <div className="text-sm font-black font-mono text-slate-900 group-hover:text-emerald-800 transition-colors truncate">
-                  {showBalance ? formatCurrency(totalNW.COP || 0, 'COP') : '$ •••'}
+
+                <div>
+                  <div className="text-xl font-black font-mono text-slate-900 group-hover:text-blue-800 transition-colors">
+                    {showBalance ? formatCurrency(investedNW.COP || 0, 'COP') : '$ •••'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Patrimonio invertido
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-500">Patrimonio total</span>
+
+                <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500">Cuentas Inversión:</span>
+                  <span className="font-mono font-bold text-blue-800">
+                    {showBalance ? formatCurrency((data.accounts || []).filter(a => a.type === 'investment' && !a.archived).reduce((acc, a) => acc + FinancialCalculations.calculateAccountBalance(a, data.transactions || []), 0), 'COP') : '$ •••'}
+                  </span>
+                </div>
+              </div>
+
+              {/* WIDGET 8: 💰 MOVIMIENTOS */}
+              <div
+                onClick={() => setActiveTab('transactions')}
+                className="p-4 rounded-3xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-sm">
+                      💰
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-emerald-800 transition-colors">Movimientos</h4>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        {data.transactions?.length || 0} registros
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Historial
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-base font-black text-slate-900 group-hover:text-emerald-800 transition-colors">
+                    Historial Completo
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Explora, filtra y audita todos los movimientos
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-emerald-800">
+                  <span>Ver todas las transacciones</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 4. MOVIMIENTOS RECIENTES */}
+          {/* 4. MOVIMIENTOS (ÚLTIMOS 6 DÍAS AGRUPADOS POR FECHA) */}
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
               <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-700 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-emerald-400" />
-                Movimientos Recientes
+                Movimientos (Últimos 6 Días)
               </h3>
               <button
                 onClick={() => setActiveTab('transactions')}
                 className="text-xs font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1 transition-colors"
               >
-                <span>Ver todos ({data.transactions?.length || 0})</span>
-                <ChevronRight className="w-4 h-4" />
+                <span>Ver más movimientos →</span>
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-2">
-              {recentTransactions.length === 0 ? (
+            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-4">
+              {groupedTransactionsLast6Days.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-xs italic">
-                  No hay movimientos registrados. ¡Toca "＋ Ingresar" o "− Gastar" para añadir uno!
+                  No hay movimientos registrados en los últimos 6 días. ¡Toca "＋ Ingresar" o "− Gastar" para añadir uno!
                 </div>
               ) : (
-                recentTransactions.map(tx => {
-                  const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield';
-                  const isExpense = tx.nature === 'external_expense' || tx.nature === 'investment_buy';
-                  const isTransfer = tx.nature === 'internal_transfer';
-
-                  const sourceAcc = data.accounts.find(a => a.id === tx.sourceAccountId);
-                  const destAcc = data.accounts.find(a => a.id === tx.destinationAccountId);
-
-                  return (
-                    <div
-                      key={tx.id}
-                      onClick={() => handleOpenEditTransaction(tx)}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer border border-slate-100 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 ${
-                          isIncome ? 'bg-emerald-500/15 text-emerald-800' : isExpense ? 'bg-rose-500/15 text-rose-800' : 'bg-indigo-500/15 text-indigo-800'
-                        }`}>
-                          {getCategoryEmoji(tx)}
-                        </div>
-
-                        <div>
-                          <div className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-800 transition-colors">
-                            {tx.description}
-                          </div>
-                          <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                            <span className="font-bold text-slate-600">{formatRelativeTxDate(tx.date)}</span>
-                            <span>·</span>
-                            <span>{tx.categoryId || (isTransfer ? 'Transferencia' : 'General')}</span>
-                            {(sourceAcc || destAcc) && (
-                              <>
-                                <span>·</span>
-                                <span className="font-semibold text-slate-700">
-                                  {isTransfer ? `${sourceAcc?.name || 'Origen'} ➔ ${destAcc?.name || 'Destino'}` : (sourceAcc?.name || destAcc?.name || 'Cuenta')}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className={`font-mono font-black text-xs ${
-                          isIncome ? 'text-emerald-800' : isExpense ? 'text-rose-800' : 'text-slate-800'
-                        }`}>
-                          {showBalance ? (
-                            isIncome ? `+ ${formatCurrency(tx.amount, tx.currency)}` : isExpense ? `- ${formatCurrency(tx.amount, tx.currency)}` : formatCurrency(tx.amount, tx.currency)
-                          ) : '$ •••'}
-                        </div>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
-                          {tx.nature === 'financial_yield' ? 'Rendimiento' : tx.nature === 'external_income' ? 'Ingreso' : tx.nature === 'internal_transfer' ? 'Transferencia' : 'Gasto'}
-                        </span>
-                      </div>
+                groupedTransactionsLast6Days.map(group => (
+                  <div key={group.date} className="space-y-2">
+                    {/* ENCABEZADO DEL DÍA */}
+                    <div className="flex items-center gap-2 pt-1 pb-1 border-b border-slate-100">
+                      <span className="text-[11px] font-black tracking-wider text-slate-800 uppercase bg-slate-100 px-2.5 py-0.5 rounded-full">
+                        {group.header}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {group.transactions.length} {group.transactions.length === 1 ? 'movimiento' : 'movimientos'}
+                      </span>
                     </div>
-                  );
-                })
+
+                    {/* MOVIMIENTOS DEL DÍA */}
+                    <div className="space-y-2">
+                      {group.transactions.map(tx => {
+                        const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield';
+                        const isExpense = tx.nature === 'external_expense' || tx.nature === 'investment_buy';
+                        const isTransfer = tx.nature === 'internal_transfer';
+
+                        const sourceAcc = data.accounts.find(a => a.id === tx.sourceAccountId);
+                        const destAcc = data.accounts.find(a => a.id === tx.destinationAccountId);
+
+                        return (
+                          <div
+                            key={tx.id}
+                            onClick={() => handleOpenEditTransaction(tx)}
+                            className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer border border-slate-100 group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 ${
+                                isIncome ? 'bg-emerald-500/15 text-emerald-800' : isExpense ? 'bg-rose-500/15 text-rose-800' : 'bg-indigo-500/15 text-indigo-800'
+                              }`}>
+                                {getCategoryEmoji(tx)}
+                              </div>
+
+                              <div>
+                                <div className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-800 transition-colors">
+                                  {tx.categoryId || (isTransfer ? 'Transferencia' : 'General')}
+                                </div>
+                                <div className="text-[11px] text-slate-600 font-medium mt-0.5">
+                                  {tx.description}
+                                </div>
+                                {(sourceAcc || destAcc) && (
+                                  <div className="text-[10px] text-slate-400 font-medium">
+                                    {isTransfer ? `${sourceAcc?.name || 'Origen'} ➔ ${destAcc?.name || 'Destino'}` : (sourceAcc?.name || destAcc?.name || 'Cuenta')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className={`font-mono font-black text-xs ${
+                                isIncome ? 'text-emerald-800' : isExpense ? 'text-rose-800' : 'text-slate-800'
+                              }`}>
+                                {showBalance ? (
+                                  isIncome ? `+ ${formatCurrency(tx.amount, tx.currency)}` : isExpense ? `- ${formatCurrency(tx.amount, tx.currency)}` : formatCurrency(tx.amount, tx.currency)
+                                ) : '$ •••'}
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                {tx.nature === 'financial_yield' ? 'Rendimiento' : tx.nature === 'external_income' ? 'Ingreso' : tx.nature === 'internal_transfer' ? 'Transferencia' : 'Gasto'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
               )}
+
+              {/* BOTÓN AL FINAL DE LA SECCIÓN */}
+              <div className="pt-2 border-t border-slate-100 text-center">
+                <button
+                  onClick={() => setActiveTab('transactions')}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span>Ver más movimientos →</span>
+                </button>
+              </div>
             </div>
           </div>
 
