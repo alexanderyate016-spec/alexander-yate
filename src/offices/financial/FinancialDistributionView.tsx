@@ -356,6 +356,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
     FinancialStore.addTransaction({
       date: todayStr,
+      time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false }),
       description: txDesc,
       amount: Number(expenseAmount),
       nature: 'external_expense',
@@ -1377,7 +1378,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                     >
                       {data.accounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
-                          {acc.name} ({formatCurrency(acc.balance, acc.currency)})
+                          {acc.name} ({formatCurrency(acc.balance ?? acc.initialBalance, acc.currency)})
                         </option>
                       ))}
                     </select>

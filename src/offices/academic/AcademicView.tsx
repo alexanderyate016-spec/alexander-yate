@@ -332,18 +332,23 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [cutName, setCutName] = useState('');
   const [cutWeight, setCutWeight] = useState(30);
 
-  // 6. Activity / Evaluation Edit Modal
-  const [editingActivity, setEditingActivity] = useState<{
+  // 6. Dedicated Evaluation Modal State
+  const [showEvaluationModal, setShowEvaluationModal] = useState(false);
+  const [editingEval, setEditingEval] = useState<{
     subjectId: string;
-    cutId: string;
-    activity: AcademicEvaluationActivity;
+    cutId?: string;
+    activityId?: string;
   } | null>(null);
-  const [editActName, setEditActName] = useState('');
-  const [editActType, setEditActType] = useState<AcademicEvaluationActivity['type']>('Parcial');
-  const [editActDate, setEditActDate] = useState('');
-  const [editActWeight, setEditActWeight] = useState(20);
-  const [editActStatus, setEditActStatus] = useState<'pending' | 'graded' | 'cancelled'>('pending');
-  const [editActGrade, setEditActGrade] = useState<string>('');
+  const [evalName, setEvalName] = useState('');
+  const [evalSubjectId, setEvalSubjectId] = useState('');
+  const [evalCutId, setEvalCutId] = useState('pendiente'); // 'pendiente' or cutId
+  const [evalType, setEvalType] = useState<AcademicEvaluationActivity['type']>('Parcial');
+  const [evalGradableType, setEvalGradableType] = useState<'calificable' | 'no_calificable' | 'pendiente'>('calificable');
+  const [evalWeightPercent, setEvalWeightPercent] = useState<string>('20');
+  const [evalDate, setEvalDate] = useState(getTodayDateString());
+  const [evalTime, setEvalTime] = useState('');
+  const [evalGrade, setEvalGrade] = useState('');
+  const [evalDescription, setEvalDescription] = useState('');
 
   // 7. Inline New Activity Forms dictionary (key = cutId)
   const [newActivityForms, setNewActivityForms] = useState<Record<string, {
@@ -353,20 +358,24 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     weight: number;
   }>>({});
 
-  // 8. Academic Activity Modal (Non-graded Events)
+  // 8. Academic Activity Modal (Tasks & Non-graded Events)
   const [showAcademicActivityModal, setShowAcademicActivityModal] = useState(false);
   const [editingAcademicActivity, setEditingAcademicActivity] = useState<AcademicActivity | null>(null);
   const [acadActName, setAcadActName] = useState('');
-  const [acadActType, setAcadActType] = useState<string>('Salida de campo');
+  const [acadActType, setAcadActType] = useState<string>('Taller');
   const [acadActSubjectId, setAcadActSubjectId] = useState('');
   const [acadActDate, setAcadActDate] = useState(getTodayDateString());
-  const [acadActStartTime, setAcadActStartTime] = useState('08:00');
-  const [acadActEndTime, setAcadActEndTime] = useState('10:00');
+  const [acadActStartTime, setAcadActStartTime] = useState('');
+  const [acadActEndTime, setAcadActEndTime] = useState('');
   const [acadActLocation, setAcadActLocation] = useState('');
   const [acadActProfessor, setAcadActProfessor] = useState('');
   const [acadActDescription, setAcadActDescription] = useState('');
   const [acadActStatus, setAcadActStatus] = useState<AcademicActivityStatus>('Pendiente');
-  const [acadActClassRelation, setAcadActClassRelation] = useState<'replaces' | 'complements' | 'independent'>('replaces');
+  const [acadActClassRelation, setAcadActClassRelation] = useState<'replaces' | 'complements' | 'independent'>('independent');
+  const [acadActEvaluationId, setAcadActEvaluationId] = useState<string>('');
+
+  // 9. History Toggle State for Tasks and Activities Tab
+  const [showActivitiesHistory, setShowActivitiesHistory] = useState(false);
 
   // Semesters & Subjects Data
   const semesters = data?.semesters || [];
@@ -550,6 +559,88 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
     return events;
   }, [activeSubjects, scheduleSelectedDate]);
+
+  // Class-only Schedule Events (Requirement 1: Horario contiene exclusivamente clases)
+  const classOnlyScheduleEvents: CalendarEvent[] = useMemo(() => {
+    return scheduleEvents.filter(e => e.raw?.type === 'class_session');
+  }, [scheduleEvents]);
+
+  // Intelligent Class Schedule Context Detection (Requirement 4)
+  const detectedEvalClassSession = useMemo(() => {
+    if (!evalSubjectId || !evalDate) return null;
+    const sub = activeSubjects.find(s => s.id === evalSubjectId);
+    if (!sub) return null;
+    const sessions = AcademicCalculations.getAllSessionsForDate([sub], evalDate);
+    return sessions.length > 0 ? sessions[0] : null;
+  }, [activeSubjects, evalSubjectId, evalDate]);
+
+  const detectedAcadActClassSession = useMemo(() => {
+    if (!acadActSubjectId || !acadActDate) return null;
+    const sub = activeSubjects.find(s => s.id === acadActSubjectId);
+    if (!sub) return null;
+    const sessions = AcademicCalculations.getAllSessionsForDate([sub], acadActDate);
+    return sessions.length > 0 ? sessions[0] : null;
+  }, [activeSubjects, acadActSubjectId, acadActDate]);
+
+  // Computed Task & Activity categories for activeTab === 'activities' (Requirements 3, 6, 7, 8)
+  const taskAndActivityData = useMemo(() => {
+    const overdue: Array<{ subject: AcademicSubject; activity: AcademicActivity; daysOverdue: number }> = [];
+    const todayItems: Array<{ subject: AcademicSubject; activity: AcademicActivity }> = [];
+    const upcomingTomorrow: Array<{ subject: AcademicSubject; activity: AcademicActivity }> = [];
+    const upcoming3Days: Array<{ subject: AcademicSubject; activity: AcademicActivity; daysDiff: number }> = [];
+    const upcomingLater: Array<{ subject: AcademicSubject; activity: AcademicActivity; daysDiff: number }> = [];
+    const historyItems: Array<{ subject: AcademicSubject; activity: AcademicActivity }> = [];
+
+    const todayDate = new Date(todayStr + 'T00:00:00');
+
+    activeSubjects.forEach(sub => {
+      (sub.academicActivities || []).forEach(act => {
+        const actDate = new Date(act.date + 'T00:00:00');
+        const diffMs = actDate.getTime() - todayDate.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+        const isPendingTask = act.status === 'Pendiente';
+        const isCompleted = act.status === 'Completada' || act.status === 'Realizada';
+        const isCancelled = act.status === 'Cancelada';
+
+        if (isCancelled || isCompleted) {
+          historyItems.push({ subject: sub, activity: act });
+          return;
+        }
+
+        if (diffDays < 0) {
+          if (isPendingTask) {
+            overdue.push({ subject: sub, activity: act, daysOverdue: Math.abs(diffDays) });
+          } else {
+            historyItems.push({ subject: sub, activity: act });
+          }
+        } else if (diffDays === 0) {
+          todayItems.push({ subject: sub, activity: act });
+        } else if (diffDays === 1) {
+          upcomingTomorrow.push({ subject: sub, activity: act });
+        } else if (diffDays <= 3) {
+          upcoming3Days.push({ subject: sub, activity: act, daysDiff: diffDays });
+        } else {
+          upcomingLater.push({ subject: sub, activity: act, daysDiff: diffDays });
+        }
+      });
+    });
+
+    overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    todayItems.sort((a, b) => (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00'));
+    upcomingTomorrow.sort((a, b) => (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00'));
+    upcoming3Days.sort((a, b) => a.daysDiff - b.daysDiff);
+    upcomingLater.sort((a, b) => a.daysDiff - b.daysDiff);
+
+    return {
+      overdue,
+      todayItems,
+      upcomingTomorrow,
+      upcoming3Days,
+      upcomingLater,
+      historyItems
+    };
+  }, [activeSubjects, todayStr]);
 
   // Professor Handlers
   const handleOpenProfessorModal = (subjectId: string, prof?: SubjectProfessor) => {
@@ -1005,80 +1096,143 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     showToast(`Evaluación "${form.name.trim()}" agregada.`);
   };
 
-  const handleOpenEditActivityModal = (subjectId: string, cutId: string, act: AcademicEvaluationActivity) => {
-    setEditingActivity({ subjectId, cutId, activity: act });
-    setEditActName(act.name);
-    setEditActType(act.type);
-    setEditActDate(act.date);
-    setEditActWeight(act.weightPercent);
-    setEditActStatus(act.status);
-    setEditActGrade(act.grade !== undefined && act.grade !== null ? String(act.grade) : '');
+  const handleOpenEvaluationModal = (
+    subjectId?: string,
+    cutId?: string,
+    evalAct?: AcademicEvaluationActivity
+  ) => {
+    if (activeSubjects.length === 0) {
+      showToast('Debes registrar al menos una materia antes de crear evaluaciones.', 'warning');
+      return;
+    }
+    const defaultSubId = subjectId || activeSubjects[0]?.id;
+    setEvalSubjectId(defaultSubId);
+
+    if (evalAct) {
+      setEditingEval({ subjectId: defaultSubId, cutId, activityId: evalAct.id });
+      setEvalName(evalAct.name);
+      setEvalType(evalAct.type);
+      setEvalGradableType(evalAct.gradableType || 'calificable');
+      setEvalCutId(cutId || evalAct.cutId || 'pendiente');
+      setEvalWeightPercent(evalAct.weightPercent ? String(evalAct.weightPercent) : '');
+      setEvalDate(evalAct.date || todayStr);
+      setEvalTime(evalAct.startTime || evalAct.time || '');
+      setEvalGrade(evalAct.grade !== undefined && evalAct.grade !== null ? String(evalAct.grade) : '');
+      setEvalDescription(evalAct.description || '');
+    } else {
+      setEditingEval(null);
+      setEvalName('');
+      setEvalType('Parcial');
+      setEvalGradableType('calificable');
+      setEvalCutId(cutId || 'pendiente');
+      setEvalWeightPercent('20');
+      setEvalDate(todayStr);
+      setEvalTime('');
+      setEvalGrade('');
+      setEvalDescription('');
+    }
+    setShowEvaluationModal(true);
   };
 
-  const handleSaveActivityEdit = (e: React.FormEvent) => {
+  const handleSaveEvaluation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingActivity) return;
+    if (!evalName.trim() || !evalSubjectId) {
+      showToast('Ingresa el nombre de la evaluación y la materia.', 'warning');
+      return;
+    }
 
+    const weightNum = evalWeightPercent.trim() !== '' ? Number(evalWeightPercent) || 0 : 0;
     let finalGrade: number | undefined = undefined;
-    if (editActGrade.trim() !== '') {
-      const parsed = parseFloat(editActGrade.replace(',', '.'));
+    if (evalGrade.trim() !== '') {
+      const parsed = parseFloat(evalGrade.replace(',', '.'));
       if (!isNaN(parsed)) {
         finalGrade = Math.min(5.0, Math.max(0.0, parsed));
       }
     }
 
-    AcademicStore.updateActivity(editingActivity.subjectId, editingActivity.cutId, editingActivity.activity.id, {
-      name: editActName.trim(),
-      type: editActType,
-      date: editActDate,
-      weightPercent: Number(editActWeight) || 0,
-      status: finalGrade !== undefined ? 'graded' : editActStatus,
-      grade: finalGrade
-    });
-
-    setEditingActivity(null);
-    showToast('Evaluación actualizada correctamente.');
+    if (editingEval && editingEval.activityId) {
+      AcademicStore.updateActivity(editingEval.subjectId, editingEval.cutId || 'cut_pending', editingEval.activityId, {
+        name: evalName.trim(),
+        type: evalType,
+        gradableType: evalGradableType,
+        cutId: evalCutId === 'pendiente' ? undefined : evalCutId,
+        weightPercent: weightNum,
+        date: evalDate,
+        startTime: evalTime || undefined,
+        time: evalTime || undefined,
+        grade: finalGrade,
+        status: finalGrade !== undefined ? 'graded' : 'pending',
+        description: evalDescription.trim()
+      });
+      showToast(`Evaluación "${evalName.trim()}" actualizada.`);
+    } else {
+      AcademicStore.addActivity(evalSubjectId, evalCutId === 'pendiente' ? 'cut_pending' : evalCutId, {
+        name: evalName.trim(),
+        type: evalType,
+        gradableType: evalGradableType,
+        cutId: evalCutId === 'pendiente' ? undefined : evalCutId,
+        weightPercent: weightNum,
+        date: evalDate,
+        startTime: evalTime || undefined,
+        time: evalTime || undefined,
+        grade: finalGrade,
+        status: finalGrade !== undefined ? 'graded' : 'pending',
+        description: evalDescription.trim()
+      });
+      showToast(`Evaluación "${evalName.trim()}" registrada correctamente.`);
+    }
+    setShowEvaluationModal(false);
   };
 
   const handleDeleteActivity = (subjectId: string, cutId: string, actId: string) => {
     AcademicStore.deleteActivity(subjectId, cutId, actId);
-    if (editingActivity?.activity.id === actId) {
-      setEditingActivity(null);
-    }
     showToast('Evaluación eliminada.');
   };
 
-  const handleOpenAcademicActivityModal = (act?: AcademicActivity, preselectedSubjectId?: string) => {
+  const handleOpenAcademicActivityModal = (act?: AcademicActivity, preselectedSubjectId?: string, preselectedEvalId?: string) => {
     if (activeSubjects.length === 0) {
-      showToast('Debes tener materias registradas para agregar eventos académicos.', 'warning');
+      showToast('Debes tener materias registradas para agregar tareas o eventos académicos.', 'warning');
       return;
     }
     if (act) {
       setEditingAcademicActivity(act);
       setAcadActName(act.name);
-      setAcadActType(act.type);
+      setAcadActType(act.type || 'Taller');
       setAcadActSubjectId(act.subjectId);
       setAcadActDate(act.date);
-      setAcadActStartTime(act.startTime || '08:00');
-      setAcadActEndTime(act.endTime || '10:00');
+      setAcadActStartTime(act.startTime || '');
+      setAcadActEndTime(act.endTime || '');
       setAcadActLocation(act.location || '');
       setAcadActProfessor(act.professor || '');
       setAcadActDescription(act.description || '');
       setAcadActStatus(act.status);
-      setAcadActClassRelation(act.classRelation || 'replaces');
+      setAcadActClassRelation(act.classRelation || 'independent');
+      setAcadActEvaluationId(act.evaluationId || preselectedEvalId || '');
     } else {
+      const subId = preselectedSubjectId || activeSubjects[0].id;
       setEditingAcademicActivity(null);
       setAcadActName('');
-      setAcadActType('Salida de campo');
-      setAcadActSubjectId(preselectedSubjectId || activeSubjects[0].id);
+      setAcadActType('Taller');
+      setAcadActSubjectId(subId);
       setAcadActDate(todayStr);
-      setAcadActStartTime('08:00');
-      setAcadActEndTime('10:00');
+
+      // Intelligent Auto-check: If class session exists on todayStr for this subject, default to its time!
+      const sub = activeSubjects.find(s => s.id === subId);
+      const sessions = sub ? AcademicCalculations.getAllSessionsForDate([sub], todayStr) : [];
+      if (sessions.length > 0) {
+        setAcadActStartTime(sessions[0].startTime);
+        setAcadActEndTime(sessions[0].endTime);
+      } else {
+        setAcadActStartTime('');
+        setAcadActEndTime('');
+      }
+
       setAcadActLocation('');
       setAcadActProfessor('');
       setAcadActDescription('');
       setAcadActStatus('Pendiente');
-      setAcadActClassRelation('replaces');
+      setAcadActClassRelation('independent');
+      setAcadActEvaluationId(preselectedEvalId || '');
     }
     setShowAcademicActivityModal(true);
   };
@@ -1096,13 +1250,14 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         name: acadActName.trim(),
         type: acadActType,
         date: acadActDate,
-        startTime: acadActStartTime,
-        endTime: acadActEndTime,
+        startTime: acadActStartTime || undefined,
+        endTime: acadActEndTime || undefined,
         location: acadActLocation.trim(),
         professor: acadActProfessor.trim(),
         description: acadActDescription.trim(),
         status: acadActStatus,
-        classRelation: acadActClassRelation
+        classRelation: acadActClassRelation,
+        evaluationId: acadActEvaluationId || undefined
       });
       showToast(`Actividad "${acadActName.trim()}" actualizada.`);
     } else {
@@ -1111,15 +1266,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         name: acadActName.trim(),
         type: acadActType,
         date: acadActDate,
-        startTime: acadActStartTime,
-        endTime: acadActEndTime,
+        startTime: acadActStartTime || undefined,
+        endTime: acadActEndTime || undefined,
         location: acadActLocation.trim(),
         professor: acadActProfessor.trim(),
         description: acadActDescription.trim(),
         status: acadActStatus,
-        classRelation: acadActClassRelation
+        classRelation: acadActClassRelation,
+        evaluationId: acadActEvaluationId || undefined
       });
-      showToast(`Actividad "${acadActName.trim()}" creada.`);
+      showToast(`Actividad "${acadActName.trim()}" creada correctamente.`);
     }
     setShowAcademicActivityModal(false);
   };
@@ -2249,7 +2405,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                                                       <button
                                                         onClick={() => {
                                                           const rawAct = cut.activities.find(a => a.id === actProg.activityId);
-                                                          if (rawAct) handleOpenEditActivityModal(currentExpandedSubject.id, cut.id, rawAct);
+                                                          if (rawAct) handleOpenEvaluationModal(currentExpandedSubject.id, cut.id, rawAct);
                                                         }}
                                                         className="p-1 text-slate-400 hover:text-slate-700 rounded"
                                                         title="Editar evaluación"
@@ -2701,14 +2857,19 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
           )}
 
-          {/* TAB 2: HORARIO SEMANAL */}
+          {/* TAB 2: HORARIO SEMANAL (Exclusivamente Clases) */}
           {activeTab === 'schedule' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#C5A059]" />
-                  Horario Académico Semanal Unificado
-                </h3>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#C5A059]" />
+                    Horario Académico Semanal (Exclusivo Clases)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Este horario contiene únicamente las sesiones de clases de tus materias.
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowAddSessionGlobalModal(true)}
                   className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-1.5 shadow-sm"
@@ -2718,7 +2879,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <UniversalSchedule
-                events={scheduleEvents}
+                events={classOnlyScheduleEvents}
                 selectedDate={scheduleSelectedDate}
                 onSelectDate={setScheduleSelectedDate}
                 viewMode={scheduleViewMode}
@@ -2735,7 +2896,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 }}
                 onRescheduleActivity={(evt) => {
                   if (evt.raw?.type === 'evaluation_activity' && evt.raw.activity) {
-                    handleOpenEditActivityModal(evt.raw.subjectId, evt.raw.cutId, evt.raw.activity);
+                    handleOpenEvaluationModal(evt.raw.subjectId, evt.raw.cutId, evt.raw.activity);
                   } else if (evt.raw?.type === 'academic_activity' && evt.raw.activity) {
                     handleOpenAcademicActivityModal(evt.raw.activity, evt.raw.subjectId);
                   }
@@ -2775,98 +2936,401 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
           {/* TAB 3: EVALUACIONES GENERALES */}
           {activeTab === 'evaluations' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Target className="w-4 h-4 text-purple-700" />
-                Todas las Evaluaciones del Semestre
-              </h3>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-700" />
+                    Evaluaciones del Semestre
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Gestiona exámenes, parciales y actividades calificables por materia.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenEvaluationModal()}
+                  className="px-3.5 py-2 text-xs font-bold text-white bg-purple-900 hover:bg-purple-800 rounded-xl flex items-center gap-1.5 shadow-sm shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Nueva Evaluación
+                </button>
+              </div>
 
               {activeSubjects.length > 0 ? (
-                <div className="space-y-4">
-                  {activeSubjects.map(sub => (
-                    <div key={sub.id} className="border border-slate-200 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: sub.color || '#3B82F6' }} />
-                        <h4 className="text-sm font-bold text-slate-900">{sub.name}</h4>
-                      </div>
+                <div className="space-y-6">
+                  {activeSubjects.map(sub => {
+                    // Collect all evaluations for this subject
+                    const allEvals: Array<{ cutName: string; cutId?: string; act: AcademicEvaluationActivity }> = [];
+                    if (sub.cuts) {
+                      sub.cuts.forEach(cut => {
+                        (cut.activities || []).forEach(act => {
+                          allEvals.push({ cutName: cut.cutName, cutId: cut.id, act });
+                        });
+                      });
+                    }
 
-                      {sub.cuts && sub.cuts.length > 0 ? (
-                        sub.cuts.map(cut => (
-                          <div key={cut.id} className="pl-3 space-y-2">
-                            <span className="text-xs font-semibold text-slate-500 block">{cut.cutName} ({cut.cutWeightPercent}%)</span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {cut.activities && cut.activities.map(act => (
-                                <div key={act.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-                                  <div className="font-bold text-slate-900 flex justify-between">
-                                    <span>{act.name}</span>
-                                    <span className="font-mono text-purple-900">{act.weightPercent}%</span>
+                    return (
+                      <div key={sub.id} className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-slate-50/50">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: sub.color || '#3B82F6' }} />
+                            <h4 className="text-base font-bold text-slate-900">{sub.name}</h4>
+                            <span className="text-xs text-slate-500 font-medium">({allEvals.length} evaluaciones)</span>
+                          </div>
+                          <button
+                            onClick={() => handleOpenEvaluationModal(sub.id)}
+                            className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 hover:underline"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Agregar Evaluación
+                          </button>
+                        </div>
+
+                        {allEvals.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {allEvals.map(({ cutName, cutId, act }) => {
+                              // Find tasks linked to this evaluation
+                              const linkedTasks = (sub.academicActivities || []).filter(task => task.evaluationId === act.id);
+
+                              const gradableLabel = act.gradableType === 'no_calificable' ? 'No Calificable' :
+                                act.gradableType === 'pendiente' ? 'Calificable: Pendiente' : 'Calificable';
+
+                              return (
+                                <div key={act.id} className="p-4 bg-white border border-slate-200 rounded-xl space-y-3 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                                  <div className="space-y-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold text-[10px] uppercase tracking-wider">
+                                          {act.type}
+                                        </span>
+                                        <h5 className="font-bold text-slate-900 text-sm mt-1">{act.name}</h5>
+                                      </div>
+                                      <button
+                                        onClick={() => handleOpenEvaluationModal(sub.id, cutId, act)}
+                                        className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                                        title="Editar evaluación"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                      <span className={`px-2 py-0.5 rounded-full font-semibold border ${
+                                        act.gradableType === 'no_calificable' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                                        act.gradableType === 'pendiente' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                        'bg-purple-50 text-purple-800 border-purple-200'
+                                      }`}>
+                                        {gradableLabel}
+                                      </span>
+
+                                      <span className={`px-2 py-0.5 rounded-full font-semibold border ${
+                                        cutName === 'Corte Pendiente' || !act.cutId ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                                      }`}>
+                                        {cutName === 'Corte Pendiente' || !act.cutId ? 'Corte: Pendiente' : cutName}
+                                      </span>
+
+                                      <span className={`px-2 py-0.5 rounded-full font-mono font-bold border ${
+                                        act.weightPercent ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'
+                                      }`}>
+                                        {act.weightPercent ? `${act.weightPercent}% Aporte` : 'Aporte: Pendiente'}
+                                      </span>
+                                    </div>
+
+                                    <div className="text-xs text-slate-600 space-y-1 pt-1 font-medium">
+                                      <div>🗓️ Fecha: <span className="font-bold text-slate-800">{act.date}</span> {act.startTime ? `(${act.startTime})` : ''}</div>
+                                      <div>
+                                        Nota: <span className="font-mono font-bold text-slate-900">
+                                          {act.grade !== undefined && act.grade !== null ? formatGrade(act.grade) : 'Pendiente'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Linked Sub-Tasks */}
+                                    {linkedTasks.length > 0 && (
+                                      <div className="pt-2 border-t border-slate-100 space-y-1">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Tareas asociadas:</span>
+                                        {linkedTasks.map(t => (
+                                          <div key={t.id} className="text-[11px] text-slate-700 flex items-center justify-between bg-slate-50 p-1.5 rounded border border-slate-200">
+                                            <span className="font-semibold truncate max-w-[150px]">{t.name}</span>
+                                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                                              t.status === 'Completada' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                            }`}>
+                                              {t.status}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="text-[11px] text-slate-500 font-mono">🗓️ {act.date}</div>
-                                  <div className="text-[11px] text-slate-700 font-semibold">
-                                    Nota: {act.grade !== undefined && act.grade !== null ? formatGrade(act.grade) : 'Pendiente'}
+
+                                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px]">
+                                    <button
+                                      onClick={() => handleOpenAcademicActivityModal(undefined, sub.id, act.id)}
+                                      className="text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 text-[11px]"
+                                    >
+                                      <Plus className="w-3 h-3" /> Agregar Tarea
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteActivity(sub.id, cutId || 'cut_pending', act.id)}
+                                      className="text-slate-400 hover:text-rose-600 transition-colors"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })}
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-xs text-slate-400 italic">Sin evaluaciones configuradas</div>
-                      )}
-                    </div>
-                  ))}
+                        ) : (
+                          <div className="text-center py-6 text-xs text-slate-400 italic">
+                            No hay evaluaciones registradas para {sub.name}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-xs text-slate-500">No hay materias registradas</div>
+                <div className="text-center py-12 text-xs text-slate-500">No hay materias registradas</div>
               )}
             </div>
           )}
 
-          {/* TAB 4: ACTIVIDADES GENERALES */}
+          {/* TAB 4: TAREAS Y ACTIVIDADES GENERALES (Reorganización con Ciclo de Vida) */}
           {activeTab === 'activities' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-emerald-700" />
-                  Eventos y Actividades Académicas No Calificables
-                </h3>
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-emerald-700" />
+                    Tareas y Actividades Académicas
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Visualiza tus pendientes organizados por urgencia y estado.
+                  </p>
+                </div>
                 <button
                   onClick={() => handleOpenAcademicActivityModal()}
-                  className="px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-2 text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 rounded-xl flex items-center gap-1.5 shadow-sm shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Nueva Actividad
+                  <Plus className="w-3.5 h-3.5" /> Nueva Tarea / Actividad
                 </button>
               </div>
 
-              {upcomingActivities.length > 0 ? (
-                <div className="space-y-3">
-                  {upcomingActivities.map((item) => (
-                    <div key={item.activity.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-slate-900">{item.activity.name}</h4>
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold">
-                            {item.activity.type}
-                          </span>
-                        </div>
-                        <div className="text-xs text-slate-600 mt-1 font-medium">
-                          Materia: <span className="font-bold text-slate-900">{item.subject.name}</span> • 🗓️ {item.activity.date}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleOpenAcademicActivityModal(item.activity)}
-                        className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg"
-                      >
-                        Editar
-                      </button>
+              <div className="space-y-6">
+                
+                {/* 1. SECCIÓN VENCIDAS (ALERTA DE ATENCIÓN) */}
+                {taskAndActivityData.overdue.length > 0 && (
+                  <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-rose-900 font-bold text-sm">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <h4>Vencidas ({taskAndActivityData.overdue.length}) — Requieren tu atención</h4>
                     </div>
-                  ))}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {taskAndActivityData.overdue.map(({ subject, activity, daysOverdue }) => (
+                        <div key={activity.id} className="p-3.5 bg-white border border-rose-200 rounded-xl space-y-2 shadow-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-900 font-bold text-[10px]">
+                                  Vencida hace {daysOverdue} día{daysOverdue > 1 ? 's' : ''}
+                                </span>
+                                <span className="text-xs text-slate-500 font-medium">{activity.type}</span>
+                              </div>
+                              <h5 className="font-bold text-slate-900 text-sm mt-1">{activity.name}</h5>
+                              <p className="text-xs text-slate-600 font-semibold">{subject.name} • 🗓️ {activity.date}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <button
+                              onClick={() => {
+                                AcademicStore.updateAcademicActivity(activity.id, { status: 'Completada', completedAt: new Date().toISOString() });
+                                showToast(`Tarea "${activity.name}" marcada como completada.`);
+                              }}
+                              className="px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Marcar como Completada
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenAcademicActivityModal(activity)}
+                              className="text-xs text-slate-500 hover:text-slate-800 font-semibold"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. SECCIÓN HOY */}
+                {taskAndActivityData.todayItems.length > 0 && (
+                  <div className="border border-blue-200 bg-blue-50/40 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+                      <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                      <h4>Hoy ({taskAndActivityData.todayItems.length})</h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {taskAndActivityData.todayItems.map(({ subject, activity }) => (
+                        <div key={activity.id} className="p-3.5 bg-white border border-blue-200 rounded-xl space-y-2 shadow-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-bold text-[10px]">
+                                {activity.type}
+                              </span>
+                              <h5 className="font-bold text-slate-900 text-sm mt-1">{activity.name}</h5>
+                              <p className="text-xs text-slate-600 font-semibold">
+                                {subject.name} {activity.startTime ? `• ⏰ ${activity.startTime}` : ''}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <button
+                              onClick={() => {
+                                AcademicStore.updateAcademicActivity(activity.id, { status: 'Completada', completedAt: new Date().toISOString() });
+                                showToast(`Tarea "${activity.name}" completada.`);
+                              }}
+                              className="px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Completar
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenAcademicActivityModal(activity)}
+                              className="text-xs text-slate-500 hover:text-slate-800 font-semibold"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. SECCIÓN PRÓXIMAMENTE */}
+                <div className="space-y-4">
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    Próximamente
+                  </h4>
+
+                  {/* Mañana */}
+                  {taskAndActivityData.upcomingTomorrow.length > 0 && (
+                    <div className="space-y-2 pl-2 border-l-2 border-amber-400">
+                      <span className="text-xs font-bold text-amber-900 block">Mañana</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {taskAndActivityData.upcomingTomorrow.map(({ subject, activity }) => (
+                          <div key={activity.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                            <div>
+                              <div className="font-bold text-slate-900">{activity.name}</div>
+                              <div className="text-slate-500 font-medium">{subject.name} • {activity.type}</div>
+                            </div>
+                            <button
+                              onClick={() => handleOpenAcademicActivityModal(activity)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* En 3 días */}
+                  {taskAndActivityData.upcoming3Days.length > 0 && (
+                    <div className="space-y-2 pl-2 border-l-2 border-blue-400">
+                      <span className="text-xs font-bold text-blue-900 block">En 2–3 días</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {taskAndActivityData.upcoming3Days.map(({ subject, activity, daysDiff }) => (
+                          <div key={activity.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                            <div>
+                              <div className="font-bold text-slate-900">{activity.name}</div>
+                              <div className="text-slate-500 font-medium">{subject.name} • 🗓️ En {daysDiff} días ({activity.date})</div>
+                            </div>
+                            <button
+                              onClick={() => handleOpenAcademicActivityModal(activity)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* En 7 días o más */}
+                  {taskAndActivityData.upcomingLater.length > 0 && (
+                    <div className="space-y-2 pl-2 border-l-2 border-slate-300">
+                      <span className="text-xs font-bold text-slate-700 block">En 4 días o más</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {taskAndActivityData.upcomingLater.map(({ subject, activity, daysDiff }) => (
+                          <div key={activity.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                            <div>
+                              <div className="font-bold text-slate-900">{activity.name}</div>
+                              <div className="text-slate-500 font-medium">{subject.name} • 🗓️ En {daysDiff} días ({activity.date})</div>
+                            </div>
+                            <button
+                              onClick={() => handleOpenAcademicActivityModal(activity)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {taskAndActivityData.upcomingTomorrow.length === 0 &&
+                   taskAndActivityData.upcoming3Days.length === 0 &&
+                   taskAndActivityData.upcomingLater.length === 0 &&
+                   taskAndActivityData.todayItems.length === 0 &&
+                   taskAndActivityData.overdue.length === 0 && (
+                    <div className="text-center py-8 text-xs text-slate-400 italic">
+                      No hay tareas ni actividades pendientes registradas
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-xs text-slate-500 italic">
-                  No hay actividades académicas pendientes registradas
-                </div>
-              )}
+
+                {/* 4. HISTORIAL Y ACTIVIDADES COMPLETADAS */}
+                {taskAndActivityData.historyItems.length > 0 && (
+                  <div className="pt-4 border-t border-slate-200 space-y-3">
+                    <button
+                      onClick={() => setShowActivitiesHistory(!showActivitiesHistory)}
+                      className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-2"
+                    >
+                      <span>{showActivitiesHistory ? '▼ Ocultar Historial y Actividades Completadas' : '▶ Mostrar Historial y Actividades Completadas'}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-[10px]">
+                        {taskAndActivityData.historyItems.length}
+                      </span>
+                    </button>
+
+                    {showActivitiesHistory && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
+                        {taskAndActivityData.historyItems.map(({ subject, activity }) => (
+                          <div key={activity.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs text-slate-600">
+                            <div>
+                              <span className="font-semibold line-through text-slate-700">{activity.name}</span>
+                              <span className="text-[11px] text-slate-400 block">{subject.name} • 🗓️ {activity.date}</span>
+                            </div>
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
+                              {activity.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
             </div>
           )}
 
@@ -3203,13 +3667,203 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         </div>
       )}
 
-      {/* MODAL: ACTIVIDAD ACADÉMICA / EVENTO NO CALIFICABLE */}
+      {/* MODAL DEDICADO: CREAR / EDITAR EVALUACIÓN (REGLA 2) */}
+      {showEvaluationModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Target className="w-4 h-4 text-purple-700" />
+                {editingEval ? 'Editar Evaluación Académica' : 'Nueva Evaluación Académica'}
+              </h3>
+              <button onClick={() => setShowEvaluationModal(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEvaluation} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Materia *</label>
+                <select
+                  value={evalSubjectId}
+                  onChange={e => setEvalSubjectId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  required
+                >
+                  {activeSubjects.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nombre de la Evaluación *</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Primer Parcial, Quiz de Algoritmos, Proyecto Final..."
+                  value={evalName}
+                  onChange={e => setEvalName(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tipo de Evaluación</label>
+                  <select
+                    value={evalType}
+                    onChange={e => setEvalType(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                  >
+                    <option value="Parcial">📝 Parcial</option>
+                    <option value="Quiz">⚡ Quiz</option>
+                    <option value="Taller">🛠️ Taller</option>
+                    <option value="Laboratorio">🧪 Laboratorio</option>
+                    <option value="Exposición">🎤 Exposición</option>
+                    <option value="Proyecto">🚀 Proyecto</option>
+                    <option value="Otro">📌 Otro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tipo de Calificación</label>
+                  <select
+                    value={evalGradableType}
+                    onChange={e => setEvalGradableType(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  >
+                    <option value="calificable">✅ Calificable</option>
+                    <option value="no_calificable">⚪ No Calificable</option>
+                    <option value="pendiente">❓ Pendiente de Clasificación</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Corte Asignado</label>
+                  <select
+                    value={evalCutId}
+                    onChange={e => setEvalCutId(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                  >
+                    <option value="pendiente">-- Pendiente de asignación --</option>
+                    {(() => {
+                      const sub = activeSubjects.find(s => s.id === evalSubjectId);
+                      return sub?.cuts?.map(c => (
+                        <option key={c.id} value={c.id}>{c.cutName} ({c.cutWeightPercent}%)</option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Aporte Porcentual (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="Ej: 20 (dejar vacío si es pendiente)"
+                    value={evalWeightPercent}
+                    onChange={e => setEvalWeightPercent(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Fecha de la Evaluación *</label>
+                  <input
+                    type="date"
+                    value={evalDate}
+                    onChange={e => setEvalDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Hora (Opcional)</label>
+                  <input
+                    type="time"
+                    value={evalTime}
+                    onChange={e => setEvalTime(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Class detection helper banner */}
+              {detectedEvalClassSession && (
+                <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between text-xs text-purple-900">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-purple-700 shrink-0" />
+                    <span>Clase detectada: <strong>{detectedEvalClassSession.startTime} - {detectedEvalClassSession.endTime}</strong> ({detectedEvalClassSession.classroom || 'Aula habitual'})</span>
+                  </div>
+                  {!evalTime && (
+                    <button
+                      type="button"
+                      onClick={() => setEvalTime(detectedEvalClassSession.startTime)}
+                      className="px-2 py-1 bg-purple-200 hover:bg-purple-300 rounded font-bold text-[10px]"
+                    >
+                      Usar Horario
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Calificación Obtenida (0.0 - 5.0)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 4.5 (dejar vacío si aún no ha sido calificada)"
+                  value={evalGrade}
+                  onChange={e => setEvalGrade(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Temas / Observaciones (Opcional)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej: Capítulos 1 a 4, fórmulas permitidas..."
+                  value={evalDescription}
+                  onChange={e => setEvalDescription(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEvaluationModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-purple-900 hover:bg-purple-800 rounded-xl shadow-md"
+                >
+                  Guardar Evaluación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ACTIVIDAD ACADÉMICA / TAREA (REGLA 3 Y 4) */}
       {showAcademicActivityModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                {editingAcademicActivity ? 'Editar Actividad Académica' : 'Nueva Actividad Académica'}
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Compass className="w-4 h-4 text-emerald-700" />
+                {editingAcademicActivity ? 'Editar Tarea / Actividad' : 'Nueva Tarea / Actividad Académica'}
               </h3>
               <button onClick={() => setShowAcademicActivityModal(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
@@ -3231,10 +3885,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre de la Actividad *</label>
+                <label className="font-bold text-slate-700 block mb-1">Nombre de la Tarea / Actividad *</label>
                 <input
                   type="text"
-                  placeholder="Ej: Salida de campo, Taller práctico, Exposición..."
+                  placeholder="Ej: Taller 1 de Ejercicios, Lectura de Paper, Preparación de Laboratorio..."
                   value={acadActName}
                   onChange={e => setAcadActName(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
@@ -3244,30 +3898,113 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Tipo</label>
+                  <label className="font-bold text-slate-700 block mb-1">Tipo de Actividad</label>
                   <select
                     value={acadActType}
                     onChange={e => setAcadActType(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                   >
+                    <option value="Taller">🛠️ Taller</option>
+                    <option value="Tarea / Entrega">📄 Tarea / Entrega</option>
+                    <option value="Lectura">📖 Lectura</option>
+                    <option value="Seminario">📚 Seminario</option>
+                    <option value="Exposición">🎤 Exposición</option>
                     <option value="Salida de campo">🚌 Salida de campo</option>
                     <option value="Laboratorio">🧪 Laboratorio</option>
                     <option value="Práctica">🛠️ Práctica</option>
-                    <option value="Conferencia">🎤 Conferencia</option>
-                    <option value="Seminario">📚 Seminario</option>
-                    <option value="Tutoría">👨‍🏫 Tutoría</option>
+                    <option value="Otro">📌 Otro</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Fecha</label>
+                  <label className="font-bold text-slate-700 block mb-1">Estado</label>
+                  <select
+                    value={acadActStatus}
+                    onChange={e => setAcadActStatus(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                  >
+                    <option value="Pendiente">⏳ Pendiente</option>
+                    <option value="Completada">✅ Completada</option>
+                    <option value="Cancelada">❌ Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Relación con Evaluación Opcional */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Vincular opcionalmente a una Evaluación</label>
+                <select
+                  value={acadActEvaluationId}
+                  onChange={e => setAcadActEvaluationId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                >
+                  <option value="">-- Ninguna (Actividad / Tarea Independiente) --</option>
+                  {(() => {
+                    const sub = activeSubjects.find(s => s.id === acadActSubjectId);
+                    if (!sub || !sub.cuts) return null;
+                    return sub.cuts.flatMap(c => (c.activities || []).map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({c.cutName})
+                      </option>
+                    )));
+                  })()}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Fecha límite / Entrega *</label>
                   <input
                     type="date"
                     value={acadActDate}
                     onChange={e => setAcadActDate(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                    required
                   />
                 </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Hora Límite (Opcional)</label>
+                  <input
+                    type="time"
+                    value={acadActStartTime}
+                    onChange={e => setAcadActStartTime(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Context Banner: Detected Class Schedule */}
+              {detectedAcadActClassSession && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Horario de clase detectado este día: <strong>{detectedAcadActClassSession.startTime} - {detectedAcadActClassSession.endTime}</strong></span>
+                  </div>
+                  {!acadActStartTime && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAcadActStartTime(detectedAcadActClassSession.startTime);
+                        setAcadActEndTime(detectedAcadActClassSession.endTime);
+                      }}
+                      className="px-2 py-1 bg-emerald-200 hover:bg-emerald-300 rounded font-bold text-[10px]"
+                    >
+                      Usar Horario
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Descripción / Instrucciones (Opcional)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej: Entregar impreso, subir en formato PDF a la plataforma..."
+                  value={acadActDescription}
+                  onChange={e => setAcadActDescription(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -3280,9 +4017,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md"
+                  className="px-4 py-2 text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 rounded-xl shadow-md"
                 >
-                  Guardar Actividad
+                  Guardar Tarea / Actividad
                 </button>
               </div>
             </form>

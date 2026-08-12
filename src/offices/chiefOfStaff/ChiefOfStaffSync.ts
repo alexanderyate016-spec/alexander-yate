@@ -601,7 +601,17 @@ export class ChiefOfStaffSync {
     const nextEvent = upcomingEvents[0];
 
     // Current Activity object (AHORA)
-    let currentActivityObj = {
+    let currentActivityObj: {
+      id?: string;
+      title: string;
+      emoji: string;
+      startTime: string;
+      endTime: string;
+      location: string;
+      isFreeTime: boolean;
+      isCommute: boolean;
+      remainingMins?: number;
+    } = {
       title: 'Tiempo libre',
       emoji: '☕',
       startTime: '',
@@ -609,11 +619,11 @@ export class ChiefOfStaffSync {
       location: 'No tienes actividades programadas en este momento.',
       isFreeTime: true,
       isCommute: false,
-      remainingMins: undefined as number | undefined
+      remainingMins: undefined
     };
 
     if (currentEvent) {
-      const isCommute = currentEvent.type === 'commute' || currentEvent.sourceOffice === 'commute' || currentEvent.title.toLowerCase().includes('desplazamiento') || currentEvent.title.toLowerCase().includes('en camino');
+      const isCommute = (currentEvent.type as string) === 'commute' || (currentEvent.sourceOffice as string) === 'commute' || currentEvent.title.toLowerCase().includes('desplazamiento') || currentEvent.title.toLowerCase().includes('en camino');
       currentActivityObj = {
         id: currentEvent.id,
         title: currentEvent.title,

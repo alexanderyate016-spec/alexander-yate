@@ -98,11 +98,13 @@ export interface AcademicEvaluationActivity {
   time?: string;
   startTime?: string; // HH:mm
   endTime?: string;   // HH:mm
-  weightPercent: number; // e.g. 20 (20%)
+  weightPercent: number; // e.g. 20 (20%) - 0 if pending
   grade?: number; // 0.0 - 5.0
   status: 'pending' | 'graded' | 'cancelled';
   description?: string;
   professorId?: string; // Optional reference to CutProfessor or SubjectProfessor
+  gradableType?: 'calificable' | 'no_calificable' | 'pendiente';
+  cutId?: string; // Optional if cut is pending / unassigned
 }
 
 export type AcademicActivityType =
@@ -117,9 +119,16 @@ export type AcademicActivityType =
   | 'Entrega de documentos'
   | 'Inscripción'
   | 'Reunión'
+  | 'Taller'
+  | 'Exposición'
+  | 'Lectura'
+  | 'Entrega'
+  | 'Presentación'
+  | 'Actividad práctica'
+  | 'Preparación de trabajo'
   | 'Otro';
 
-export type AcademicActivityStatus = 'Pendiente' | 'Realizada' | 'Cancelada' | 'Reprogramada';
+export type AcademicActivityStatus = 'Pendiente' | 'Completada' | 'Realizada' | 'Cancelada' | 'Reprogramada' | 'Vencida';
 
 export interface AcademicActivity {
   id: string;
@@ -134,6 +143,8 @@ export interface AcademicActivity {
   description?: string;
   status: AcademicActivityStatus;
   classRelation?: 'replaces' | 'complements' | 'independent';
+  evaluationId?: string; // Optional link to an AcademicEvaluationActivity
+  completedAt?: string;
 }
 
 export interface AcademicCut {
@@ -332,6 +343,7 @@ export interface FinancialAccount {
   type: 'cash' | 'checking' | 'savings' | 'high_yield' | 'digital_wallet' | 'investment' | 'other';
   currency: CurrencyCode;
   initialBalance: number;
+  balance?: number;
   annualInterestRate?: number; // for high yield accounts (TEA %)
   archived?: boolean;
   createdAt?: string;
@@ -369,6 +381,7 @@ export interface FinancialTransaction {
   date: string;
   time: string;
   nature: TransactionNature;
+  accountId?: string;
   sourceAccountId?: string;
   destinationAccountId?: string;
   sourceName?: string; // Origen del dinero en ingresos externos (ej. salario, beca)

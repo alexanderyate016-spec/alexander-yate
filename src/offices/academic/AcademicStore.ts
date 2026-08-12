@@ -251,12 +251,22 @@ export const AcademicStore = {
   addActivity(subjectId: string, cutId: string, activity: Omit<AcademicEvaluationActivity, 'id'>) {
     storeInstance.updateState(draft => {
       const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
-      if (sub && sub.cuts) {
-        const cut = sub.cuts.find(c => c.id === cutId);
-        if (cut) {
-          const id = 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-          cut.activities.push({ ...activity, id });
+      if (sub) {
+        if (!sub.cuts) sub.cuts = [];
+        let cut = sub.cuts.find(c => c.id === cutId);
+        if (!cut) {
+          cut = sub.cuts.find(c => c.id === 'cut_pending' || c.cutName.toLowerCase().includes('pendiente'));
         }
+        if (!cut) {
+          if (sub.cuts.length > 0) {
+            cut = sub.cuts[0];
+          } else {
+            cut = { id: 'cut_pending_' + Date.now(), cutName: 'Corte Pendiente / Sin Asignar', cutWeightPercent: 0, activities: [] };
+            sub.cuts.push(cut);
+          }
+        }
+        const id = 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        cut.activities.push({ ...activity, id, cutId: cut.id });
       }
     });
   },
@@ -265,17 +275,42 @@ export const AcademicStore = {
     storeInstance.updateState(draft => {
       const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
       if (sub && sub.cuts) {
-        const cut = sub.cuts.find(c => c.id === cutId);
-        if (cut) {
-          const actIdx = cut.activities.findIndex(a => a.id === activityId);
-          if (actIdx !== -1) {
-            const current = cut.activities[actIdx];
-            const updated = { ...current, ...updates };
-            if ('grade' in updates && updates.grade === undefined) {
-              delete updated.grade;
+        // Find current activity across cuts
+        let currentCut = sub.cuts.find(c => c.id === cutId);
+        let actIdx = currentCut ? currentCut.activities.findIndex(a => a.id === activityId) : -1;
+
+        if (actIdx === -1) {
+          // Search all cuts for activity
+          for (const c of sub.cuts) {
+            const idx = c.activities.findIndex(a => a.id === activityId);
+            if (idx !== -1) {
+              currentCut = c;
+              actIdx = idx;
+              break;
             }
-            cut.activities[actIdx] = updated;
           }
+        }
+
+        if (currentCut && actIdx !== -1) {
+          const current = currentCut.activities[actIdx];
+          const updated = { ...current, ...updates };
+
+          if ('grade' in updates && updates.grade === undefined) {
+            delete updated.grade;
+          }
+
+          // Check if moving to a different cut
+          if (updates.cutId && updates.cutId !== currentCut.id) {
+            const newCut = sub.cuts.find(c => c.id === updates.cutId);
+            if (newCut) {
+              currentCut.activities.splice(actIdx, 1);
+              updated.cutId = newCut.id;
+              newCut.activities.push(updated);
+              return;
+            }
+          }
+
+          currentCut.activities[actIdx] = updated;
         }
       }
     });
@@ -285,15 +320,14 @@ export const AcademicStore = {
     storeInstance.updateState(draft => {
       const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
       if (sub && sub.cuts) {
-        const cut = sub.cuts.find(c => c.id === cutId);
-        if (cut) {
+        sub.cuts.forEach(cut => {
           cut.activities = cut.activities.filter(a => a.id !== activityId);
-        }
+        });
       }
     });
   },
 
-  // ACADEMIC ACTIVITIES (NON-GRADED EVENTS)
+  // ACADEMIC ACTIVITIES (NON-GRADED EVENTS AND TASKS)
   addAcademicActivity(activity: Omit<AcademicActivity, 'id'>) {
     storeInstance.updateState(draft => {
       const id = 'acad_act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
@@ -314,28 +348,37 @@ export const AcademicStore = {
 
   updateAcademicActivity(activityId: string, updates: Partial<AcademicActivity>) {
     storeInstance.updateState(draft => {
-      // Update in global array
-      if (draft.offices.academica.academicActivities) {
-        const idx = draft.offices.academica.academicActivities.findIndex(a => a.id === activityId);
-        if (idx !== -1) {
-          draft.offices.academica.academicActivities[idx] = {
-            ...draft.offices.academica.academicActivities[idx],
-            ...updates
-          };
-        }
-      }
-      // Update in subject's array
-      draft.offices.academica.subjects.forEach(sub => {
-        if (sub.academicActivities) {
-          const sIdx = sub.academicActivities.findIndex(a => a.id === activityId);
-          if (sIdx !== -1) {
-            sub.academicActivities[sIdx] = {
-              ...sub.academicActivities[sIdx],
-              ...updates
-            };
+      // If subjectId changes, move to new subject
+      let currentSub = draft.offices.academica.subjects.find(s => s.academicActivities?.some(a => a.id === activityId));
+      let actObj = currentSub?.academicActivities?.find(a => a.id === activityId);
+
+      if (actObj) {
+        const updatedAct = { ...actObj, ...updates };
+        
+        if (updates.subjectId && currentSub && updates.subjectId !== currentSub.id) {
+          // Remove from current subject
+          currentSub.academicActivities = currentSub.academicActivities?.filter(a => a.id !== activityId);
+          // Add to new subject
+          const newSub = draft.offices.academica.subjects.find(s => s.id === updates.subjectId);
+          if (newSub) {
+            if (!newSub.academicActivities) newSub.academicActivities = [];
+            newSub.academicActivities.push(updatedAct);
+          }
+        } else if (currentSub?.academicActivities) {
+          const idx = currentSub.academicActivities.findIndex(a => a.id === activityId);
+          if (idx !== -1) {
+            currentSub.academicActivities[idx] = updatedAct;
           }
         }
-      });
+
+        // Sync global array if present
+        if (draft.offices.academica.academicActivities) {
+          const gIdx = draft.offices.academica.academicActivities.findIndex(a => a.id === activityId);
+          if (gIdx !== -1) {
+            draft.offices.academica.academicActivities[gIdx] = updatedAct;
+          }
+        }
+      }
     });
   },
 
