@@ -361,6 +361,10 @@ export const FinancialCalculations = {
     return { amount: total, count };
   },
 
+  calculateFundUsedAmount(fundId: string, transactions: FinancialTransaction[], monthPrefix?: string): { amount: number; count: number } {
+    return this.calculateBudgetUsedAmount(fundId, transactions, monthPrefix);
+  },
+
   calculateCategoryUsedAmount(
     fundId: string,
     categoryId: string,
