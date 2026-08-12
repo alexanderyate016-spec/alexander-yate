@@ -447,5 +447,90 @@ export const FinancialCalculations = {
       badgeColor: 'emerald' as const,
       alertClass: 'bg-emerald-500/10 text-emerald-800 border-emerald-200'
     };
+  },
+
+  getCalculatedBudgets(data: FinancialOfficeData, todayStr: string) {
+    const plan = data.distributionPlan || {
+      incomeBaseMode: 'calculated',
+      monthlyBaseIncome: undefined,
+      currency: 'COP',
+      funds: [
+        { id: 'fund_necesarios', name: 'Gastos Necesarios', percentage: 50, emoji: '🏠', color: 'emerald', categories: [] },
+        { id: 'fund_personales', name: 'Gastos Personales', percentage: 30, emoji: '🎟️', color: 'purple', categories: [] },
+        { id: 'fund_ahorro', name: 'Ahorro e Inversión', percentage: 20, emoji: 'blue', categories: [] }
+      ]
+    };
+
+    const currency: CurrencyCode = plan.currency || 'COP';
+    const mode = plan.incomeBaseMode || 'calculated';
+
+    const actualIncome = this.calculateActualMonthlyIncome(data.transactions || [], currency, todayStr);
+
+    const baseIncome = mode === 'manual'
+      ? (plan.monthlyBaseIncome !== undefined && plan.monthlyBaseIncome !== null ? plan.monthlyBaseIncome : 0)
+      : actualIncome;
+
+    const fundsRaw = (plan.funds && plan.funds.length > 0) ? plan.funds : [
+      { id: 'fund_necesarios', name: 'Gastos Necesarios', percentage: 50, emoji: '🏠', color: 'emerald', categories: [] },
+      { id: 'fund_personales', name: 'Gastos Personales', percentage: 30, emoji: '🎟️', color: 'purple', categories: [] },
+      { id: 'fund_ahorro', name: 'Ahorro e Inversión', percentage: 20, emoji: 'blue', categories: [] }
+    ];
+
+    const monthPrefix = todayStr.substring(0, 7);
+
+    const funds = fundsRaw.map(f => {
+      const targetBudget = baseIncome * ((f.percentage || 0) / 100);
+      const spent = this.calculateFundUsedAmount(f.id, data.transactions || [], monthPrefix).amount;
+      const remaining = targetBudget - spent;
+      const percentUsed = targetBudget > 0 ? (spent / targetBudget) * 100 : 0;
+
+      const categories = (f.categories || []).map(c => {
+        const catTargetBudget = targetBudget * ((c.percentage || 0) / 100);
+        const catSpent = this.calculateCategoryUsedAmount(f.id, c.id, c.name, data.transactions || [], monthPrefix).amount;
+        const catRemaining = catTargetBudget - catSpent;
+        const catPercentUsed = catTargetBudget > 0 ? (catSpent / catTargetBudget) * 100 : 0;
+
+        return {
+          id: c.id,
+          name: c.name,
+          emoji: c.emoji || '📁',
+          percentage: c.percentage || 0,
+          targetBudget: catTargetBudget,
+          spent: catSpent,
+          remaining: catRemaining,
+          percentUsed: catPercentUsed
+        };
+      });
+
+      return {
+        id: f.id,
+        name: f.name.startsWith('Presupuesto') ? f.name : `Presupuesto de ${f.name}`,
+        rawName: f.name,
+        emoji: f.emoji || '💼',
+        color: f.color || 'emerald',
+        percentage: f.percentage || 0,
+        targetBudget,
+        spent,
+        remaining,
+        percentUsed,
+        categories
+      };
+    });
+
+    const totalAssigned = funds.reduce((acc, f) => acc + f.targetBudget, 0);
+    const totalSpent = funds.reduce((acc, f) => acc + f.spent, 0);
+    const totalRemaining = totalAssigned - totalSpent;
+    const overallPct = totalAssigned > 0 ? (totalSpent / totalAssigned) * 100 : 0;
+
+    return {
+      baseIncome,
+      currency,
+      incomeMode: mode,
+      funds,
+      totalAssigned,
+      totalSpent,
+      totalRemaining,
+      overallPct
+    };
   }
 };

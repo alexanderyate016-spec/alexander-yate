@@ -373,47 +373,36 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     return (data.accounts || []).some(a => a.type === 'high_yield');
   }, [data.accounts]);
 
+  // Unified Calculated Budgets Memo
+  const calculatedBudgets = useMemo(() => {
+    return FinancialCalculations.getCalculatedBudgets(data, todayStr);
+  }, [data, todayStr]);
+
   // Budget & Category Options Memo
   const budgetOptions = useMemo(() => {
-    const funds = data.distributionPlan?.funds || [];
-    if (funds.length === 0) {
-      return [
-        { id: 'fund_necesarios', name: 'Presupuesto de Gastos Necesarios', rawName: 'Gastos Necesarios', emoji: '🏠', categories: [] },
-        { id: 'fund_personales', name: 'Presupuesto de Gastos Personales', rawName: 'Gastos Personales', emoji: '🎟️', categories: [] },
-        { id: 'fund_ahorro', name: 'Presupuesto de Ahorro e Inversión', rawName: 'Ahorro e Inversión', emoji: '🏦', categories: [] }
-      ];
-    }
-    return funds.map(f => ({
+    return calculatedBudgets.funds.map(f => ({
       id: f.id,
-      name: f.name.startsWith('Presupuesto') ? f.name : `Presupuesto de ${f.name}`,
-      rawName: f.name,
-      emoji: f.emoji || '💼',
-      categories: f.categories || []
+      name: f.name,
+      rawName: f.rawName,
+      emoji: f.emoji,
+      categories: f.categories
     }));
-  }, [data.distributionPlan]);
+  }, [calculatedBudgets]);
 
   const getCategoryOptionsForBudget = (budgetIdStr: string) => {
     if (!budgetIdStr) return [];
-    const fund = (data.distributionPlan?.funds || []).find(f => f.id === budgetIdStr);
+    const fund = calculatedBudgets.funds.find(f => f.id === budgetIdStr);
     if (!fund || !fund.categories || fund.categories.length === 0) return [];
 
-    const baseIncome = (data.distributionPlan?.monthlyBaseIncome) || 0;
-    const fundTargetBudget = baseIncome * ((fund.percentage || 0) / 100);
-
-    return fund.categories.map(cat => {
-      const catBudget = fundTargetBudget * ((cat.percentage || 0) / 100);
-      const catUsed = FinancialCalculations.calculateCategoryUsedAmount(fund.id, cat.id, cat.name, data.transactions, todayStr.substring(0, 7)).amount;
-      const catRemaining = catBudget - catUsed;
-      return {
-        id: cat.id,
-        name: cat.name,
-        emoji: cat.emoji || '📁',
-        budget: catBudget,
-        used: catUsed,
-        remaining: catRemaining,
-        label: `${cat.emoji || '📁'} ${cat.name} (Disponible: ${formatCurrency(catRemaining, txCurr)})`
-      };
-    });
+    return fund.categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      emoji: cat.emoji,
+      budget: cat.targetBudget,
+      used: cat.spent,
+      remaining: cat.remaining,
+      label: `${cat.emoji} ${cat.name} (Disponible: ${formatCurrency(cat.remaining, txCurr)})`
+    }));
   };
 
   // Modals & Sub-states
@@ -600,18 +589,14 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
   // Overall Budget & Savings Totals
   const budgetSummary = useMemo(() => {
-    const budgets = data.budgets || [];
-    let totalAssigned = 0;
-    let totalSpent = 0;
-
-    budgets.forEach((b: any) => {
-      totalAssigned += b.monthlyLimit || 0;
-      totalSpent += FinancialCalculations.calculateBudgetSpent(b, data.transactions || [], todayStr);
-    });
-
-    const overallPct = totalAssigned > 0 ? (totalSpent / totalAssigned) * 100 : 0;
-    return { totalAssigned, totalSpent, overallPct, count: budgets.length };
-  }, [data.budgets, data.transactions, todayStr]);
+    return {
+      totalAssigned: calculatedBudgets.totalAssigned,
+      totalSpent: calculatedBudgets.totalSpent,
+      totalRemaining: calculatedBudgets.totalRemaining,
+      overallPct: calculatedBudgets.overallPct,
+      count: calculatedBudgets.funds.length
+    };
+  }, [calculatedBudgets]);
 
   const savingsSummary = useMemo(() => {
     const goals = data.savings || [];
@@ -1571,11 +1556,12 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
               </div>
 
               <div className="space-y-3">
-                {budgetOptions.slice(0, 3).map(f => {
-                  const fundTargetBudget = ((data.distributionPlan?.monthlyBaseIncome) || 0) * ((((data.distributionPlan?.funds || []).find(x => x.id === f.id)?.percentage) || 30) / 100);
-                  const fundUsed = FinancialCalculations.calculateBudgetUsedAmount(f.id, data.transactions || [], todayStr.substring(0, 7)).amount;
-                  const remaining = fundTargetBudget - fundUsed;
-                  const pct = fundTargetBudget > 0 ? (fundUsed / fundTargetBudget) * 100 : 0;
+                {calculatedBudgets.funds.map(f => {
+                  const fundTargetBudget = f.targetBudget;
+                  const fundUsed = f.spent;
+                  const remaining = f.remaining;
+                  const pct = f.percentUsed;
+                  const curr = calculatedBudgets.currency;
 
                   return (
                     <div key={f.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
@@ -1585,7 +1571,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                           {f.rawName}
                         </span>
                         <span className="font-mono text-[11px] font-bold text-slate-600">
-                          {showBalance ? `${formatCurrency(fundUsed, 'COP')} / ${formatCurrency(fundTargetBudget, 'COP')}` : '$ ••• / $ •••'}
+                          {showBalance ? `${formatCurrency(fundUsed, curr)} / ${formatCurrency(fundTargetBudget, curr)}` : '$ ••• / $ •••'}
                         </span>
                       </div>
 
@@ -1594,10 +1580,10 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                       <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold pt-0.5">
                         <span className={remaining >= 0 ? 'text-emerald-800 font-bold' : 'text-rose-800 font-bold'}>
                           {remaining >= 0
-                            ? `${showBalance ? formatCurrency(remaining, 'COP') : '$ •••'} disponibles`
-                            : `${showBalance ? formatCurrency(Math.abs(remaining), 'COP') : '$ •••'} excedido`}
+                            ? `${showBalance ? formatCurrency(remaining, curr) : '$ •••'} disponibles`
+                            : `${showBalance ? formatCurrency(Math.abs(remaining), curr) : '$ •••'} excedido`}
                         </span>
-                        <span>{Math.round(pct)}% consumido</span>
+                        <span>{pct < 10 && pct > 0 ? pct.toFixed(1).replace('.', ',') : Math.round(pct)}% consumido</span>
                       </div>
                     </div>
                   );
