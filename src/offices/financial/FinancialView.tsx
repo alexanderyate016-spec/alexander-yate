@@ -666,6 +666,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       description: txDesc.trim(),
       amount: finalAmount,
       currency: txCurr,
+      accountId: txNature === 'external_income' ? (txDestAcc || undefined) : (txSourceAcc || undefined),
       sourceAccountId: txSourceAcc || undefined,
       destinationAccountId: txDestAcc || undefined,
       sourceName: txSourceName.trim() || undefined,
@@ -3626,30 +3627,58 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                   )}
 
                   {quickActionType === 'expense' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                      <ExecutiveInput
-                        label="Beneficiario / Establecimiento"
-                        placeholder="Ej: Supermercado / Arriendo"
-                        value={txBeneficiaryName}
-                        onChange={e => setTxBeneficiaryName(e.target.value)}
-                        accentColor="emerald"
-                      />
-                      <ExecutiveInput
-                        label="Monto *"
-                        type="number"
-                        placeholder="0.00"
-                        value={txAmount}
-                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        accentColor="emerald"
-                      />
-                      <ExecutiveInput
-                        label="Concepto *"
-                        placeholder="Ej: Compra de insumos"
-                        value={txDesc}
-                        onChange={e => setTxDesc(e.target.value)}
-                        accentColor="emerald"
-                      />
-                      <div className="sm:col-span-3 flex justify-end gap-2 pt-2">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                        <ExecutiveInput
+                          label="Beneficiario / Establecimiento"
+                          placeholder="Ej: Supermercado / Arriendo"
+                          value={txBeneficiaryName}
+                          onChange={e => setTxBeneficiaryName(e.target.value)}
+                          accentColor="emerald"
+                        />
+                        <ExecutiveInput
+                          label="Monto *"
+                          type="number"
+                          placeholder="0.00"
+                          value={txAmount}
+                          onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                          accentColor="emerald"
+                        />
+                        <ExecutiveInput
+                          label="Concepto *"
+                          placeholder="Ej: Compra de insumos"
+                          value={txDesc}
+                          onChange={e => setTxDesc(e.target.value)}
+                          accentColor="emerald"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end pt-1">
+                        <ExecutiveSelect
+                          label="Presupuesto a Descontar (Opcional)"
+                          value={txBudgetId}
+                          onChange={e => {
+                            setTxBudgetId(e.target.value);
+                            setTxBudgetCategoryId('');
+                          }}
+                          accentColor="emerald"
+                          options={[
+                            { value: '', label: 'Ninguno (No descontar de un presupuesto)' },
+                            ...budgetOptions.map(b => ({ value: b.id, label: `${b.emoji} ${b.name}` }))
+                          ]}
+                        />
+                        <ExecutiveSelect
+                          label="Subcategoría Asociada"
+                          value={txBudgetCategoryId}
+                          onChange={e => setTxBudgetCategoryId(e.target.value)}
+                          accentColor="emerald"
+                          disabled={!txBudgetId}
+                          options={[
+                            { value: '', label: txBudgetId ? '-- Seleccionar Subcategoría --' : 'Primero selecciona un presupuesto' },
+                            ...getCategoryOptionsForBudget(txBudgetId).map(c => ({ value: c.id, label: c.label }))
+                          ]}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
                         <ExecutiveButton
                           onClick={() => {
                             if (!txAmount || !txDesc) {
@@ -3661,16 +3690,21 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
                               time: timeStr,
                               nature: 'external_expense',
                               sourceAccountId: acc.id,
+                              accountId: acc.id,
                               beneficiaryName: txBeneficiaryName || 'Beneficiario',
                               description: txDesc,
                               amount: Number(txAmount),
-                              currency: acc.currency
+                              currency: acc.currency,
+                              budgetId: txBudgetId || undefined,
+                              budgetCategoryId: txBudgetCategoryId || undefined
                             });
                             triggerToast('Gasto registrado con éxito', 'success');
                             setQuickActionType(null);
                             setTxAmount('');
                             setTxDesc('');
                             setTxBeneficiaryName('');
+                            setTxBudgetId('');
+                            setTxBudgetCategoryId('');
                           }}
                           variant="primary"
                           accentColor="rose"

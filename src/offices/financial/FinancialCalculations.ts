@@ -4,18 +4,24 @@ export const FinancialCalculations = {
   calculateAccountBalance(account: FinancialAccount, transactions: FinancialTransaction[]): number {
     let balance = account.initialBalance || 0;
 
-    transactions.forEach(tx => {
-      // 1. External income / Financial yield
-      if ((tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell') && tx.destinationAccountId === account.id) {
+    (transactions || []).forEach(tx => {
+      const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell';
+      const isExpense = tx.nature === 'external_expense' || tx.nature === 'investment_buy';
+
+      const isDest = tx.destinationAccountId === account.id || (tx.accountId === account.id && isIncome);
+      const isSource = tx.sourceAccountId === account.id || (tx.accountId === account.id && isExpense);
+
+      // 1. External income / Financial yield / Investment sell
+      if (isIncome && isDest) {
         balance += tx.amount;
       }
       // 2. External expense / Investment buy
-      if ((tx.nature === 'external_expense' || tx.nature === 'investment_buy') && tx.sourceAccountId === account.id) {
+      if (isExpense && isSource) {
         balance -= tx.amount;
       }
       // 3. Internal transfer
       if (tx.nature === 'internal_transfer') {
-        if (tx.sourceAccountId === account.id) balance -= tx.amount;
+        if (tx.sourceAccountId === account.id || (tx.accountId === account.id && !tx.destinationAccountId)) balance -= tx.amount;
         if (tx.destinationAccountId === account.id) balance += tx.amount;
       }
       // 4. Reconciliation adjustment
@@ -251,7 +257,7 @@ export const FinancialCalculations = {
 
   calculateAccountStats(account: FinancialAccount, transactions: FinancialTransaction[], obligations: FinancialObligation[], budgets: any[], todayStr: string) {
     const accountTxs = (transactions || []).filter(
-      t => t.sourceAccountId === account.id || t.destinationAccountId === account.id
+      t => t.sourceAccountId === account.id || t.destinationAccountId === account.id || t.accountId === account.id
     );
 
     // Sort chronologically
@@ -274,18 +280,23 @@ export const FinancialCalculations = {
 
     sortedTxs.forEach(tx => {
       let delta = 0;
-      if ((tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell') && tx.destinationAccountId === account.id) {
+      const isIncome = tx.nature === 'external_income' || tx.nature === 'financial_yield' || tx.nature === 'investment_sell';
+      const isExpense = tx.nature === 'external_expense' || tx.nature === 'investment_buy';
+      const isDest = tx.destinationAccountId === account.id || (tx.accountId === account.id && isIncome);
+      const isSource = tx.sourceAccountId === account.id || (tx.accountId === account.id && isExpense);
+
+      if (isIncome && isDest) {
         delta = tx.amount;
         if (tx.nature === 'external_income') totalIncomes += tx.amount;
         if (tx.nature === 'financial_yield') totalYields += tx.amount;
-      } else if ((tx.nature === 'external_expense' || tx.nature === 'investment_buy') && tx.sourceAccountId === account.id) {
+      } else if (isExpense && isSource) {
         delta = -tx.amount;
-        if (tx.nature === 'external_expense' || tx.nature === 'investment_buy') totalExpenses += tx.amount;
+        if (isExpense) totalExpenses += tx.amount;
       } else if (tx.nature === 'internal_transfer') {
         if (tx.destinationAccountId === account.id) {
           delta = tx.amount;
           transfersReceived += tx.amount;
-        } else if (tx.sourceAccountId === account.id) {
+        } else if (tx.sourceAccountId === account.id || (tx.accountId === account.id && !tx.destinationAccountId)) {
           delta = -tx.amount;
           transfersSent += tx.amount;
         }
@@ -376,7 +387,7 @@ export const FinancialCalculations = {
 
     let total = 0;
     let count = 0;
-    const catNameLower = categoryName.toLowerCase();
+    const catNameLower = (categoryName || '').toLowerCase();
 
     transactions.forEach(t => {
       if (t.nature !== 'external_expense' && t.nature !== 'investment_buy') return;
@@ -385,7 +396,7 @@ export const FinancialCalculations = {
       if (t.splits && t.splits.length > 0) {
         t.splits.forEach(s => {
           if (s.budgetId === fundId) {
-            if (s.budgetCategoryId === categoryId || (s.categoryName && s.categoryName.toLowerCase() === catNameLower)) {
+            if (!categoryId || s.budgetCategoryId === categoryId || (s.categoryName && s.categoryName.toLowerCase() === catNameLower)) {
               total += s.amount;
               count++;
             }
@@ -393,9 +404,18 @@ export const FinancialCalculations = {
         });
       } else if (t.budgetId === fundId) {
         if (
+          !categoryId ||
           t.budgetCategoryId === categoryId ||
           t.categoryId === categoryId ||
-          t.description.toLowerCase().includes(catNameLower)
+          (catNameLower && t.description.toLowerCase().includes(catNameLower))
+        ) {
+          total += t.amount;
+          count++;
+        }
+      } else if (!t.budgetId) {
+        if (
+          (categoryId && (t.budgetCategoryId === categoryId || t.categoryId === categoryId)) ||
+          (catNameLower && t.description.toLowerCase().includes(catNameLower))
         ) {
           total += t.amount;
           count++;

@@ -354,17 +354,21 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
     const txDesc = expenseDescription.trim() || `${fund?.emoji || '💰'} ${fund?.name || 'Gasto'}${sub ? ' - ' + sub.name : ''}`;
 
+    const selectedAccId = expenseAccountId || data.accounts?.[0]?.id || '';
+
     FinancialStore.addTransaction({
       date: todayStr,
       time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false }),
       description: txDesc,
       amount: Number(expenseAmount),
       nature: 'external_expense',
-      accountId: expenseAccountId || data.accounts?.[0]?.id || 'acc_default',
+      accountId: selectedAccId,
+      sourceAccountId: selectedAccId,
       currency: currency,
       budgetId: expenseFundId,
       budgetCategoryId: expenseSubId || undefined,
-      categoryId: expenseFundId
+      categoryId: sub ? sub.name : (fund ? fund.name : expenseFundId),
+      beneficiaryName: fund?.name || 'Gasto de Presupuesto'
     });
 
     triggerToast(`Gasto de ${formatCurrency(Number(expenseAmount), currency)} registrado en ${fund?.name || 'Presupuesto'}`, 'success');
@@ -1376,11 +1380,14 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       onChange={e => setExpenseAccountId(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none"
                     >
-                      {data.accounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.name} ({formatCurrency(acc.balance ?? acc.initialBalance, acc.currency)})
-                        </option>
-                      ))}
+                      {data.accounts.map(acc => {
+                        const realBal = FinancialCalculations.calculateAccountBalance(acc, data.transactions || []);
+                        return (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name} ({formatCurrency(realBal, acc.currency)})
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 )}
