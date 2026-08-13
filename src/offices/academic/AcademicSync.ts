@@ -45,6 +45,9 @@ export const AcademicSync = {
       (sub?.cuts || []).forEach(cut => {
         (cut?.activities || []).forEach(act => {
           if (act.date === targetDateStr && act.status === 'pending') {
+            const startTimeStr = act.time || act.startTime || undefined;
+            const endTimeStr = act.endTime || (act.time ? `${parseInt(act.time.split(':')[0]) + 1}:${act.time.split(':')[1]}` : undefined);
+
             events.push({
               id: `acad_eval_${sub.id}_${act.id}`,
               sourceOffice: 'academica',
@@ -53,8 +56,8 @@ export const AcademicSync = {
               title: `Evaluación: ${act.name} (${sub.name})`,
               subtitle: `Corte: ${cut.cutName} (${act.weightPercent}%)`,
               date: act.date,
-              startTime: act.time || '09:00',
-              endTime: act.time ? `${parseInt(act.time.split(':')[0]) + 1}:${act.time.split(':')[1]}` : '10:00',
+              startTime: startTimeStr,
+              endTime: endTimeStr,
               type: 'evaluation',
               priority: 'high',
               rawObject: { subject: sub, cut, activity: act }
@@ -72,10 +75,10 @@ export const AcademicSync = {
             officeLabel: 'Oficina Académica',
             color: sub.color || '#3B82F6',
             title: `Actividad: ${act.name} (${sub.name})`,
-            subtitle: `${act.type} ${act.location ? '| ' + act.location : ''} ${act.professor ? '| Responsable: ' + act.professor : ''}`,
+            subtitle: `${act.type} ${act.location ? '| ' + act.location : ''} ${act.professor ? '| Responsable: ' + act.professor : ''}`.trim(),
             date: act.date,
-            startTime: act.startTime || '08:00',
-            endTime: act.endTime || (act.startTime ? `${parseInt(act.startTime.split(':')[0]) + 1}:${act.startTime.split(':')[1]}` : '09:00'),
+            startTime: act.startTime || undefined,
+            endTime: act.endTime || undefined,
             type: 'academic_activity',
             priority: 'medium',
             rawObject: { subject: sub, academicActivity: act }
@@ -103,7 +106,7 @@ export const AcademicSync = {
       if (evt.type === 'academic_activity' && evt.rawObject?.academicActivity) {
         const act = evt.rawObject.academicActivity;
         const sub = evt.rawObject.subject;
-        const relation = act.classRelation || 'replaces'; // Default to replaces if same subject on class day
+        const relation = act.classRelation || 'independent'; // Default to independent (do not replace class unless explicitly specified)
 
         const matchingClass = classEvents.find(c => c.rawObject?.subject?.id === sub?.id);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MasterState, ChiefOfStaffEvent, UnifiedExecutiveEvent } from '../../types/store';
 import { ChiefOfStaffStore } from '../chiefOfStaff/ChiefOfStaffStore';
-import { ChiefOfStaffSync } from '../chiefOfStaff/ChiefOfStaffSync';
+import { ChiefOfStaffSync, timeToMinutes } from '../chiefOfStaff/ChiefOfStaffSync';
 import { showToast } from '../../components/executive';
 import { ExecutiveCalendar, CalendarEvent } from '../../components/executive/ExecutiveCalendar';
 import {
@@ -90,6 +90,27 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
   // Bulk Cancellation Modal state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
+  // Conflict detection for current event form values
+  const formConflict = React.useMemo(() => {
+    if (!formDate || !formStartTime || !formEndTime) return null;
+    if (formStartTime >= formEndTime) return null;
+
+    const startM = timeToMinutes(formStartTime);
+    const endM = timeToMinutes(formEndTime);
+
+    const eventsOnDate = ChiefOfStaffSync.getUnifiedEventsForDate(state, formDate);
+    return eventsOnDate.find(evt => {
+      if (editingEvent && evt.id === editingEvent.id) return false;
+      if (evt.status === 'cancelled' || evt.status === 'Cancelada') return false;
+      if (!evt.startTime || !evt.endTime || evt.startTime === 'UNTIMED') return false;
+
+      const evtStart = timeToMinutes(evt.startTime);
+      const evtEnd = timeToMinutes(evt.endTime);
+
+      return startM < evtEnd && endM > evtStart;
+    });
+  }, [state, formDate, formStartTime, formEndTime, editingEvent]);
 
   // Real-time clock for personal secretary
   const [nowDate, setNowDate] = useState<Date>(new Date());
@@ -769,8 +790,14 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                       <div className={`px-3.5 py-2 rounded-xl font-mono text-xs font-bold shrink-0 text-center space-y-0.5 ${
                         isCancelled ? 'bg-rose-900/80 text-rose-100' : 'bg-slate-900 text-white'
                       }`}>
-                        <div className="text-[11px] text-amber-300 font-semibold">{evt.startTime}</div>
-                        <div className="text-[10px] text-slate-400">a {evt.endTime}</div>
+                        {evt.startTime && evt.startTime !== 'UNTIMED' ? (
+                          <>
+                            <div className="text-[11px] text-amber-300 font-semibold">{evt.startTime}</div>
+                            {evt.endTime && <div className="text-[10px] text-slate-400">a {evt.endTime}</div>}
+                          </>
+                        ) : (
+                          <div className="text-[10px] text-indigo-300 font-sans font-semibold py-1">📌 Todo el día</div>
+                        )}
                       </div>
 
                       {/* Content */}
@@ -903,8 +930,8 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                 id: u.id,
                 title: u.title,
                 date: day.dateStr,
-                startTime: u.startTime || '09:00',
-                endTime: u.endTime || '10:00',
+                startTime: u.startTime && u.startTime !== '' ? u.startTime : 'UNTIMED',
+                endTime: u.endTime && u.endTime !== '' ? u.endTime : 'UNTIMED',
                 classroom: u.rawObject?.location || u.rawObject?.classroom,
                 subtitle: u.subtitle,
                 officeLabel: u.officeLabel,
@@ -1213,6 +1240,19 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
+
+              {/* Conflict Alert Banner in Modal */}
+              {formConflict && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 space-y-1 animate-in fade-in duration-150">
+                  <div className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>⚠️ Conflicto de Horario Detectado</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    El nuevo horario (<strong>{formStartTime} - {formEndTime}</strong>) se traslapa con el compromiso <strong>"{formConflict.title}"</strong> ({formConflict.startTime} - {formConflict.endTime}). Las tareas y actividades sin hora no generan conflicto.
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                 <button

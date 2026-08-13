@@ -254,7 +254,7 @@ export class ChiefOfStaffSync {
    * Detect conflicts (overlaps) among timed events for a date
    */
   public static detectConflicts(events: UnifiedExecutiveEvent[]): ScheduleConflict[] {
-    const timedEvents = events.filter(e => e.startTime && e.endTime);
+    const timedEvents = events.filter(e => e.startTime && e.endTime && e.startTime !== 'UNTIMED' && e.status !== 'cancelled' && e.status !== 'Cancelada');
     const conflicts: ScheduleConflict[] = [];
 
     for (let i = 0; i < timedEvents.length; i++) {
