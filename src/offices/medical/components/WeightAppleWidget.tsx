@@ -55,7 +55,7 @@ export const WeightAppleWidget: React.FC<Props> = ({ data, todayStr, onOpenDetai
   // Sparkline calculation
   const weightRecords = (data.healthRecords || [])
     .filter(r => r.weightKg && r.weightKg > 0)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     .slice(-7);
 
   const svgWidth = 120;

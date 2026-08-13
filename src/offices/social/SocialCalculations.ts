@@ -18,7 +18,7 @@ export const SocialCalculations = {
     const personInteractions = interactions.filter(i => i.personId === personId);
     if (personInteractions.length === 0) return null;
 
-    personInteractions.sort((a, b) => b.date.localeCompare(a.date));
+    personInteractions.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const last = personInteractions[0];
     const today = new Date().toISOString().split('T')[0];
     const daysAgo = getDaysDifference(last.date, today);
@@ -32,7 +32,7 @@ export const SocialCalculations = {
       if (personInteractions.length === 1) return '1 interacción registrada';
       return 'Sin interacciones registradas';
     }
-    personInteractions.sort((a, b) => a.date.localeCompare(b.date));
+    personInteractions.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     const firstDate = new Date(personInteractions[0].date);
     const lastDate = new Date(personInteractions[personInteractions.length - 1].date);
     const diffDays = Math.max(1, Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -262,7 +262,7 @@ export const SocialCalculations = {
       });
     }
 
-    events.sort((a, b) => b.date.localeCompare(a.date));
+    events.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     return events;
   },
 

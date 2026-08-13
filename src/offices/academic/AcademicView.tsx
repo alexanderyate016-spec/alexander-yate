@@ -627,8 +627,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     });
 
     overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
-    todayItems.sort((a, b) => (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00'));
-    upcomingTomorrow.sort((a, b) => (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00'));
+    todayItems.sort((a, b) => (a.activity?.startTime || '00:00').localeCompare(b.activity?.startTime || '00:00'));
+    upcomingTomorrow.sort((a, b) => (a.activity?.startTime || '00:00').localeCompare(b.activity?.startTime || '00:00'));
     upcoming3Days.sort((a, b) => a.daysDiff - b.daysDiff);
     upcomingLater.sort((a, b) => a.daysDiff - b.daysDiff);
 

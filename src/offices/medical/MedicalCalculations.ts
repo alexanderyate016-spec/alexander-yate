@@ -41,7 +41,7 @@ export const MedicalCalculations = {
     const records = data.healthRecords || [];
     
     // Sort records chronologically (newest first)
-    const sorted = [...records].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...records].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const todayRecord = records.find(r => r.date === today);
     const latest = sorted.length > 0 ? sorted[0] : null;
 
@@ -409,6 +409,6 @@ export const MedicalCalculations = {
     });
 
     // Sort descending by date
-    return events.sort((a, b) => b.rawDate.localeCompare(a.rawDate));
+    return events.sort((a, b) => (b.rawDate || '').localeCompare(a.rawDate || ''));
   }
 };

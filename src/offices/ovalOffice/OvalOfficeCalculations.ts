@@ -638,11 +638,13 @@ export const OvalOfficeCalculations = {
 
     // Sort chronologically
     upcoming.sort((a, b) => {
-      if (a.dateStr !== b.dateStr) {
-        return a.dateStr.localeCompare(b.dateStr);
+      const dateA = a.dateStr || '';
+      const dateB = b.dateStr || '';
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
       }
-      const timeA = a.event.startTime || '00:00';
-      const timeB = b.event.startTime || '00:00';
+      const timeA = a.event?.startTime || '00:00';
+      const timeB = b.event?.startTime || '00:00';
       return timeA.localeCompare(timeB);
     });
 

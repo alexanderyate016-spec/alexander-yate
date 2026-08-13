@@ -16,12 +16,12 @@ export const RecentMemoriesSection: React.FC<Props> = ({ data, onSelectPerson })
   const reviewedCommitments = commitments.filter(c => c.rating || c.memoryNote || c.memoryPhotoUrl || c.isCompleted);
 
   // Sort by date descending
-  reviewedCommitments.sort((a, b) => b.date.localeCompare(a.date));
+  reviewedCommitments.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   // Also extract interactions that have rich notes
   const interactions = (data.interactions || [])
     .filter(i => i.type === 'Salida' || i.type === 'Reunión' || i.type === 'Conversación')
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   if (reviewedCommitments.length === 0 && interactions.length === 0) {
     return (

@@ -411,8 +411,12 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
     // Sort chronologically (date ascending, startTime ascending)
     filtered.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return a.startTime.localeCompare(b.startTime);
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
     });
 
     return filtered;

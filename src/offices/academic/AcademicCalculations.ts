@@ -809,7 +809,7 @@ export const AcademicCalculations = {
       allSessions.push(...sessions);
     });
 
-    allSessions.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    allSessions.sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
     return allSessions;
   },
 
@@ -976,7 +976,7 @@ export const AcademicCalculations = {
       });
     });
 
-    evals.sort((a, b) => a.activity.date.localeCompare(b.activity.date));
+    evals.sort((a, b) => (a.activity?.date || '').localeCompare(b.activity?.date || ''));
     return evals.slice(0, limit);
   },
 
@@ -1011,7 +1011,7 @@ export const AcademicCalculations = {
       });
     });
 
-    items.sort((a, b) => a.activityDate.localeCompare(b.activityDate));
+    items.sort((a, b) => (a.activityDate || '').localeCompare(b.activityDate || ''));
 
     const today = items.filter(i => i.daysDiff === 0);
     const tomorrow = items.filter(i => i.daysDiff === 1);
@@ -1089,9 +1089,9 @@ export const AcademicCalculations = {
     });
 
     items.sort((a, b) => {
-      const dComp = a.activity.date.localeCompare(b.activity.date);
+      const dComp = (a.activity?.date || '').localeCompare(b.activity?.date || '');
       if (dComp !== 0) return dComp;
-      return (a.activity.startTime || '00:00').localeCompare(b.activity.startTime || '00:00');
+      return (a.activity?.startTime || '00:00').localeCompare(b.activity?.startTime || '00:00');
     });
 
     return items.slice(0, limit);

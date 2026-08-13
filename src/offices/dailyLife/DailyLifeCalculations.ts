@@ -257,7 +257,7 @@ export const DailyLifeCalculations = {
     });
 
     // Convert map values to array and sort descending (newest first)
-    return Array.from(recordsMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+    return Array.from(recordsMap.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   },
 
   calculateDailyWorkload(data: DailyLifeOfficeData, todayStr: string): WorkloadMetrics {

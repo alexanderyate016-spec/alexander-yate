@@ -14,7 +14,7 @@ export const WeightTrendWidget: React.FC<Props> = ({ data, todayStr }) => {
   const metrics = MedicalCalculations.getLatestHealthMetrics(data, todayStr);
   const records = [...(data.healthRecords || [])]
     .filter(r => r.weightKg !== undefined && r.weightKg !== null && r.weightKg > 0)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   const [inputWeight, setInputWeight] = useState<number | ''>('');
 
