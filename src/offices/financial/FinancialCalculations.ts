@@ -552,5 +552,177 @@ export const FinancialCalculations = {
       totalRemaining,
       overallPct
     };
+  },
+
+  // -------------------------------------------------------------
+  // CÁLCULOS QUINCENALES AUTOMÁTICOS (1-15 y 16-30/31)
+  // -------------------------------------------------------------
+  getQuincenalPeriodInfo(dateStr: string) {
+    const SPANISH_MONTHS = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const parts = (dateStr || '').split('-');
+    let year = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10);
+    let day = parseInt(parts[2], 10);
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      const now = new Date();
+      year = now.getFullYear();
+      month = now.getMonth() + 1;
+      day = now.getDate();
+    }
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const monthName = SPANISH_MONTHS[month - 1] || 'Mes';
+
+    if (day <= 15) {
+      return {
+        id: `${year}-${pad(month)}-Q1`,
+        year,
+        month,
+        quincena: 1 as const,
+        startDate: `${year}-${pad(month)}-01`,
+        endDate: `${year}-${pad(month)}-15`,
+        daysInMonth,
+        dayRangeText: '1–15',
+        monthName,
+        periodLabel: `Quincena 1–15 de ${monthName} de ${year}`,
+        shortLabel: `1–15 ${monthName}`
+      };
+    } else {
+      return {
+        id: `${year}-${pad(month)}-Q2`,
+        year,
+        month,
+        quincena: 2 as const,
+        startDate: `${year}-${pad(month)}-16`,
+        endDate: `${year}-${pad(month)}-${pad(daysInMonth)}`,
+        daysInMonth,
+        dayRangeText: `16–${daysInMonth}`,
+        monthName,
+        periodLabel: `Quincena 16–${daysInMonth} de ${monthName} de ${year}`,
+        shortLabel: `16–${daysInMonth} ${monthName}`
+      };
+    }
+  },
+
+  getPreviousQuincenalPeriodInfo(dateStr: string) {
+    const current = this.getQuincenalPeriodInfo(dateStr);
+    const SPANISH_MONTHS = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    if (current.quincena === 2) {
+      // Previous is Q1 of same month
+      return {
+        id: `${current.year}-${pad(current.month)}-Q1`,
+        year: current.year,
+        month: current.month,
+        quincena: 1 as const,
+        startDate: `${current.year}-${pad(current.month)}-01`,
+        endDate: `${current.year}-${pad(current.month)}-15`,
+        daysInMonth: current.daysInMonth,
+        dayRangeText: '1–15',
+        monthName: current.monthName,
+        periodLabel: `Quincena 1–15 de ${current.monthName} de ${current.year}`,
+        shortLabel: `1–15 ${current.monthName}`
+      };
+    } else {
+      // Previous is Q2 of previous month
+      let prevYear = current.year;
+      let prevMonth = current.month - 1;
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+      }
+      const prevDaysInMonth = new Date(prevYear, prevMonth, 0).getDate();
+      const prevMonthName = SPANISH_MONTHS[prevMonth - 1];
+
+      return {
+        id: `${prevYear}-${pad(prevMonth)}-Q2`,
+        year: prevYear,
+        month: prevMonth,
+        quincena: 2 as const,
+        startDate: `${prevYear}-${pad(prevMonth)}-16`,
+        endDate: `${prevYear}-${pad(prevMonth)}-${pad(prevDaysInMonth)}`,
+        daysInMonth: prevDaysInMonth,
+        dayRangeText: `16–${prevDaysInMonth}`,
+        monthName: prevMonthName,
+        periodLabel: `Quincena 16–${prevDaysInMonth} de ${prevMonthName} de ${prevYear}`,
+        shortLabel: `16–${prevDaysInMonth} ${prevMonthName}`
+      };
+    }
+  },
+
+  calculateQuincenalIncome(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string): number {
+    if (!transactions || transactions.length === 0) return 0;
+    return transactions
+      .filter(t => 
+        (t.nature === 'external_income' || t.nature === 'financial_yield' || t.nature === 'investment_sell') &&
+        t.currency === currency &&
+        t.date >= startDate &&
+        t.date <= endDate
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+  },
+
+  calculateQuincenalExpenses(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string): number {
+    if (!transactions || transactions.length === 0) return 0;
+    return transactions
+      .filter(t => 
+        (t.nature === 'external_expense' || t.nature === 'investment_buy') &&
+        t.currency === currency &&
+        t.date >= startDate &&
+        t.date <= endDate
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
+  },
+
+  calculateQuincenalBudgetItemSpent(
+    budgetItem: { id: string; name: string; categoryName?: string },
+    transactions: FinancialTransaction[],
+    currency: CurrencyCode,
+    startDate: string,
+    endDate: string
+  ): number {
+    if (!transactions || transactions.length === 0) return 0;
+    const nameLower = (budgetItem.name || '').toLowerCase();
+    const catLower = (budgetItem.categoryName || '').toLowerCase();
+
+    return transactions
+      .filter(t => 
+        (t.nature === 'external_expense' || t.nature === 'investment_buy') &&
+        t.currency === currency &&
+        t.date >= startDate &&
+        t.date <= endDate
+      )
+      .reduce((sum, t) => {
+        // Splits check
+        if (t.splits && t.splits.length > 0) {
+          const splitSum = t.splits.reduce((sAcc, s) => {
+            let match = false;
+            if (s.budgetId === budgetItem.id) match = true;
+            else if (s.categoryName && (s.categoryName.toLowerCase().includes(nameLower) || (catLower && s.categoryName.toLowerCase().includes(catLower)))) match = true;
+            else if (s.description && (s.description.toLowerCase().includes(nameLower) || (catLower && s.description.toLowerCase().includes(catLower)))) match = true;
+            return match ? sAcc + s.amount : sAcc;
+          }, 0);
+          return sum + splitSum;
+        }
+
+        // Direct check
+        let isMatch = false;
+        if (t.budgetId === budgetItem.id) isMatch = true;
+        else if (t.description && (t.description.toLowerCase().includes(nameLower) || (catLower && t.description.toLowerCase().includes(catLower)))) isMatch = true;
+        else if (t.categoryId && (t.categoryId.toLowerCase().includes(nameLower) || (catLower && t.categoryId.toLowerCase().includes(catLower)))) isMatch = true;
+        else if (t.tags && t.tags.some(tg => tg.toLowerCase().includes(nameLower) || (catLower && tg.toLowerCase().includes(catLower)))) isMatch = true;
+
+        return isMatch ? sum + t.amount : sum;
+      }, 0);
   }
 };

@@ -1245,18 +1245,23 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
                 />
               </div>
 
-              {/* Conflict Alert Banner in Modal */}
-              {formConflict && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 space-y-1 animate-in fade-in duration-150">
+              {/* Conflict Alert / Availability Banner in Modal */}
+              {formConflict ? (
+                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-amber-950 space-y-1 animate-in fade-in duration-150">
                   <div className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
                     <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>⚠️ Conflicto de Horario Detectado</span>
+                    <span>⚠️ Este horario se cruza con otro compromiso.</span>
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    El nuevo horario (<strong>{formStartTime} - {formEndTime}</strong>) se traslapa con el compromiso <strong>"{formConflict.title}"</strong> ({formConflict.startTime} - {formConflict.endTime}). Las tareas y actividades sin hora no generan conflicto.
+                    El horario seleccionado (<strong>{formStartTime} – {formEndTime}</strong>) coincide con <strong>"{formConflict.title}"</strong> ({formConflict.startTime} – {formConflict.endTime}). Las tareas y actividades sin hora fija no generan conflicto. Puedes guardar para mantener ambos o ajustar el horario.
                   </p>
                 </div>
-              )}
+              ) : formStartTime && formEndTime && formStartTime < formEndTime ? (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 flex items-center gap-2 text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-[11px]">✅ Horario disponible (sin cruces con otros eventos o clases)</span>
+                </div>
+              ) : null}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                 <button

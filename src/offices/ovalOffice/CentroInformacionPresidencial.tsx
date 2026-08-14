@@ -123,16 +123,16 @@ export const CentroInformacionPresidencial: React.FC<Props> = ({
                 <span>{briefing.conflictCount} Conflictos Detectados</span>
               </div>
               <p className="text-[11px] text-red-300">
-                Existen compromisos encimados en su horario. La Jefatura requiere su autorización para resolverlos.
+                Existen compromisos encimados en su horario. La Oficina de Agenda requiere su revisión para resolverlos.
               </p>
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  onNavigateToOffice('jefaturaGabinete');
+                  onNavigateToOffice('agenda');
                 }}
                 className="w-full mt-1 py-1.5 bg-red-600/30 hover:bg-red-600/50 border border-red-500/40 rounded-lg text-red-100 font-semibold transition-all text-[11px] flex justify-center items-center gap-1"
               >
-                Resolver en Jefatura <ChevronRight className="w-3.5 h-3.5" />
+                Resolver en Agenda <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -264,11 +264,11 @@ export const CentroInformacionPresidencial: React.FC<Props> = ({
           <button
             onClick={() => {
               setIsOpen(false);
-              onNavigateToOffice('jefaturaGabinete');
+              onNavigateToOffice('agenda');
             }}
-            className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-xl shadow-lg transition-all text-xs flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all text-xs flex items-center justify-center gap-2"
           >
-            Abrir Oficina de Jefatura de Gabinete <ChevronRight className="w-4 h-4" />
+            Abrir Oficina de Agenda <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

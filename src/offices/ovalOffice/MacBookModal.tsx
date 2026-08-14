@@ -55,9 +55,22 @@ export const MacBookModal: React.FC<Props> = ({
     ? `${habits.length} hábitos y ${tasks.length} tareas monitoreadas`
     : 'Sin información registrada.';
 
+  const agendaEvents = state.offices.jefaturaGabinete?.events || [];
+  const activeAgendaEvents = agendaEvents.filter(e => e.status !== 'cancelled');
+  const agendaSummary = activeAgendaEvents.length > 0
+    ? `${activeAgendaEvents.length} compromisos registrados`
+    : 'Agenda al día';
+
   const securityStatus = state.security.isLocked ? 'Bloqueado' : 'Protección Activa';
 
   const macOfficeCards = [
+    {
+      key: 'agenda',
+      title: 'Oficina de Agenda',
+      subtitle: agendaSummary,
+      icon: Calendar,
+      color: 'from-purple-600/30 to-indigo-600/20 border-purple-500/30 text-purple-300'
+    },
     {
       key: 'academica',
       title: 'Oficina Académica',

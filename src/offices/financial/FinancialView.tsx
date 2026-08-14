@@ -891,7 +891,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
           <span className="text-xs font-black uppercase tracking-wider text-slate-200 px-3.5 py-1.5 rounded-full bg-slate-800 border border-slate-700 shadow-inner">
             {activeTab === 'accounts' && '💳 Cuentas & Liquidez'}
-            {activeTab === 'budgets' && '🎯 Planes de Presupuesto'}
+            {activeTab === 'budgets' && '🎯 Presupuestos Quincenales'}
             {activeTab === 'expenses' && '📉 Control de Gastos'}
             {activeTab === 'income' && '📈 Registro de Ingresos'}
             {activeTab === 'savings' && '🐷 Metas de Ahorro'}

@@ -9,8 +9,12 @@ import {
   CurrencyCode,
   FinancialFundPlan,
   FinancialCategoryPlan,
-  FinancialSubcategoryPlan
+  FinancialSubcategoryPlan,
+  QuincenalBudgetItem,
+  QuincenalPeriodRecord,
+  QuincenalBudgetOfficeState
 } from '../../types/store';
+import { FinancialCalculations } from './FinancialCalculations';
 
 export const FinancialStore = {
   getData(): FinancialOfficeData {
@@ -578,6 +582,210 @@ export const FinancialStore = {
   resetDistributionPlanToDefault() {
     storeInstance.updateState(draft => {
       draft.offices.financiera.distributionPlan = getDefaultDistributionPlan();
+    });
+  },
+
+  // -------------------------------------------------------------
+  // PRESUPUESTOS QUINCENALES AUTOMÁTICOS (Día 1-15 y Día 16-30/31)
+  // -------------------------------------------------------------
+  syncQuincenalPeriod(todayStr: string) {
+    storeInstance.updateState(draft => {
+      const currentInfo = FinancialCalculations.getQuincenalPeriodInfo(todayStr);
+
+      if (!draft.offices.financiera.quincenalBudgets) {
+        draft.offices.financiera.quincenalBudgets = {
+          currentPeriodId: currentInfo.id,
+          budgetTemplates: [
+            { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultPercentage: 50 },
+            { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultPercentage: 20 },
+            { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultPercentage: 20 }
+          ],
+          periodHistory: [],
+          accumulatedCarryover: 0
+        };
+      }
+
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      qbState.currentPeriodId = currentInfo.id;
+      const transactions = draft.offices.financiera.transactions || [];
+
+      // 1. Cerrar automáticamente periodos pasados que hayan finalizado
+      (qbState.periodHistory || []).forEach(period => {
+        if (period.endDate < todayStr && !period.isClosed) {
+          const actualSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', period.startDate, period.endDate);
+          period.isClosed = true;
+          period.closedAt = todayStr;
+          period.totalSpent = actualSpent;
+          period.leftover = Math.max(0, period.totalAvailable - actualSpent);
+        }
+      });
+
+      // 2. Verificar si existe el registro para la quincena actual
+      let currentPeriod = (qbState.periodHistory || []).find(p => p.id === currentInfo.id);
+
+      if (!currentPeriod) {
+        // Calcular dinero sobrante de la quincena anterior
+        const prevInfo = FinancialCalculations.getPreviousQuincenalPeriodInfo(todayStr);
+        const prevPeriod = (qbState.periodHistory || []).find(p => p.id === prevInfo.id);
+
+        let leftoverFromPrevious = 0;
+        if (prevPeriod) {
+          const prevSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', prevPeriod.startDate, prevPeriod.endDate);
+          leftoverFromPrevious = Math.max(0, prevPeriod.totalAvailable - prevSpent);
+        } else {
+          // Si no había registro previo, calcularlo a partir de transacciones pasadas
+          const prevIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', prevInfo.startDate, prevInfo.endDate);
+          const prevExpenses = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', prevInfo.startDate, prevInfo.endDate);
+          leftoverFromPrevious = Math.max(0, prevIncome - prevExpenses);
+        }
+
+        // Calcular ingreso actual del periodo
+        const currentIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentInfo.startDate, currentInfo.endDate);
+
+        // Crear plantillas de presupuestos con valores iniciales en $0 (Reinicio limpio)
+        const defaultBudgets: QuincenalBudgetItem[] = (qbState.budgetTemplates || [
+          { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald' },
+          { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple' },
+          { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue' }
+        ]).map(tmpl => ({
+          id: 'bdg_' + tmpl.id + '_' + Date.now().toString(36),
+          name: tmpl.name,
+          allocatedAmount: 0, // Reinicio automático a $0
+          spentAmount: 0,
+          emoji: tmpl.emoji,
+          color: tmpl.color,
+          categoryName: tmpl.name
+        }));
+
+        currentPeriod = {
+          id: currentInfo.id,
+          year: currentInfo.year,
+          month: currentInfo.month,
+          quincena: currentInfo.quincena,
+          startDate: currentInfo.startDate,
+          endDate: currentInfo.endDate,
+          periodLabel: currentInfo.periodLabel,
+          isClosed: false,
+          newIncome: currentIncome,
+          leftoverFromPrevious,
+          totalAvailable: currentIncome + leftoverFromPrevious,
+          budgets: defaultBudgets,
+          totalAllocated: 0,
+          freeUnallocated: currentIncome + leftoverFromPrevious,
+          totalSpent: 0,
+          leftover: currentIncome + leftoverFromPrevious
+        };
+
+        qbState.periodHistory.unshift(currentPeriod);
+      } else {
+        // Actualizar datos en tiempo real de la quincena en curso
+        const actualIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate);
+        if (actualIncome > 0) {
+          currentPeriod.newIncome = actualIncome;
+        }
+
+        currentPeriod.totalAvailable = currentPeriod.newIncome + currentPeriod.leftoverFromPrevious;
+
+        const totalSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate);
+        currentPeriod.totalSpent = totalSpent;
+
+        // Actualizar gasto individual de cada presupuesto
+        currentPeriod.budgets.forEach(b => {
+          b.spentAmount = FinancialCalculations.calculateQuincenalBudgetItemSpent(b, transactions, 'COP', currentPeriod!.startDate, currentPeriod!.endDate);
+        });
+
+        currentPeriod.totalAllocated = currentPeriod.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        currentPeriod.freeUnallocated = Math.max(0, currentPeriod.totalAvailable - currentPeriod.totalAllocated);
+        currentPeriod.leftover = Math.max(0, currentPeriod.totalAvailable - totalSpent);
+      }
+    });
+  },
+
+  updateQuincenalBudgets(periodId: string, budgets: QuincenalBudgetItem[]) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        period.budgets = budgets;
+        period.totalAllocated = budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+      }
+    });
+  },
+
+  setQuincenalBudgetAllocation(periodId: string, budgetId: string, newAmount: number) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        const item = period.budgets.find(b => b.id === budgetId);
+        if (item) {
+          item.allocatedAmount = Math.max(0, newAmount);
+          period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+          period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        }
+      }
+    });
+  },
+
+  addQuincenalBudgetItem(periodId: string, item: Omit<QuincenalBudgetItem, 'id'>) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        const id = 'bdg_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 5);
+        period.budgets.push({
+          ...item,
+          id,
+          spentAmount: 0
+        });
+        period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+      }
+    });
+  },
+
+  deleteQuincenalBudgetItem(periodId: string, budgetId: string) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        period.budgets = period.budgets.filter(b => b.id !== budgetId);
+        period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+      }
+    });
+  },
+
+  setQuincenalIncome(periodId: string, newIncome: number) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        period.newIncome = Math.max(0, newIncome);
+        period.totalAvailable = period.newIncome + period.leftoverFromPrevious;
+        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.leftover = Math.max(0, period.totalAvailable - period.totalSpent);
+      }
+    });
+  },
+
+  setQuincenalLeftover(periodId: string, leftover: number) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        period.leftoverFromPrevious = Math.max(0, leftover);
+        period.totalAvailable = period.newIncome + period.leftoverFromPrevious;
+        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.leftover = Math.max(0, period.totalAvailable - period.totalSpent);
+      }
     });
   }
 };

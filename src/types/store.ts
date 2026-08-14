@@ -454,12 +454,58 @@ export interface FinancialDistributionPlan {
   funds: FinancialFundPlan[];
 }
 
+export interface QuincenalBudgetItem {
+  id: string;
+  name: string;
+  allocatedAmount: number; // Monto asignado en esta quincena
+  spentAmount?: number; // Monto gastado (calculado en el periodo)
+  emoji?: string;
+  color?: string;
+  categoryName?: string;
+}
+
+export interface QuincenalPeriodRecord {
+  id: string; // ej: "2026-08-Q1", "2026-08-Q2"
+  year: number;
+  month: number; // 1 - 12
+  quincena: 1 | 2; // 1 = 1-15, 2 = 16-fin de mes
+  startDate: string; // "YYYY-MM-01" o "YYYY-MM-16"
+  endDate: string; // "YYYY-MM-15" o "YYYY-MM-30/31"
+  periodLabel: string; // "Quincena 1–15 de Agosto de 2026"
+  isClosed: boolean;
+  closedAt?: string;
+
+  // Ingreso y sobrante
+  newIncome: number; // Dinero realmente recibido en la quincena
+  leftoverFromPrevious: number; // Dinero sobrante que no se gastó en la quincena anterior
+  totalAvailable: number; // newIncome + leftoverFromPrevious (Disponible para distribuir)
+
+  // Presupuestos asignados en esta quincena
+  budgets: QuincenalBudgetItem[];
+
+  // Resumen del periodo
+  totalAllocated: number; // Suma de presupuestos asignados
+  freeUnallocated: number; // Dinero libre / disponible sin asignar a presupuesto
+  totalSpent: number; // Total gastado durante la quincena
+  leftover: number; // Sobrante al cierre (totalAvailable - totalSpent)
+
+  notes?: string;
+}
+
+export interface QuincenalBudgetOfficeState {
+  currentPeriodId?: string;
+  budgetTemplates?: Array<{ id: string; name: string; emoji: string; color: string; defaultAmount?: number; defaultPercentage?: number }>;
+  periodHistory: QuincenalPeriodRecord[];
+  accumulatedCarryover?: number;
+}
+
 export interface FinancialOfficeData {
   accounts: FinancialAccount[];
   categories: FinancialCategory[];
   transactions: FinancialTransaction[];
   budgets: Array<{ id: string; categoryId: string; monthlyLimit: number; currency: CurrencyCode }>;
   distributionPlan?: FinancialDistributionPlan;
+  quincenalBudgets?: QuincenalBudgetOfficeState;
   recurringExpenses: Array<{ id: string; title: string; amount: number; currency: CurrencyCode; dueDay: number }>;
   savings: Array<{ id: string; goalName: string; targetAmount: number; currentAmount: number; currency: CurrencyCode; targetDate?: string }>;
   investments: InvestmentPosition[];
