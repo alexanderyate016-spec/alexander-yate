@@ -514,7 +514,7 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                       const leftPercent = (rEvt.colIndex / rEvt.totalCols) * 96 + 2;
                       const widthPercent = (100 / rEvt.totalCols) - 3;
 
-                      const hasActivitiesIndicator = Boolean(evt.raw?.hasPendingActivities);
+                      const hasActivitiesIndicator = Boolean(evt.raw?.hasPendingActivities || (evt.raw?.pendingActivitiesCount && evt.raw.pendingActivitiesCount > 0));
 
                       return (
                         <div
@@ -548,16 +548,19 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                               {hasActivitiesIndicator && !isCancelled && (
                                 <span
                                   className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-amber-600 shrink-0 animate-pulse shadow-xs"
-                                  title={`${evt.raw.pendingActivitiesCount} actividades/evaluaciones pendientes en esta materia`}
+                                  title={`${evt.raw?.pendingActivitiesCount || 1} actividades/evaluaciones pendientes en esta materia`}
                                 />
                               )}
                             </div>
 
                             {/* TITLE */}
                             <div className="font-extrabold text-[11px] leading-tight truncate flex items-center justify-between gap-1" style={{ color: isCancelled ? '#991B1B' : (rEvt.isConflict ? '#9F1239' : style.titleColor) }}>
-                              <span className={`truncate flex items-center gap-1 ${isCancelled ? 'line-through opacity-80' : ''}`}>
+                              <span className={`truncate flex items-center gap-1.5 ${isCancelled ? 'line-through opacity-80' : ''}`}>
                                 {evt.completed && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
                                 <span className="truncate">{evt.title}</span>
+                                {hasActivitiesIndicator && !isCancelled && (
+                                  <span className="text-amber-600 font-extrabold text-sm leading-none shrink-0" title={`${evt.raw?.pendingActivitiesCount || 1} actividades/tareas pendientes`}>•</span>
+                                )}
                               </span>
                             </div>
 
@@ -761,13 +764,13 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
               )}
             </div>
 
-            {/* CLASS ACTIVITIES SECTION (REQUIREMENT 3) */}
-            {activeEventModal.raw?.type === 'class_session' && (
+            {/* CLASS ACTIVITIES SECTION (REQUIREMENT 3 & 7) */}
+            {(activeEventModal.raw?.type === 'class_session' || activeEventModal.category === 'class' || activeEventModal.raw?.session) && (
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                   <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-purple-600" />
-                    📝 Actividades y Tareas de esta Materia
+                    📝 Actividades y Evaluaciones de esta Materia
                   </h4>
                   {activeEventModal.raw?.hasPendingActivities && (
                     <span className="text-[10px] font-extrabold px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-full">
@@ -776,8 +779,30 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                   )}
                 </div>
 
+                {/* TODAY IN-CLASS ACTIVITIES / EXAMS */}
+                {activeEventModal.raw?.todayActivities && activeEventModal.raw.todayActivities.length > 0 && (
+                  <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg space-y-1.5">
+                    <div className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span>Para esta sesión ({activeEventModal.date}):</span>
+                    </div>
+                    {activeEventModal.raw.todayActivities.map((act: any, idx: number) => (
+                      <div key={act.id || idx} className="text-xs text-amber-950 bg-white/80 p-2 rounded border border-amber-200/80 flex items-center justify-between font-semibold">
+                        <span>{act.name} {act.weightPercent ? `(${act.weightPercent}%)` : ''}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-tight text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                          {act.startTime ? `${act.startTime} - ${act.endTime}` : 'Durante la clase'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ALL PENDING ACTIVITIES FOR THIS SUBJECT */}
                 {activeEventModal.raw?.pendingEvalActs?.length > 0 || activeEventModal.raw?.pendingAcadActs?.length > 0 ? (
-                  <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pt-1">
+                      Todas las entregas y tareas pendientes:
+                    </div>
                     {activeEventModal.raw?.pendingEvalActs?.map((act: any) => (
                       <div key={act.id} className="p-2.5 bg-white border border-slate-200 rounded-lg text-xs space-y-0.5 shadow-2xs">
                         <div className="flex items-center justify-between font-bold text-slate-900">
@@ -806,7 +831,7 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                           <span className="text-[10px] font-semibold text-slate-500">{act.type}</span>
                         </div>
                         <div className="text-[11px] text-slate-600 font-mono text-[10px]">
-                          📅 Fecha: {act.date} {act.startTime ? `(${act.startTime} - ${act.endTime})` : ''}
+                          📅 Entrega / Fecha: {act.date} {act.startTime ? `(${act.startTime} - ${act.endTime})` : ''}
                         </div>
                       </div>
                     ))}

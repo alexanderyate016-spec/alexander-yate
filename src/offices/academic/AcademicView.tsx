@@ -15,6 +15,7 @@ import {
 } from '../../types/store';
 import { AcademicStore } from './AcademicStore';
 import { AcademicCalculations } from './AcademicCalculations';
+import { AcademicSync } from './AcademicSync';
 import { getTodayDateString, getDayOfWeekName, getWeekDaysForDate } from '../../utils/dates';
 import { UniversalSchedule, CalendarEvent } from '../../components/executive';
 import { formatGrade } from '../../utils/formatters';
@@ -436,134 +437,39 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     return AcademicCalculations.getUpcomingAcademicActivities(activeSubjects, 5);
   }, [activeSubjects]);
 
-  // Universal Calendar Events projection
+  // Universal Calendar Events projection (uses unified projection from AcademicSync)
   const scheduleEvents: CalendarEvent[] = useMemo(() => {
     const events: CalendarEvent[] = [];
     const weekDays = getWeekDaysForDate(scheduleSelectedDate);
+    const academicData: AcademicOfficeData = {
+      semesters: data.semesters || [],
+      subjects: activeSubjects,
+      academicActivities: data.academicActivities || []
+    };
     
-    // 1. Collect all resolved class sessions for the week
     weekDays.forEach(day => {
-      const resolvedSessions = AcademicCalculations.getAllSessionsForDate(activeSubjects, day.dateStr);
-      resolvedSessions.forEach(ses => {
-        // Find pending activities associated with this subject
-        const sub = activeSubjects.find(s => s.id === ses.subjectId);
-        const pendingEvalActs: any[] = [];
-        if (sub?.cuts) {
-          sub.cuts.forEach(cut => {
-            if (cut.activities) {
-              cut.activities.forEach(act => {
-                if (act.status === 'pending') {
-                  pendingEvalActs.push({ ...act, cutName: cut.cutName, subjectName: sub.name });
-                }
-              });
-            }
-          });
-        }
-
-        const pendingAcadActs: any[] = [];
-        if (sub?.academicActivities) {
-          sub.academicActivities.forEach(act => {
-            pendingAcadActs.push({ ...act, subjectName: sub.name });
-          });
-        }
-
-        const hasPendingActivities = pendingEvalActs.length > 0 || pendingAcadActs.length > 0;
-        const pendingActivitiesCount = pendingEvalActs.length + pendingAcadActs.length;
-
+      const unifiedEvents = AcademicSync.projectAcademicEvents(academicData, day.dateStr);
+      unifiedEvents.forEach(ue => {
         events.push({
-          id: ses.id,
-          title: ses.subjectName,
-          subtitle: `Prof: ${ses.professorTitle ? ses.professorTitle + ' ' : ''}${ses.professorName}${ses.classroom ? ` • ${ses.classroom}` : ''}`,
+          id: ue.id,
+          title: ue.title,
+          subtitle: ue.subtitle,
           date: day.dateStr,
-          startTime: ses.startTime,
-          endTime: ses.endTime,
-          classroom: ses.classroom,
-          professor: ses.professorName,
-          location: ses.classroom,
-          color: ses.subjectColor || '#3B82F6',
-          officeLabel: 'Académica',
+          startTime: ue.startTime || 'UNTIMED',
+          endTime: ue.endTime || 'UNTIMED',
+          classroom: ue.rawObject?.session?.classroom || ue.rawObject?.classroom || ue.location,
+          professor: ue.rawObject?.session?.professorName,
+          location: ue.location,
+          color: ue.color || '#3B82F6',
+          officeLabel: ue.officeLabel || 'Académica',
           sourceOffice: 'academica',
-          raw: {
-            type: 'class_session',
-            session: ses,
-            hasPendingActivities,
-            pendingActivitiesCount,
-            pendingEvalActs,
-            pendingAcadActs
-          }
+          raw: { ...(ue.rawObject || {}), ...ue }
         });
       });
     });
 
-    // 2. Collect evaluation activities and academic activities
-    activeSubjects.forEach(sub => {
-      // Evaluation activities
-      if (sub.cuts) {
-        sub.cuts.forEach(cut => {
-          if (cut.activities) {
-            cut.activities.forEach(act => {
-              if (act.status !== 'cancelled' && act.date) {
-                const startTime = act.startTime || act.time || 'UNTIMED';
-                const endTime = act.endTime || (act.startTime ? act.startTime : 'UNTIMED');
-
-                events.push({
-                  id: `eval_${act.id}_${act.date}`,
-                  title: `📝 ${act.name} (${act.type})`,
-                  subtitle: `Materia: ${sub.name} • ${act.weightPercent}% (${cut.cutName})`,
-                  date: act.date,
-                  startTime,
-                  endTime,
-                  color: '#F59E0B',
-                  officeLabel: 'Evaluación',
-                  sourceOffice: 'academica',
-                  raw: {
-                    type: 'evaluation_activity',
-                    subjectId: sub.id,
-                    cutId: cut.id,
-                    activity: act
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-
-      // Non-graded academic activities
-      if (sub.academicActivities) {
-        sub.academicActivities.forEach(act => {
-          if (act.date) {
-            const startTime = act.startTime || 'UNTIMED';
-            const endTime = act.endTime || (act.startTime ? act.startTime : 'UNTIMED');
-
-            events.push({
-              id: `acad_${act.id}_${act.date}`,
-              title: `📌 ${act.name} (${act.type})`,
-              subtitle: `Materia: ${sub.name}`,
-              date: act.date,
-              startTime,
-              endTime,
-              color: '#8B5CF6',
-              officeLabel: 'Actividad',
-              sourceOffice: 'academica',
-              raw: {
-                type: 'academic_activity',
-                subjectId: sub.id,
-                activity: act
-              }
-            });
-          }
-        });
-      }
-    });
-
     return events;
   }, [activeSubjects, scheduleSelectedDate]);
-
-  // Class-only Schedule Events (Requirement 1: Horario contiene exclusivamente clases)
-  const classOnlyScheduleEvents: CalendarEvent[] = useMemo(() => {
-    return scheduleEvents.filter(e => e.raw?.type === 'class_session');
-  }, [scheduleEvents]);
 
   // Intelligent Class Schedule Context Detection (Requirement 4)
   const detectedEvalClassSession = useMemo(() => {
@@ -2879,7 +2785,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
               </div>
 
               <UniversalSchedule
-                events={classOnlyScheduleEvents}
+                events={scheduleEvents}
                 selectedDate={scheduleSelectedDate}
                 onSelectDate={setScheduleSelectedDate}
                 viewMode={scheduleViewMode}

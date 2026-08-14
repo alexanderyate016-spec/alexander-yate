@@ -764,8 +764,8 @@ export class ChiefOfStaffSync {
       title: evt.title,
       subtitle: evt.subtitle,
       date: evt.date,
-      startTime: evt.startTime || '08:00',
-      endTime: evt.endTime || '09:00',
+      startTime: evt.startTime || 'UNTIMED',
+      endTime: evt.endTime || 'UNTIMED',
       color: evt.color || '#8B5CF6',
       category: evt.type,
       officeLabel: evt.officeLabel,
@@ -773,7 +773,7 @@ export class ChiefOfStaffSync {
       location: evt.location,
       priority: evt.priority,
       completed: evt.status === 'completed',
-      raw: evt
+      raw: { ...(evt.rawObject || {}), ...evt }
     }));
   }
 }
