@@ -91,14 +91,16 @@ export class ChiefOfStaffStore {
   }
 
   /**
-   * Cancel any event by ID (standalone or projected)
+   * Cancel any event by ID (standalone or projected) with reason
    */
-  public static cancelEvent(id: string, dateStr?: string) {
+  public static cancelEvent(id: string, dateStr?: string, reason?: string) {
     storeInstance.updateState(draft => {
       const cabinetEvents = draft.offices.jefaturaGabinete?.events || [];
       const index = cabinetEvents.findIndex(e => e.id === id);
       if (index !== -1) {
         draft.offices.jefaturaGabinete.events[index].status = 'cancelled';
+        draft.offices.jefaturaGabinete.events[index].cancelReason = reason || 'Cancelado por el usuario';
+        draft.offices.jefaturaGabinete.events[index].cancelledAt = new Date().toISOString();
       }
 
       if (!draft.offices.jefaturaGabinete.cancelledEventIds) {
@@ -129,6 +131,8 @@ export class ChiefOfStaffStore {
       const index = cabinetEvents.findIndex(e => e.id === id);
       if (index !== -1) {
         draft.offices.jefaturaGabinete.events[index].status = 'active';
+        draft.offices.jefaturaGabinete.events[index].cancelReason = undefined;
+        draft.offices.jefaturaGabinete.events[index].cancelledAt = undefined;
       }
 
       if (draft.offices.jefaturaGabinete.cancelledEventIds) {
@@ -142,11 +146,92 @@ export class ChiefOfStaffStore {
   }
 
   /**
-   * Bulk cancel activities for a date (e.g. "Cancelar las clases de hoy" or "Cancelar todo")
+   * Reschedule an event to a new date and time without duplicating, preserving history
+   */
+  public static rescheduleEvent(
+    eventId: string,
+    newDate: string,
+    newStartTime: string,
+    newEndTime: string,
+    options?: {
+      oldDate?: string;
+      oldStartTime?: string;
+      oldEndTime?: string;
+      reason?: string;
+    }
+  ) {
+    storeInstance.updateState(draft => {
+      if (!draft.offices.jefaturaGabinete) {
+        draft.offices.jefaturaGabinete = {
+          config: { wakeUpTime: '06:30', sleepTime: '23:00', breakfastTime: '07:30', lunchTime: '12:30', dinnerTime: '19:30', commuteRoutes: [] },
+          events: []
+        };
+      }
+
+      const cabinetEvents = draft.offices.jefaturaGabinete.events || [];
+      const existingIdx = cabinetEvents.findIndex(e => e.id === eventId);
+
+      const oldDate = options?.oldDate || (existingIdx !== -1 ? cabinetEvents[existingIdx].date : newDate);
+      const oldStart = options?.oldStartTime || (existingIdx !== -1 ? cabinetEvents[existingIdx].startTime : newStartTime);
+      const oldEnd = options?.oldEndTime || (existingIdx !== -1 ? cabinetEvents[existingIdx].endTime : newEndTime);
+
+      // Remove from cancelled list if it was cancelled
+      if (draft.offices.jefaturaGabinete.cancelledEventIds) {
+        draft.offices.jefaturaGabinete.cancelledEventIds = draft.offices.jefaturaGabinete.cancelledEventIds.filter(id => id !== eventId);
+      }
+      if (oldDate && draft.offices.jefaturaGabinete.cancelledEventsByDate?.[oldDate]) {
+        draft.offices.jefaturaGabinete.cancelledEventsByDate[oldDate] = draft.offices.jefaturaGabinete.cancelledEventsByDate[oldDate].filter(id => id !== eventId);
+      }
+
+      if (existingIdx !== -1) {
+        const ev = cabinetEvents[existingIdx];
+        ev.date = newDate;
+        ev.startTime = newStartTime;
+        ev.endTime = newEndTime;
+        ev.status = 'active';
+        ev.cancelReason = undefined;
+        ev.cancelledAt = undefined;
+        ev.reprogrammedFrom = {
+          oldDate,
+          oldStartTime: oldStart,
+          oldEndTime: oldEnd,
+          reason: options?.reason,
+          reprogrammedAt: new Date().toISOString()
+        };
+        ev.notes = (ev.notes ? ev.notes + ' | ' : '') + `Reprogramado desde ${oldDate} (${oldStart} - ${oldEnd})`;
+      } else {
+        // Event originated from another office or projected source, create a managed reschedule in Jefatura
+        const newEvt: ChiefOfStaffEvent = {
+          id: eventId,
+          title: `[Reprogramado] Evento`,
+          date: newDate,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          status: 'active',
+          sourceOffice: 'jefatura',
+          priority: 'medium',
+          reprogrammedFrom: {
+            oldDate,
+            oldStartTime: oldStart,
+            oldEndTime: oldEnd,
+            reason: options?.reason,
+            reprogrammedAt: new Date().toISOString()
+          },
+          notes: `Reprogramado desde ${oldDate} (${oldStart} - ${oldEnd})`,
+          createdAt: new Date().toISOString()
+        };
+        draft.offices.jefaturaGabinete.events.push(newEvt);
+      }
+    });
+  }
+
+  /**
+   * Bulk cancel activities for a date (e.g. "Cancelar las clases de hoy" or "Cancelar todo") with reason
    */
   public static cancelAllEventsForDate(
     dateStr: string,
-    filterType: 'all' | 'classes' | 'academic' | 'medical' | 'social' = 'all'
+    filterType: 'all' | 'classes' | 'academic' | 'medical' | 'social' = 'all',
+    reason?: string
   ) {
     storeInstance.updateState(draft => {
       if (!draft.offices.jefaturaGabinete.cancelledOccurrences) {
@@ -154,17 +239,22 @@ export class ChiefOfStaffStore {
       }
 
       // Check if rule already exists
-      const exists = draft.offices.jefaturaGabinete.cancelledOccurrences.some(
+      const existingIdx = draft.offices.jefaturaGabinete.cancelledOccurrences.findIndex(
         c => c.date === dateStr && c.filter === filterType
       );
 
-      if (!exists) {
-        draft.offices.jefaturaGabinete.cancelledOccurrences.push({
-          id: `canc_occ_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-          date: dateStr,
-          filter: filterType,
-          createdAt: new Date().toISOString()
-        });
+      const cancelRule = {
+        id: `canc_occ_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        date: dateStr,
+        filter: filterType,
+        reason: reason || (filterType === 'classes' ? 'Cancelación de clases' : 'Cancelación extraordinaria del día'),
+        createdAt: new Date().toISOString()
+      };
+
+      if (existingIdx !== -1) {
+        draft.offices.jefaturaGabinete.cancelledOccurrences[existingIdx] = cancelRule;
+      } else {
+        draft.offices.jefaturaGabinete.cancelledOccurrences.push(cancelRule);
       }
 
       // Also mark all cabinet events for this date as cancelled
@@ -173,9 +263,13 @@ export class ChiefOfStaffStore {
         if (e.date === dateStr) {
           if (filterType === 'all') {
             e.status = 'cancelled';
+            e.cancelReason = cancelRule.reason;
+            e.cancelledAt = cancelRule.createdAt;
           } else if (filterType === 'classes' || filterType === 'academic') {
             if (e.category === 'academic' || e.sourceOffice === 'academica') {
               e.status = 'cancelled';
+              e.cancelReason = cancelRule.reason;
+              e.cancelledAt = cancelRule.createdAt;
             }
           }
         }

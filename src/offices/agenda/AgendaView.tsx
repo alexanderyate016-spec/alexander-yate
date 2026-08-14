@@ -90,6 +90,15 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
   // Bulk Cancellation Modal state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelFilterType, setCancelFilterType] = useState<'all' | 'classes' | 'medical'>('all');
+  const [cancelReasonText, setCancelReasonText] = useState<string>('');
+
+  // Reschedule Modal state
+  const [reschedulingEvent, setReschedulingEvent] = useState<any | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<string>('');
+  const [rescheduleStartTime, setRescheduleStartTime] = useState<string>('09:00');
+  const [rescheduleEndTime, setRescheduleEndTime] = useState<string>('10:00');
+  const [rescheduleReason, setRescheduleReason] = useState<string>('');
 
   // Conflict detection for current event form values
   const formConflict = React.useMemo(() => {
@@ -111,6 +120,27 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
       return startM < evtEnd && endM > evtStart;
     });
   }, [state, formDate, formStartTime, formEndTime, editingEvent]);
+
+  // Conflict detection for Reschedule Modal
+  const rescheduleConflict = React.useMemo(() => {
+    if (!rescheduleDate || !rescheduleStartTime || !rescheduleEndTime || !reschedulingEvent) return null;
+    if (rescheduleStartTime >= rescheduleEndTime) return null;
+
+    const startM = timeToMinutes(rescheduleStartTime);
+    const endM = timeToMinutes(rescheduleEndTime);
+
+    const eventsOnDate = ChiefOfStaffSync.getUnifiedEventsForDate(state, rescheduleDate);
+    return eventsOnDate.find(evt => {
+      if (evt.id === reschedulingEvent.id) return false;
+      if (evt.status === 'cancelled' || evt.status === 'Cancelada') return false;
+      if (!evt.startTime || !evt.endTime || evt.startTime === 'UNTIMED') return false;
+
+      const evtStart = timeToMinutes(evt.startTime);
+      const evtEnd = timeToMinutes(evt.endTime);
+
+      return startM < evtEnd && endM > evtStart;
+    });
+  }, [state, rescheduleDate, rescheduleStartTime, rescheduleEndTime, reschedulingEvent]);
 
   // Real-time clock for personal secretary
   const [nowDate, setNowDate] = useState<Date>(new Date());
@@ -248,11 +278,52 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
     );
   };
 
+  const handleOpenRescheduleModal = (evt: any) => {
+    setReschedulingEvent(evt);
+    setRescheduleDate(evt.date || selectedDate || todayStr);
+    setRescheduleStartTime(evt.startTime && evt.startTime !== 'UNTIMED' ? evt.startTime : '09:00');
+    setRescheduleEndTime(evt.endTime && evt.endTime !== 'UNTIMED' ? evt.endTime : '10:00');
+    setRescheduleReason('');
+  };
+
+  const handleConfirmReschedule = () => {
+    if (!reschedulingEvent) return;
+    if (rescheduleStartTime >= rescheduleEndTime) {
+      showToast('La hora de inicio debe ser anterior a la hora de finalización', 'warning');
+      return;
+    }
+
+    ChiefOfStaffStore.rescheduleEvent(
+      reschedulingEvent.id,
+      rescheduleDate,
+      rescheduleStartTime,
+      rescheduleEndTime,
+      {
+        oldDate: reschedulingEvent.date,
+        oldStartTime: reschedulingEvent.startTime,
+        oldEndTime: reschedulingEvent.endTime,
+        reason: rescheduleReason.trim() || undefined
+      }
+    );
+
+    showToast(`Evento reprogramado exitosamente para el ${formatFriendlyDate(rescheduleDate)}`, 'success');
+    setReschedulingEvent(null);
+  };
+
   const BulkCancelModal = () => {
     if (!isCancelModalOpen) return null;
+    const reasonChips = [
+      '🚨 Emergencia general',
+      '🤒 Enfermedad / Incapacidad',
+      '🏛️ Suspensión institucional / Feriado',
+      '⛈️ Clima adverso / Fuerza mayor',
+      '💼 Compromiso de fuerza mayor',
+      'Personal'
+    ];
+
     return (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-        <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+        <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold shrink-0">
@@ -277,25 +348,56 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
               Regla Ejecutiva de Cancelación:
             </p>
             <p className="text-[11px] text-amber-800 leading-relaxed">
-              Las actividades no serán borradas de la base de datos. Cambiarán su estado a <strong>CANCELADA</strong> (atenuadas y tachadas) manteniendo su fecha, horario e historial intacto. No generarán alertas ni contarán como compromisos activos.
+              Las actividades <strong>NO serán eliminadas</strong> de la base de datos. Cambiarán su estado a <strong>CANCELADA</strong> (atenuadas y tachadas) manteniendo su fecha, horario e historial intacto. No generarán alertas ni contarán como compromisos activos.
             </p>
           </div>
 
-          <div className="space-y-3">
+          {/* Motivo de la Cancelación */}
+          <div className="space-y-2 text-xs">
+            <label className="font-bold text-slate-700 block">Motivo de la cancelación (Opcional):</label>
+            <div className="flex flex-wrap gap-1.5">
+              {reasonChips.map(chip => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => setCancelReasonText(chip)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
+                    cancelReasonText === chip
+                      ? 'bg-rose-100 border-rose-400 text-rose-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              placeholder="Escribe un motivo personalizado..."
+              value={cancelReasonText}
+              onChange={e => setCancelReasonText(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500 mt-1"
+            />
+          </div>
+
+          <div className="space-y-2.5 pt-1">
+            <label className="font-bold text-xs text-slate-800 block">Selecciona el alcance de la cancelación:</label>
+
             <button
               onClick={() => {
-                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'classes');
+                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'classes', cancelReasonText.trim() || undefined);
                 showToast(`Se registraron como CANCELADAS las clases para ${formatFriendlyDate(selectedDate)}`, 'info');
                 setIsCancelModalOpen(false);
+                setCancelReasonText('');
               }}
-              className="w-full p-4 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
+              className="w-full p-3.5 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
             >
               <div>
                 <h4 className="text-xs font-bold text-slate-900 group-hover:text-rose-900">
                   📚 Cancelar únicamente las Clases de este Día
                 </h4>
                 <p className="text-[11px] text-slate-500 group-hover:text-rose-700 mt-0.5">
-                  Marca las clases académicas como canceladas sin alterar los compromisos personales o citas.
+                  Marca las clases de hoy como canceladas sin alterar compromisos personales o citas.
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-600 shrink-0" />
@@ -303,11 +405,12 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
             <button
               onClick={() => {
-                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'all');
+                ChiefOfStaffStore.cancelAllEventsForDate(selectedDate, 'all', cancelReasonText.trim() || undefined);
                 showToast(`Se registraron como CANCELADAS TODAS las actividades para ${formatFriendlyDate(selectedDate)}`, 'info');
                 setIsCancelModalOpen(false);
+                setCancelReasonText('');
               }}
-              className="w-full p-4 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
+              className="w-full p-3.5 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-2xl text-left transition-all flex items-center justify-between group"
             >
               <div>
                 <h4 className="text-xs font-bold text-slate-900 group-hover:text-rose-900">
@@ -327,6 +430,156 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
             >
               Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const RescheduleModal = () => {
+    if (!reschedulingEvent) return null;
+
+    const reasonChips = [
+      'Ajuste de horario',
+      'Cita médica postergada',
+      'Cambio de hora de clase',
+      'Compromiso previo extendido',
+      'Reprogramación acordada'
+    ];
+
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+        <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                <CalendarIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Reprogramar Evento</h3>
+                <p className="text-xs text-slate-500 font-medium">Mover de fecha/hora sin crear duplicados</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setReschedulingEvent(null)}
+              className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Event Summary Card */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-xs">
+            <div className="font-bold text-slate-900 text-sm">{reschedulingEvent.title}</div>
+            <div className="text-slate-600 flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-purple-600" />
+              <span>Horario actual: <strong>{reschedulingEvent.date}</strong> ({reschedulingEvent.startTime} – {reschedulingEvent.endTime})</span>
+            </div>
+            {reschedulingEvent.location && (
+              <div className="text-slate-500 text-[11px]">📍 {reschedulingEvent.location}</div>
+            )}
+          </div>
+
+          {/* New Date & Time Pickers */}
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Nueva Fecha *</label>
+              <input
+                type="date"
+                required
+                value={rescheduleDate}
+                onChange={e => setRescheduleDate(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-purple-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nueva Hora Inicio *</label>
+                <input
+                  type="time"
+                  required
+                  value={rescheduleStartTime}
+                  onChange={e => setRescheduleStartTime(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nueva Hora Fin *</label>
+                <input
+                  type="time"
+                  required
+                  value={rescheduleEndTime}
+                  onChange={e => setRescheduleEndTime(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-purple-600 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Motivo de la reprogramación */}
+            <div className="space-y-1.5 pt-1">
+              <label className="font-bold text-slate-700 block">Motivo de la reprogramación (Opcional):</label>
+              <div className="flex flex-wrap gap-1.5">
+                {reasonChips.map(chip => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setRescheduleReason(chip)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
+                      rescheduleReason === chip
+                        ? 'bg-purple-100 border-purple-400 text-purple-900'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="Escribe el motivo..."
+                value={rescheduleReason}
+                onChange={e => setRescheduleReason(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-600 mt-1"
+              />
+            </div>
+
+            {/* Conflict Detection Banner */}
+            {rescheduleConflict ? (
+              <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-amber-950 space-y-1.5 animate-in fade-in duration-150">
+                <div className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>⚠️ Conflicto detectado en la fecha de destino</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Ya tienes <strong>"{rescheduleConflict.title}"</strong> de {rescheduleConflict.startTime} a {rescheduleConflict.endTime} en esa fecha. Puedes continuar para mantener ambos en paralelo o ajustar el horario.
+                </p>
+              </div>
+            ) : (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 flex items-center gap-2 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-semibold text-[11px]">✅ Horario destino libre de conflictos</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setReschedulingEvent(null)}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmReschedule}
+              className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              Confirmar Reprogramación
             </button>
           </div>
         </div>
@@ -858,6 +1111,16 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                      {/* REPROGRAMAR BUTTON */}
+                      <button
+                        onClick={() => handleOpenRescheduleModal(evt)}
+                        className="px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl flex items-center gap-1 transition-all"
+                        title="Reprogramar fecha u hora"
+                      >
+                        <CalendarIcon className="w-3.5 h-3.5 text-purple-600" />
+                        Reprogramar
+                      </button>
+
                       {isCancelled ? (
                         <button
                           onClick={() => {
@@ -953,6 +1216,8 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
               const found = activeRawEvents.find(r => r.id === evtId);
               if (found) setDeletingEvent({ id: found.id, title: found.title });
             }}
+            onRescheduleActivity={(evt) => handleOpenRescheduleModal(evt)}
+            onRescheduleClass={(evt) => handleOpenRescheduleModal(evt)}
             onCancelActivity={(evt) => {
               if (evt.status === 'cancelled' || evt.status === 'Cancelada') {
                 ChiefOfStaffStore.uncancelEvent(evt.id, evt.date || selectedDate);
@@ -1288,6 +1553,9 @@ export const AgendaView: React.FC<Props> = ({ state, onNavigateToOffice }) => {
 
       {/* Bulk Cancel Modal */}
       <BulkCancelModal />
+
+      {/* Reschedule Modal */}
+      <RescheduleModal />
     </div>
   );
 };

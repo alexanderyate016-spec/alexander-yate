@@ -1054,6 +1054,15 @@ export interface ChiefOfStaffEvent {
   reminderMinutes?: number;
   priority: 'low' | 'medium' | 'high';
   status: 'active' | 'completed' | 'rescheduled' | 'cancelled';
+  cancelReason?: string;
+  cancelledAt?: string;
+  reprogrammedFrom?: {
+    oldDate: string;
+    oldStartTime: string;
+    oldEndTime: string;
+    reason?: string;
+    reprogrammedAt?: string;
+  };
   isRecurring?: boolean;
   recurrenceRule?: {
     type: 'daily' | 'weekly' | 'period' | 'single';
@@ -1097,6 +1106,7 @@ export interface ChiefOfStaffOfficeData {
     date: string;
     filter?: 'all' | 'classes' | 'academic' | 'medical' | 'social';
     titleKeyword?: string;
+    reason?: string;
     createdAt?: string;
   }>;
 }

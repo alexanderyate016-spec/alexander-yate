@@ -98,10 +98,13 @@ export interface RealTimeSecretaryState {
   greeting: string;
   summaryMessage: string;
   totalToday: number;
+  totalScheduled: number;
+  totalCancelled: number;
   completedTodayCount: number;
   currentNowText: string;
   nextEventText: string;
   nextFreeGapText: string;
+  cancelReasonNote?: string;
   currentActivity: {
     id?: string;
     title: string;
@@ -211,15 +214,20 @@ export class ChiefOfStaffSync {
     const occurrenceRules = jefatura?.cancelledOccurrences || [];
 
     // Map each event, setting status to 'cancelled' if matched by any cancellation rule or status
+    let activeCancelReason: string | undefined;
+
     const eventsProcessed = rawEvents.map(e => {
       let isCancelled = false;
+      let reason: string | undefined;
 
       if (e.status === 'cancelled' || e.status === 'Cancelada' || e.rawObject?.status === 'cancelled' || e.rawObject?.status === 'Cancelada' || e.rawObject?.academicActivity?.status === 'Cancelada') {
         isCancelled = true;
+        reason = e.rawObject?.cancelReason || 'Cancelado';
       } else if (conflictCancelledIds.has(e.id) || userCancelledEventIds.has(e.id) || dateCancelledIds.has(e.id)) {
         isCancelled = true;
+        reason = 'Cancelado por el usuario';
       } else if (occurrenceRules.length > 0) {
-        const matchesOccurrence = occurrenceRules.some(occ => {
+        const matchedRule = occurrenceRules.find(occ => {
           if (occ.date !== dateStr) return false;
           if (occ.filter === 'all') return true;
           if (occ.filter === 'classes' || occ.filter === 'academic') {
@@ -229,14 +237,21 @@ export class ChiefOfStaffSync {
           if (occ.filter === 'social') return e.sourceOffice === 'vidaSocial';
           return false;
         });
-        if (matchesOccurrence) {
+        if (matchedRule) {
           isCancelled = true;
+          reason = matchedRule.reason || 'Cancelación extraordinaria del día';
+          if (!activeCancelReason) activeCancelReason = reason;
         }
       }
 
       return {
         ...e,
-        status: isCancelled ? 'cancelled' : (e.status || 'active')
+        status: isCancelled ? 'cancelled' : (e.status || 'active'),
+        rawObject: {
+          ...e.rawObject,
+          cancelReason: reason || e.rawObject?.cancelReason,
+          status: isCancelled ? 'cancelled' : (e.status || 'active')
+        }
       };
     });
 
@@ -560,7 +575,21 @@ export class ChiefOfStaffSync {
 
     // 2. Events for target date (excluding cancelled ones)
     const allEventsForDate = this.getUnifiedEventsForDate(state, targetDateStr);
+    const cancelledEvents = allEventsForDate.filter(e => e.status === 'cancelled');
     const activeEvents = allEventsForDate.filter(e => e.status !== 'cancelled');
+
+    const totalScheduled = allEventsForDate.length;
+    const totalCancelled = cancelledEvents.length;
+    const totalToday = activeEvents.length;
+
+    // Detect cancel reason note
+    let cancelReasonNote: string | undefined = undefined;
+    if (totalCancelled > 0) {
+      const firstCancelled = cancelledEvents.find(e => e.rawObject?.cancelReason);
+      if (firstCancelled?.rawObject?.cancelReason) {
+        cancelReasonNote = firstCancelled.rawObject.cancelReason;
+      }
+    }
 
     // Sort chronologically
     activeEvents.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
@@ -571,8 +600,6 @@ export class ChiefOfStaffSync {
     const conflictsText = hasConflicts
       ? `⚠️ ${conflicts.length} conflicto${conflicts.length > 1 ? 's' : ''} requiere${conflicts.length > 1 ? 'n' : ''} atención`
       : '✓ Agenda sin conflictos';
-
-    const totalToday = activeEvents.length;
 
     // Completed events today
     const completedEvents = activeEvents.filter(e => {
@@ -697,7 +724,16 @@ export class ChiefOfStaffSync {
 
     // Dynamic Summary Message (Secretary Voice)
     let summaryMessage = '';
-    if (currentHour >= 5 && currentHour < 12) {
+
+    if (totalCancelled > 0) {
+      const reasonPart = cancelReasonNote ? ` por "${cancelReasonNote}"` : '';
+      if (totalToday === 0) {
+        summaryMessage = `${greeting} Tenías ${totalScheduled} compromiso${totalScheduled > 1 ? 's' : ''} programado${totalScheduled > 1 ? 's' : ''}, pero ${totalCancelled === totalScheduled ? (totalCancelled > 1 ? 'todos fueron cancelados' : 'fue cancelado') : `${totalCancelled} fueron cancelados`}${reasonPart}. Tu día ha quedado completamente libre.`;
+      } else {
+        const nextPart = nextEvent ? ` Tu próxima actividad activa comienza a las ${formatTime12h(nextEvent.startTime)}.` : '';
+        summaryMessage = `${greeting} Hoy tenías ${totalScheduled} compromisos programados, pero ${totalCancelled} ${totalCancelled > 1 ? 'fueron cancelados' : 'fue cancelado'}${reasonPart}. Te quedan ${totalToday} actividad${totalToday === 1 ? '' : 'es'} activa${totalToday === 1 ? '' : 's'}.${nextPart}`;
+      }
+    } else if (currentHour >= 5 && currentHour < 12) {
       // Morning
       if (totalToday === 0) {
         summaryMessage = 'Buenos días, Alex. Hoy no tienes compromisos programados en tu agenda. Disfruta de tu día libre.';
@@ -742,10 +778,13 @@ export class ChiefOfStaffSync {
       greeting,
       summaryMessage,
       totalToday,
+      totalScheduled,
+      totalCancelled,
       completedTodayCount,
       currentNowText,
       nextEventText,
       nextFreeGapText,
+      cancelReasonNote,
       currentActivity: currentActivityObj,
       afterActivities,
       conflictsCount: conflicts.length,

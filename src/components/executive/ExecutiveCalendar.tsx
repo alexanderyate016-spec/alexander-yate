@@ -749,6 +749,32 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                 </div>
               )}
 
+              {/* CANCELLED REASON BANNER IN MODAL */}
+              {(activeEventModal.status === 'cancelled' || activeEventModal.status === 'Cancelada' || activeEventModal.raw?.status === 'cancelled') && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1 text-rose-800">
+                    <X className="w-4 h-4 text-rose-600" />
+                    <span>Actividad Marcada como CANCELADA</span>
+                  </div>
+                  <p className="text-[11px] text-rose-700">
+                    Motivo: {activeEventModal.raw?.cancelReason || 'Cancelación registrada en la agenda'}. Se mantiene el registro en el historial.
+                  </p>
+                </div>
+              )}
+
+              {/* REPROGRAMMED NOTICE IN MODAL */}
+              {activeEventModal.raw?.reprogrammedFrom && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1 text-purple-800">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                    <span>Evento Reprogramado</span>
+                  </div>
+                  <p className="text-[11px] text-purple-700">
+                    Horario original: {activeEventModal.raw.reprogrammedFrom.date} ({activeEventModal.raw.reprogrammedFrom.startTime} - {activeEventModal.raw.reprogrammedFrom.endTime})
+                  </p>
+                </div>
+              )}
+
               {activeEventModal.professor && (
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-slate-500 shrink-0" />
@@ -878,6 +904,27 @@ export const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                   title="Cancelar únicamente la clase de esta fecha sin borrar el semestre"
                 >
                   🚫 Cancelar esta clase de hoy
+                </button>
+              )}
+
+              {/* RESCHEDULE EVENT BUTTON */}
+              {(onRescheduleActivity || onRescheduleClass) && (
+                <button
+                  onClick={() => {
+                    const evt = activeEventModal;
+                    setActiveEventModal(null);
+                    if (evt.raw?.type === 'class_session' && onRescheduleClass) {
+                      onRescheduleClass(evt);
+                    } else if (onRescheduleActivity) {
+                      onRescheduleActivity(evt);
+                    } else if (onEditActivity) {
+                      onEditActivity(evt);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                  title="Reprogramar este evento a otra fecha u horario sin crear duplicados"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-purple-600" /> Reprogramar
                 </button>
               )}
 
