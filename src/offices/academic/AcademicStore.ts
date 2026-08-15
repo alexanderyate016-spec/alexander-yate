@@ -1,5 +1,5 @@
 import { storeInstance } from '../../store/CasaBlancaStore';
-import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession, AcademicActivity, SubjectProfessor, SubjectScheduleRule } from '../../types/store';
+import { AcademicOfficeData, AcademicSemester, AcademicSubject, AcademicCut, AcademicEvaluationActivity, AcademicSession, AcademicActivity, SubjectProfessor, SubjectScheduleRule, CutProfessor } from '../../types/store';
 
 export const AcademicStore = {
   getData(): AcademicOfficeData {
@@ -216,13 +216,26 @@ export const AcademicStore = {
   },
 
   // EVALUATIONS & CUTS
-  addCut(subjectId: string, cutName: string, cutWeightPercent: number) {
+  addCut(
+    subjectId: string,
+    cutName: string,
+    cutWeightPercent: number,
+    mode: 'relative_to_cut' | 'direct_to_subject' = 'relative_to_cut',
+    professors?: CutProfessor[]
+  ) {
     storeInstance.updateState(draft => {
       const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
       if (sub) {
         const id = 'cut_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
         if (!sub.cuts) sub.cuts = [];
-        sub.cuts.push({ id, cutName, cutWeightPercent, activities: [] });
+        sub.cuts.push({
+          id,
+          cutName,
+          cutWeightPercent,
+          professorDistributionMode: mode,
+          professors: professors && professors.length > 0 ? professors : undefined,
+          activities: []
+        });
       }
     });
   },
@@ -234,6 +247,26 @@ export const AcademicStore = {
         const idx = sub.cuts.findIndex(c => c.id === cutId);
         if (idx !== -1) {
           sub.cuts[idx] = { ...sub.cuts[idx], ...updates };
+        }
+      }
+    });
+  },
+
+  setCutProfessors(
+    subjectId: string,
+    cutId: string,
+    professors: CutProfessor[],
+    mode?: 'relative_to_cut' | 'direct_to_subject'
+  ) {
+    storeInstance.updateState(draft => {
+      const sub = draft.offices.academica.subjects.find(s => s.id === subjectId);
+      if (sub && sub.cuts) {
+        const cut = sub.cuts.find(c => c.id === cutId);
+        if (cut) {
+          cut.professors = professors;
+          if (mode) {
+            cut.professorDistributionMode = mode;
+          }
         }
       }
     });

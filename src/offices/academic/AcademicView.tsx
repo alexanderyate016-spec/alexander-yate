@@ -11,7 +11,8 @@ import {
   AcademicActivityStatus,
   SubjectProfessor,
   SubjectScheduleRule,
-  AcademicScheduleType
+  AcademicScheduleType,
+  CutProfessor
 } from '../../types/store';
 import { AcademicStore } from './AcademicStore';
 import { AcademicCalculations } from './AcademicCalculations';
@@ -201,6 +202,58 @@ const ActivitiesDistributionBar: React.FC<{
   );
 };
 
+const CutProfessorsDistributionBar: React.FC<{ 
+  professors: CutProfessor[]; 
+  cutWeightPercent: number;
+  mode: 'relative_to_cut' | 'direct_to_subject';
+}> = ({ professors, cutWeightPercent, mode }) => {
+  const dist = AcademicCalculations.getProfessorsDistribution(professors, cutWeightPercent, mode);
+  const target = mode === 'relative_to_cut' ? 100 : (cutWeightPercent || 100);
+
+  return (
+    <div className={`p-3 rounded-xl border space-y-1.5 text-xs transition-all ${
+      dist.statusColor === 'emerald'
+        ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+        : dist.statusColor === 'rose'
+        ? 'bg-rose-50 border-rose-200 text-rose-900'
+        : 'bg-amber-50 border-amber-200 text-amber-900'
+    }`}>
+      <div className="flex flex-wrap justify-between items-center gap-2 font-bold">
+        <span className="flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5 text-purple-700" />
+          <span>Distribución de Profesores ({mode === 'relative_to_cut' ? 'Relativo 100% del Corte' : `Directo ${cutWeightPercent}% de la Materia`})</span>
+        </span>
+        <div className="flex items-center gap-3 font-mono text-[11px]">
+          <span>Total asignado: <strong className="text-slate-900">{dist.totalAssigned}%</strong></span>
+          {dist.isDeficit && <span>Faltan: <strong className="text-amber-800">{dist.remaining}%</strong></span>}
+          {dist.isExcess && <span className="text-rose-800 font-bold">Exceso: +{dist.excess}%</span>}
+        </div>
+      </div>
+
+      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-300">
+        <div 
+          className={`h-full transition-all duration-300 rounded-full ${
+            dist.statusColor === 'emerald' ? 'bg-emerald-600' :
+            dist.statusColor === 'rose' ? 'bg-rose-600' :
+            'bg-amber-500'
+          }`}
+          style={{ width: `${Math.min(100, (dist.totalAssigned / (target || 1)) * 100)}%` }}
+        />
+      </div>
+
+      <div className="flex justify-between items-center text-[10px] font-semibold">
+        <span className="flex items-center gap-1">
+          {dist.isComplete && <Check className="w-3.5 h-3.5 text-emerald-700" />}
+          {dist.isDeficit && <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />}
+          {dist.isExcess && <AlertCircle className="w-3.5 h-3.5 text-rose-700" />}
+          {dist.statusMessage}
+        </span>
+        <span className="font-mono text-slate-700">{dist.totalAssigned}% / {target}%</span>
+      </div>
+    </div>
+  );
+};
+
 export const AcademicView: React.FC<Props> = ({ data }) => {
   const todayStr = getTodayDateString();
 
@@ -331,7 +384,9 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [cutSubjectId, setCutSubjectId] = useState('');
   const [editingCut, setEditingCut] = useState<{ subjectId: string; cut: AcademicCut } | null>(null);
   const [cutName, setCutName] = useState('');
-  const [cutWeight, setCutWeight] = useState(30);
+  const [cutWeight, setCutWeight] = useState(35);
+  const [cutProfMode, setCutProfMode] = useState<'relative_to_cut' | 'direct_to_subject'>('relative_to_cut');
+  const [cutProfessors, setCutProfessors] = useState<CutProfessor[]>([]);
 
   // 6. Dedicated Evaluation Modal State
   const [showEvaluationModal, setShowEvaluationModal] = useState(false);
@@ -343,6 +398,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
   const [evalName, setEvalName] = useState('');
   const [evalSubjectId, setEvalSubjectId] = useState('');
   const [evalCutId, setEvalCutId] = useState('pendiente'); // 'pendiente' or cutId
+  const [evalProfessorId, setEvalProfessorId] = useState('');
+  const [evalProfessorName, setEvalProfessorName] = useState('');
   const [evalType, setEvalType] = useState<AcademicEvaluationActivity['type']>('Parcial');
   const [evalGradableType, setEvalGradableType] = useState<'calificable' | 'no_calificable' | 'pendiente'>('calificable');
   const [evalWeightPercent, setEvalWeightPercent] = useState<string>('20');
@@ -946,17 +1003,95 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
 
   const handleOpenCutModal = (subjectId: string, cut?: AcademicCut) => {
     setCutSubjectId(subjectId);
+    const subj = subjects.find(s => s.id === subjectId);
+    const subProfs = subj?.professors || [];
+
     if (cut) {
       setEditingCut({ subjectId, cut });
       setCutName(cut.cutName);
       setCutWeight(cut.cutWeightPercent);
+      const mode = cut.professorDistributionMode || 'relative_to_cut';
+      setCutProfMode(mode);
+
+      if (cut.professors && cut.professors.length > 0) {
+        setCutProfessors(cut.professors.map(p => ({
+          id: p.id,
+          professorId: p.professorId,
+          name: p.name || p.professorName || 'Docente',
+          professorName: p.professorName || p.name || 'Docente',
+          weightPercent: p.weightPercent
+        })));
+      } else if (subProfs.length > 1) {
+        const evenWeight = mode === 'direct_to_subject'
+          ? Number((cut.cutWeightPercent / subProfs.length).toFixed(1))
+          : Number((100 / subProfs.length).toFixed(1));
+        setCutProfessors(subProfs.map(p => {
+          const fullName = `${p.title ? p.title + ' ' : ''}${p.name}`;
+          return {
+            id: p.id,
+            professorId: p.id,
+            name: fullName,
+            professorName: fullName,
+            weightPercent: evenWeight
+          };
+        }));
+      } else if (subProfs.length === 1) {
+        const p = subProfs[0];
+        const fullName = `${p.title ? p.title + ' ' : ''}${p.name}`;
+        setCutProfessors([{
+          id: p.id,
+          professorId: p.id,
+          name: fullName,
+          professorName: fullName,
+          weightPercent: mode === 'direct_to_subject' ? cut.cutWeightPercent : 100
+        }]);
+      } else {
+        const dName = subj?.professor || 'Docente Principal';
+        setCutProfessors([{
+          name: dName,
+          professorName: dName,
+          weightPercent: mode === 'direct_to_subject' ? cut.cutWeightPercent : 100
+        }]);
+      }
     } else {
       setEditingCut(null);
-      const subj = subjects.find(s => s.id === subjectId);
       const existingCuts = subj?.cuts || [];
       const num = existingCuts.length + 1;
       setCutName(`Corte ${num}`);
-      setCutWeight(30);
+      const defaultCutWeight = 35;
+      setCutWeight(defaultCutWeight);
+      setCutProfMode('relative_to_cut');
+
+      if (subProfs.length > 1) {
+        const evenWeight = Number((100 / subProfs.length).toFixed(1));
+        setCutProfessors(subProfs.map(p => {
+          const fullName = `${p.title ? p.title + ' ' : ''}${p.name}`;
+          return {
+            id: p.id,
+            professorId: p.id,
+            name: fullName,
+            professorName: fullName,
+            weightPercent: evenWeight
+          };
+        }));
+      } else if (subProfs.length === 1) {
+        const p = subProfs[0];
+        const fullName = `${p.title ? p.title + ' ' : ''}${p.name}`;
+        setCutProfessors([{
+          id: p.id,
+          professorId: p.id,
+          name: fullName,
+          professorName: fullName,
+          weightPercent: 100
+        }]);
+      } else {
+        const dName = subj?.professor || 'Docente Principal';
+        setCutProfessors([{
+          name: dName,
+          professorName: dName,
+          weightPercent: 100
+        }]);
+      }
     }
     setShowCutModal(true);
   };
@@ -967,14 +1102,37 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       showToast('Ingresa el nombre del corte.', 'warning');
       return;
     }
+    const weightNum = Number(cutWeight) || 0;
+
+    const validProfs: CutProfessor[] = cutProfessors
+      .filter(p => (p.professorName || p.name || '').trim() !== '')
+      .map(p => {
+        const pName = (p.professorName || p.name || '').trim();
+        return {
+          id: p.id,
+          professorId: p.professorId,
+          name: pName,
+          professorName: pName,
+          weightPercent: Number(p.weightPercent) || 0
+        };
+      });
+
     if (editingCut) {
       AcademicStore.updateCut(editingCut.subjectId, editingCut.cut.id, {
         cutName: cutName.trim(),
-        cutWeightPercent: Number(cutWeight) || 0
+        cutWeightPercent: weightNum,
+        professorDistributionMode: cutProfMode,
+        professors: validProfs.length > 0 ? validProfs : undefined
       });
       showToast(`Corte "${cutName.trim()}" actualizado.`);
     } else {
-      AcademicStore.addCut(cutSubjectId, cutName.trim(), Number(cutWeight) || 0);
+      AcademicStore.addCut(
+        cutSubjectId,
+        cutName.trim(),
+        weightNum,
+        cutProfMode,
+        validProfs.length > 0 ? validProfs : undefined
+      );
       showToast(`Corte "${cutName.trim()}" agregado.`);
     }
     setShowCutModal(false);
@@ -987,17 +1145,24 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       return;
     }
 
+    const sub = subjects.find(s => s.id === subjectId);
+    const cut = sub?.cuts?.find(c => c.id === cutId);
+    const profId = cut?.professors?.[0]?.professorId;
+    const profName = cut?.professors?.[0]?.professorName || sub?.professor;
+
     AcademicStore.addActivity(subjectId, cutId, {
       name: form.name.trim(),
       type: form.type || 'Parcial',
       date: form.date || todayStr,
-      weightPercent: Number(form.weight) || 10,
+      weightPercent: Number(form.weight) || 20,
+      professorId: profId,
+      professorName: profName,
       status: 'pending'
     });
 
     setNewActivityForms(prev => ({
       ...prev,
-      [cutId]: { name: '', type: 'Parcial', date: todayStr, weight: 10 }
+      [cutId]: { name: '', type: 'Parcial', date: todayStr, weight: 20 }
     }));
     showToast(`Evaluación "${form.name.trim()}" agregada.`);
   };
@@ -1013,13 +1178,18 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
     }
     const defaultSubId = subjectId || activeSubjects[0]?.id;
     setEvalSubjectId(defaultSubId);
+    const sub = subjects.find(s => s.id === defaultSubId);
+    const effectiveCutId = cutId || evalAct?.cutId || 'pendiente';
+    const targetCut = sub?.cuts?.find(c => c.id === effectiveCutId);
 
     if (evalAct) {
       setEditingEval({ subjectId: defaultSubId, cutId, activityId: evalAct.id });
       setEvalName(evalAct.name);
       setEvalType(evalAct.type);
       setEvalGradableType(evalAct.gradableType || 'calificable');
-      setEvalCutId(cutId || evalAct.cutId || 'pendiente');
+      setEvalCutId(effectiveCutId);
+      setEvalProfessorId(evalAct.professorId || '');
+      setEvalProfessorName(evalAct.professorName || '');
       setEvalWeightPercent(evalAct.weightPercent ? String(evalAct.weightPercent) : '');
       setEvalDate(evalAct.date || todayStr);
       setEvalTime(evalAct.startTime || evalAct.time || '');
@@ -1030,7 +1200,17 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       setEvalName('');
       setEvalType('Parcial');
       setEvalGradableType('calificable');
-      setEvalCutId(cutId || 'pendiente');
+      setEvalCutId(effectiveCutId);
+
+      const cutProfs = targetCut?.professors || [];
+      if (cutProfs.length > 0) {
+        setEvalProfessorId(cutProfs[0].professorId || '');
+        setEvalProfessorName(cutProfs[0].professorName);
+      } else {
+        setEvalProfessorId('');
+        setEvalProfessorName(sub?.professor || '');
+      }
+
       setEvalWeightPercent('20');
       setEvalDate(todayStr);
       setEvalTime('');
@@ -1056,12 +1236,26 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       }
     }
 
+    const sub = activeSubjects.find(s => s.id === evalSubjectId);
+    const targetCut = sub?.cuts?.find(c => c.id === evalCutId);
+    let resolvedProfId: string | undefined = evalProfessorId || undefined;
+    let resolvedProfName: string | undefined = evalProfessorName.trim() || undefined;
+
+    if (evalProfessorId && targetCut?.professors) {
+      const matchCutProf = targetCut.professors.find(p => p.professorId === evalProfessorId);
+      if (matchCutProf) {
+        resolvedProfName = matchCutProf.professorName;
+      }
+    }
+
     if (editingEval && editingEval.activityId) {
       AcademicStore.updateActivity(editingEval.subjectId, editingEval.cutId || 'cut_pending', editingEval.activityId, {
         name: evalName.trim(),
         type: evalType,
         gradableType: evalGradableType,
         cutId: evalCutId === 'pendiente' ? undefined : evalCutId,
+        professorId: resolvedProfId,
+        professorName: resolvedProfName,
         weightPercent: weightNum,
         date: evalDate,
         startTime: evalTime || undefined,
@@ -1077,6 +1271,8 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
         type: evalType,
         gradableType: evalGradableType,
         cutId: evalCutId === 'pendiente' ? undefined : evalCutId,
+        professorId: resolvedProfId,
+        professorName: resolvedProfName,
         weightPercent: weightNum,
         date: evalDate,
         startTime: evalTime || undefined,
@@ -3517,9 +3713,10 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
       {/* MODAL: CORTE */}
       {showCutModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Percent className="w-4 h-4 text-purple-700" />
                 {editingCut ? 'Editar Corte Académico' : 'Agregar Corte Académico'}
               </h3>
               <button onClick={() => setShowCutModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -3528,28 +3725,236 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
             </div>
 
             <form onSubmit={handleSaveCut} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre del Corte *</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Corte 1, Primer Parcial..."
-                  value={cutName}
-                  onChange={e => setCutName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:border-slate-900"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nombre del Corte *</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Corte 1, Primer Parcial..."
+                    value={cutName}
+                    onChange={e => setCutName(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:border-slate-900"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Porcentaje del Corte (%) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={cutWeight}
+                    onChange={e => setCutWeight(Number(e.target.value))}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-center font-bold"
+                    required
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Porcentaje del Corte (%) *</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={cutWeight}
-                  onChange={e => setCutWeight(Number(e.target.value))}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-center font-bold"
-                  required
+              {/* MODALIDAD DE DISTRIBUCIÓN DE PROFESORES */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="font-bold text-slate-800 block text-xs flex items-center justify-between">
+                  <span>¿Cómo se expresan los porcentajes de los profesores? *</span>
+                  <span className="text-[10px] text-purple-800 font-mono font-bold bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                    Corte: {cutWeight}% de la materia
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Opción A */}
+                  <label 
+                    onClick={() => setCutProfMode('relative_to_cut')}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                      cutProfMode === 'relative_to_cut'
+                        ? 'bg-purple-50/80 border-purple-400 ring-1 ring-purple-400 text-purple-950'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="cutProfMode" 
+                      checked={cutProfMode === 'relative_to_cut'} 
+                      onChange={() => setCutProfMode('relative_to_cut')}
+                      className="mt-1 text-purple-600 focus:ring-purple-500 shrink-0" 
+                    />
+                    <div className="space-y-1">
+                      <div className="font-bold text-xs flex items-center gap-2">
+                        <span>Opción A: Porcentaje relativo al corte (100% del corte)</span>
+                        <span className="text-[10px] px-1.5 py-0.2 bg-purple-200 text-purple-900 rounded font-mono font-bold">Base 100%</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Los profesores se distribuyen el <strong>100% de este corte</strong> (ej. 50% y 50%). El sistema calcula automáticamente el aporte de cada profesor en la materia ({cutWeight}% × % docente).
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Opción B */}
+                  <label 
+                    onClick={() => setCutProfMode('direct_to_subject')}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                      cutProfMode === 'direct_to_subject'
+                        ? 'bg-blue-50/80 border-blue-400 ring-1 ring-blue-400 text-blue-950'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="cutProfMode" 
+                      checked={cutProfMode === 'direct_to_subject'} 
+                      onChange={() => setCutProfMode('direct_to_subject')}
+                      className="mt-1 text-blue-600 focus:ring-blue-500 shrink-0" 
+                    />
+                    <div className="space-y-1">
+                      <div className="font-bold text-xs flex items-center gap-2">
+                        <span>Opción B: Porcentaje directo en la materia (% de la materia)</span>
+                        <span className="text-[10px] px-1.5 py-0.2 bg-blue-200 text-blue-900 rounded font-mono font-bold">Base {cutWeight}%</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Los porcentajes de los profesores se expresan como <strong>puntos directos de la materia</strong> y deben sumar exactamente <strong>{cutWeight}%</strong> (ej. 20% y 15%). El sistema calcula automáticamente el peso relativo de cada uno en el corte.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* PROFESORES DEL CORTE */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-slate-800 block text-xs flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-purple-700" />
+                    <span>Profesores Asignados a este Corte</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sub = subjects.find(s => s.id === cutSubjectId);
+                      const subProfs = sub?.professors || [];
+                      const unusedProf = subProfs.find(sp => !cutProfessors.some(cp => cp.professorId === sp.id));
+                      const name = unusedProf ? `${unusedProf.title ? unusedProf.title + ' ' : ''}${unusedProf.name}` : `Profesor ${cutProfessors.length + 1}`;
+                      setCutProfessors(prev => [
+                        ...prev,
+                        {
+                          id: unusedProf?.id,
+                          professorId: unusedProf?.id,
+                          name: name,
+                          professorName: name,
+                          weightPercent: cutProfMode === 'direct_to_subject' ? Math.max(0, cutWeight - prev.reduce((s, p) => s + p.weightPercent, 0)) : 0
+                        }
+                      ]);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar Profesor
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {cutProfessors.map((prof, pIdx) => {
+                    const sub = subjects.find(s => s.id === cutSubjectId);
+                    const subProfs = sub?.professors || [];
+
+                    // Calculate real-time conversion preview
+                    const equivText = cutProfMode === 'relative_to_cut'
+                      ? `Aporte materia: ${(cutWeight * (prof.weightPercent / 100)).toFixed(2)}%`
+                      : `Peso en corte: ${(cutWeight > 0 ? (prof.weightPercent / cutWeight) * 100 : 0).toFixed(1)}%`;
+
+                    return (
+                      <div key={pIdx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            {subProfs.length > 0 ? (
+                              <select
+                                value={prof.professorId || ''}
+                                onChange={(e) => {
+                                  const pId = e.target.value;
+                                  const matched = subProfs.find(p => p.id === pId);
+                                  setCutProfessors(prev => prev.map((item, idx) => idx === pIdx ? {
+                                    ...item,
+                                    professorId: pId,
+                                    professorName: matched ? `${matched.title ? matched.title + ' ' : ''}${matched.name}` : item.professorName
+                                  } : item));
+                                }}
+                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-semibold text-xs"
+                              >
+                                {subProfs.map(sp => (
+                                  <option key={sp.id} value={sp.id}>
+                                    {sp.title ? `${sp.title} ` : ''}{sp.name} {sp.role ? `(${sp.role})` : ''}
+                                  </option>
+                                ))}
+                                {!subProfs.some(sp => sp.id === prof.professorId) && (
+                                  <option value="">{prof.professorName || 'Docente Personalizado'}</option>
+                                )}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Nombre del docente"
+                                value={prof.professorName}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setCutProfessors(prev => prev.map((item, idx) => idx === pIdx ? {
+                                    ...item,
+                                    professorName: val
+                                  } : item));
+                                }}
+                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-semibold text-xs"
+                              />
+                            )}
+                          </div>
+
+                          <div className="w-24">
+                            <div className="relative">
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                value={prof.weightPercent}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setCutProfessors(prev => prev.map((item, idx) => idx === pIdx ? {
+                                    ...item,
+                                    weightPercent: val
+                                  } : item));
+                                }}
+                                className="w-full p-2 pr-6 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono font-bold text-center text-xs"
+                              />
+                              <span className="absolute right-2 top-2 text-slate-400 font-bold">%</span>
+                            </div>
+                          </div>
+
+                          {cutProfessors.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCutProfessors(prev => prev.filter((_, idx) => idx !== pIdx));
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                              title="Remover profesor del corte"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center text-[10px] px-1 text-slate-500 font-mono">
+                          <span>
+                            {cutProfMode === 'relative_to_cut' ? '% dentro del corte (100%)' : '% directo en la materia'}
+                          </span>
+                          <span className="font-bold text-purple-900 bg-purple-100/70 px-1.5 py-0.5 rounded border border-purple-200">
+                            {equivText}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <CutProfessorsDistributionBar
+                  professors={cutProfessors}
+                  cutWeightPercent={cutWeight}
+                  mode={cutProfMode}
                 />
               </div>
 
@@ -3565,7 +3970,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   type="submit"
                   className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md"
                 >
-                  Guardar Corte
+                  Guardar Corte y Distribución
                 </button>
               </div>
             </form>
@@ -3651,7 +4056,16 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   <label className="font-bold text-slate-700 block mb-1">Corte Asignado</label>
                   <select
                     value={evalCutId}
-                    onChange={e => setEvalCutId(e.target.value)}
+                    onChange={e => {
+                      const newCutId = e.target.value;
+                      setEvalCutId(newCutId);
+                      const sub = activeSubjects.find(s => s.id === evalSubjectId);
+                      const targetCut = sub?.cuts?.find(c => c.id === newCutId);
+                      if (targetCut?.professors && targetCut.professors.length > 0) {
+                        setEvalProfessorId(targetCut.professors[0].professorId || '');
+                        setEvalProfessorName(targetCut.professors[0].professorName);
+                      }
+                    }}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
                   >
                     <option value="pendiente">-- Pendiente de asignación --</option>
@@ -3665,7 +4079,71 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Aporte Porcentual (%)</label>
+                  <label className="font-bold text-slate-700 block mb-1">Profesor Responsable</label>
+                  {(() => {
+                    const sub = activeSubjects.find(s => s.id === evalSubjectId);
+                    const targetCut = sub?.cuts?.find(c => c.id === evalCutId);
+                    const cutProfs = targetCut?.professors || [];
+                    const subProfs = sub?.professors || [];
+
+                    if (cutProfs.length > 0) {
+                      return (
+                        <select
+                          value={evalProfessorId || ''}
+                          onChange={(e) => {
+                            const pId = e.target.value;
+                            setEvalProfessorId(pId);
+                            const matched = cutProfs.find(p => p.professorId === pId);
+                            if (matched) setEvalProfessorName(matched.professorName);
+                          }}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                        >
+                          {cutProfs.map(cp => (
+                            <option key={cp.professorId || cp.professorName} value={cp.professorId || ''}>
+                              {cp.professorName} ({cp.weightPercent}%)
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    } else if (subProfs.length > 0) {
+                      return (
+                        <select
+                          value={evalProfessorId || ''}
+                          onChange={(e) => {
+                            const pId = e.target.value;
+                            setEvalProfessorId(pId);
+                            const matched = subProfs.find(p => p.id === pId);
+                            if (matched) setEvalProfessorName(`${matched.title ? matched.title + ' ' : ''}${matched.name}`);
+                          }}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                        >
+                          {subProfs.map(sp => (
+                            <option key={sp.id} value={sp.id}>
+                              {sp.title ? `${sp.title} ` : ''}{sp.name}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    } else {
+                      return (
+                        <input
+                          type="text"
+                          placeholder="Nombre del docente"
+                          value={evalProfessorName}
+                          onChange={e => setEvalProfessorName(e.target.value)}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold"
+                        />
+                      );
+                    }
+                  })()}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    % Dentro del Profesor (100%)
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -3676,9 +4154,7 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Fecha de la Evaluación *</label>
                   <input
@@ -3689,7 +4165,59 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     required
                   />
                 </div>
+              </div>
 
+              {/* Chain preview info */}
+              {(() => {
+                const sub = activeSubjects.find(s => s.id === evalSubjectId);
+                const targetCut = sub?.cuts?.find(c => c.id === evalCutId);
+                const weightNum = Number(evalWeightPercent) || 0;
+                if (targetCut && weightNum > 0) {
+                  const cutWeight = targetCut.cutWeightPercent;
+                  const mode = targetCut.professorDistributionMode || 'relative_to_cut';
+                  const matchProf = targetCut.professors?.find(p => p.professorId === evalProfessorId) || targetCut.professors?.[0];
+                  
+                  let profWeightInCut = 100;
+                  let profWeightInSubject = cutWeight;
+                  if (matchProf) {
+                    if (mode === 'relative_to_cut') {
+                      profWeightInCut = matchProf.weightPercent;
+                      profWeightInSubject = (cutWeight * matchProf.weightPercent) / 100;
+                    } else {
+                      profWeightInSubject = matchProf.weightPercent;
+                      profWeightInCut = cutWeight > 0 ? (matchProf.weightPercent / cutWeight) * 100 : 0;
+                    }
+                  }
+                  const actAporteCut = (profWeightInCut * weightNum) / 100;
+                  const actAporteSubject = (profWeightInSubject * weightNum) / 100;
+
+                  return (
+                    <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 text-[11px] space-y-1 font-medium">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <Percent className="w-3.5 h-3.5 text-purple-700" />
+                        <span>Cadena de Porcentajes: Actividad ➔ Profesor ➔ Corte ➔ Materia</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[10px]">
+                        <div className="bg-white p-1.5 rounded border border-purple-100">
+                          <span className="text-slate-500 block text-[9px]">En el Docente:</span>
+                          <span className="font-bold text-slate-900">{weightNum}%</span>
+                        </div>
+                        <div className="bg-white p-1.5 rounded border border-purple-100">
+                          <span className="text-slate-500 block text-[9px]">En el Corte:</span>
+                          <span className="font-bold text-purple-900">{actAporteCut.toFixed(2)}%</span>
+                        </div>
+                        <div className="bg-white p-1.5 rounded border border-purple-100">
+                          <span className="text-slate-500 block text-[9px]">En la Materia:</span>
+                          <span className="font-bold text-emerald-700">{actAporteSubject.toFixed(2)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Hora (Opcional)</label>
                   <input
@@ -3697,6 +4225,17 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                     value={evalTime}
                     onChange={e => setEvalTime(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Calificación Obtenida (0.0 - 5.0)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 4.5 (vacío si no calificada)"
+                    value={evalGrade}
+                    onChange={e => setEvalGrade(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold"
                   />
                 </div>
               </div>
@@ -3719,17 +4258,6 @@ export const AcademicView: React.FC<Props> = ({ data }) => {
                   )}
                 </div>
               )}
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Calificación Obtenida (0.0 - 5.0)</label>
-                <input
-                  type="text"
-                  placeholder="Ej: 4.5 (dejar vacío si aún no ha sido calificada)"
-                  value={evalGrade}
-                  onChange={e => setEvalGrade(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold text-sm"
-                />
-              </div>
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Temas / Observaciones (Opcional)</label>

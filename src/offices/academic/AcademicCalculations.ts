@@ -57,13 +57,15 @@ export interface ActivityProgressResult {
   date: string;
   grade?: number;
   isGraded: boolean;
-  weightPercentInProf: number;  // e.g. 50% (peso dentro del profesor)
+  weightPercentInProf: number;  // e.g. 50% (peso dentro de la distribución del profesor, suma 100%)
   aporteToProf: number;         // grade * (weightPercentInProf / 100) (e.g. 1.90)
-  profWeightInCut: number;      // e.g. 60% or 100% (peso del profesor en el corte)
-  aporteToCut: number;          // aporteToProf * (profWeightInCut / 100) (e.g. 1.14)
-  cutWeightInSubject: number;   // e.g. 30% (peso del corte en la materia)
-  aporteToSubject: number;      // aporteToCut * (cutWeightInSubject / 100) (e.g. 0.342)
-  materiaEvaluadaPercent: number; // % de la materia que representa esta actividad (e.g. 15%)
+  profWeightInCut: number;      // raw configured weight for professor in cut
+  effectiveWeightInCut: number; // relative % within the cut (0-100%)
+  effectiveWeightInSubject: number; // direct % contribution of this prof to the subject
+  aporteToCut: number;          // contribution to the cut grade
+  cutWeightInSubject: number;   // weight of cut in subject (e.g. 35%)
+  aporteToSubject: number;      // points contributed to the subject
+  materiaEvaluadaPercent: number; // % of subject evaluated by this activity
   professorId?: string;
   professorName?: string;
 }
@@ -71,22 +73,29 @@ export interface ActivityProgressResult {
 export interface ProfessorProgressResult {
   professorId: string;
   professorName: string;
-  weightPercentInCut: number;     // e.g. 60% or 100%
+  weightPercentInCut: number;     // raw configured weight (e.g. 50% or 18%)
+  effectiveWeightInCut: number;   // effective % of the cut (e.g. 50% or 51.4%)
+  effectiveWeightInSubject: number; // effective % points of the subject (e.g. 17.5% or 18%)
+  mode: 'relative_to_cut' | 'direct_to_subject';
   activitiesProgress: ActivityProgressResult[];
   totalActivitiesCount: number;
   gradedActivitiesCount: number;
-  totalActivityWeightAssigned: number; // Sum of activity weights in prof
+  totalActivityWeightAssigned: number; // Sum of activity weights in prof (target 100%)
   evaluatedWeightPercentInProf: number; // Sum of graded activity weights in prof
-  grade: number;                  // Sum of activity.aporteToProf (e.g. 4.15)
-  aporteToCut: number;            // grade * (weightPercentInCut / 100) (e.g. 2.49)
-  maxAporteToCut: number;         // 5.0 * (weightPercentInCut / 100) (e.g. 3.0)
-  evaluatedWeightInCut: number;   // (evaluatedWeightPercentInProf / 100) * weightPercentInCut
+  grade: number;                  // Sum of activity.aporteToProf (0.0 - 5.0)
+  aporteToCut: number;            // Points contributed to cut grade (0.0 - 5.0)
+  aporteToSubject: number;        // Points contributed to subject grade (0.0 - 5.0)
+  maxAporteToCut: number;         // Max points contributed to cut
+  maxAporteToSubject: number;     // Max points contributed to subject
+  evaluatedWeightInCut: number;   // % of cut evaluated by this professor
+  evaluatedWeightInSubject: number; // % of subject evaluated by this professor
 }
 
 export interface CutProgressResult {
   cutId: string;
   cutName: string;
-  cutWeightPercent: number; // Weight within the subject (e.g. 30%)
+  cutWeightPercent: number; // Weight within the subject (e.g. 35%)
+  distributionMode: 'relative_to_cut' | 'direct_to_subject';
   
   professorsProgress: ProfessorProgressResult[];
   activities: AcademicEvaluationActivity[];
@@ -97,8 +106,8 @@ export interface CutProgressResult {
   evaluatedWeightPercent: number;     // % of the cut evaluated so far (0 - 100%)
   pendingWeightPercent: number;       // % of the cut pending evaluation
   
-  accumulatedCutGrade: number;        // Grade of the corte = Sum of professor.aporteToCut
-  aporteSubject: number;              // accumulatedCutGrade * (cutWeightPercent / 100)
+  accumulatedCutGrade: number;        // Grade of the corte = Sum of professor.aporteToCut (0.0 - 5.0)
+  aporteSubject: number;              // accumulatedCutGrade * (cutWeightPercent / 100) = Sum of prof.aporteToSubject
   maxAporteSubject: number;           // 5.0 * (cutWeightPercent / 100)
   materiaEvaluadaPercent: number;     // cutWeightPercent * (evaluatedWeightPercent / 100)
   
@@ -107,7 +116,7 @@ export interface CutProgressResult {
   statusColor: 'emerald' | 'amber' | 'slate';
   
   activitiesDistribution: DistributionMetric;
-  professorsDistribution?: DistributionMetric;
+  professorsDistribution: DistributionMetric;
 }
 
 export interface SubjectProgressResult {
@@ -199,7 +208,7 @@ export const AcademicCalculations = {
       statusColor = 'rose';
     } else if (isDeficit) {
       status = 'deficit';
-      statusMessage = `Falta distribuir en el corte (Faltan: ${remaining}%).`;
+      statusMessage = `Falta distribuir en el profesor/corte (Faltan: ${remaining}%).`;
       statusColor = 'amber';
     }
 
@@ -217,6 +226,72 @@ export const AcademicCalculations = {
     };
   },
 
+  getProfessorsDistribution(
+    professors: { weightPercent: number }[] | undefined,
+    cutWeightPercent: number,
+    mode: 'relative_to_cut' | 'direct_to_subject' = 'relative_to_cut'
+  ): DistributionMetric {
+    const safeProfessors = (professors && professors.length > 0)
+      ? professors
+      : [{ weightPercent: mode === 'direct_to_subject' ? cutWeightPercent : 100 }];
+
+    const totalAssigned = Math.round(safeProfessors.reduce((acc, p) => acc + (Number(p.weightPercent) || 0), 0) * 10) / 10;
+    const target = mode === 'direct_to_subject' ? cutWeightPercent : 100;
+
+    const isComplete = Math.abs(totalAssigned - target) < 0.1;
+    const isExcess = totalAssigned > target;
+    const isDeficit = totalAssigned < target;
+
+    const remaining = isDeficit ? Math.round((target - totalAssigned) * 10) / 10 : 0;
+    const excess = isExcess ? Math.round((totalAssigned - target) * 10) / 10 : 0;
+
+    let status: 'complete' | 'deficit' | 'excess' = 'complete';
+    let statusMessage = '';
+    let statusColor: 'emerald' | 'amber' | 'rose' = 'emerald';
+
+    if (mode === 'relative_to_cut') {
+      if (isExcess) {
+        status = 'excess';
+        statusMessage = `⚠️ La distribución de profesores suma ${totalAssigned}% del corte. Excede en ${excess}%.`;
+        statusColor = 'rose';
+      } else if (isDeficit) {
+        status = 'deficit';
+        statusMessage = `⚠️ La distribución de profesores suma ${totalAssigned}% del corte. Falta distribuir el ${remaining}%.`;
+        statusColor = 'amber';
+      } else {
+        statusMessage = `✅ Distribución válida (100% del corte = ${cutWeightPercent}% de la materia).`;
+        statusColor = 'emerald';
+      }
+    } else {
+      // direct_to_subject
+      if (isExcess) {
+        status = 'excess';
+        statusMessage = `⚠️ La distribución suma ${totalAssigned}%. El corte representa ${cutWeightPercent}%. Excede en ${excess} puntos porcentuales.`;
+        statusColor = 'rose';
+      } else if (isDeficit) {
+        status = 'deficit';
+        statusMessage = `⚠️ La distribución suma ${totalAssigned}%. El corte representa ${cutWeightPercent}%. Faltan ${remaining} puntos porcentuales.`;
+        statusColor = 'amber';
+      } else {
+        statusMessage = `✅ Distribución válida (${cutWeightPercent}% de la materia cubierto).`;
+        statusColor = 'emerald';
+      }
+    }
+
+    return {
+      totalAssigned,
+      remaining,
+      excess,
+      percentage: target > 0 ? Math.min(100, Math.round((totalAssigned / target) * 100)) : 100,
+      isComplete,
+      isDeficit,
+      isExcess,
+      status,
+      statusMessage,
+      statusColor
+    };
+  },
+
   /**
    * Calculates progressive corte metrics dynamically in real-time strictly following:
    * Actividad → Profesor → Corte → Materia
@@ -224,15 +299,28 @@ export const AcademicCalculations = {
   calculateCutProgress(cut: AcademicCut): CutProgressResult {
     const activities = cut.activities || [];
     const cutWeight = Number(cut.cutWeightPercent) || 0;
+    const mode = cut.professorDistributionMode || 'relative_to_cut';
     
     // Determine professors for this cut
     const cutProfs = (cut.professors && cut.professors.length > 0)
       ? cut.professors
-      : [{ id: 'default_prof', name: 'Profesor Principal', weightPercent: 100 }];
+      : [{ id: 'default_prof', name: 'Profesor Principal', weightPercent: mode === 'direct_to_subject' ? cutWeight : 100 }];
 
     const professorsProgress: ProfessorProgressResult[] = cutProfs.map(prof => {
-      const profWeightInCut = Number(prof.weightPercent) || 100;
+      const profRawWeight = Number(prof.weightPercent) || 0;
       
+      let effectiveWeightInCut = 100;
+      let effectiveWeightInSubject = cutWeight;
+
+      if (mode === 'direct_to_subject') {
+        effectiveWeightInSubject = profRawWeight;
+        effectiveWeightInCut = cutWeight > 0 ? (profRawWeight / cutWeight) * 100 : 0;
+      } else {
+        // relative_to_cut
+        effectiveWeightInCut = profRawWeight;
+        effectiveWeightInSubject = (profRawWeight / 100) * cutWeight;
+      }
+
       // Filter activities assigned to this professor
       const profActivities = (cutProfs.length === 1)
         ? activities
@@ -255,18 +343,25 @@ export const AcademicCalculations = {
           evaluatedWeightPercentInProf += wInProf;
         }
 
-        // Aporte a la nota del profesor = nota * (peso_actividad / 100)
+        // Aporte a la nota del profesor (0.0 - 5.0) = nota * (peso_actividad / 100)
         const aporteToProf = isGraded ? (g * wInProf) / 100 : 0;
         profGrade += aporteToProf;
 
-        // Aporte al corte = aporte_profesor * (peso_profesor_en_corte / 100)
-        const aporteToCut = (aporteToProf * profWeightInCut) / 100;
+        // Aporte al corte y a la materia según modalidad
+        let aporteToCut = 0;
+        let aporteToSubject = 0;
+        let materiaEvaluadaPercent = 0;
 
-        // Aporte a la materia = aporte_corte * (peso_corte_en_materia / 100)
-        const aporteToSubject = (aporteToCut * cutWeight) / 100;
-
-        // Porcentaje de la materia evaluado por esta actividad
-        const materiaEvaluadaPercent = isGraded ? (wInProf / 100) * (profWeightInCut / 100) * cutWeight : 0;
+        if (mode === 'direct_to_subject') {
+          aporteToCut = cutWeight > 0 ? (aporteToProf * profRawWeight) / cutWeight : 0;
+          aporteToSubject = (aporteToProf * profRawWeight) / 100;
+          materiaEvaluadaPercent = isGraded ? (wInProf / 100) * profRawWeight : 0;
+        } else {
+          // relative_to_cut
+          aporteToCut = (aporteToProf * profRawWeight) / 100;
+          aporteToSubject = (aporteToCut * cutWeight) / 100;
+          materiaEvaluadaPercent = isGraded ? (wInProf / 100) * (profRawWeight / 100) * cutWeight : 0;
+        }
 
         return {
           activityId: act.id,
@@ -277,7 +372,9 @@ export const AcademicCalculations = {
           isGraded,
           weightPercentInProf: wInProf,
           aporteToProf,
-          profWeightInCut,
+          profWeightInCut: profRawWeight,
+          effectiveWeightInCut,
+          effectiveWeightInSubject,
           aporteToCut,
           cutWeightInSubject: cutWeight,
           aporteToSubject,
@@ -287,14 +384,37 @@ export const AcademicCalculations = {
         };
       });
 
-      const aporteToCut = (profGrade * profWeightInCut) / 100;
-      const maxAporteToCut = (5.0 * profWeightInCut) / 100;
-      const evaluatedWeightInCut = (evaluatedWeightPercentInProf / 100) * profWeightInCut;
+      let aporteToCut = 0;
+      let aporteToSubject = 0;
+      let maxAporteToCut = 0;
+      let maxAporteToSubject = 0;
+      let evaluatedWeightInCut = 0;
+      let evaluatedWeightInSubject = 0;
+
+      if (mode === 'direct_to_subject') {
+        aporteToCut = cutWeight > 0 ? (profGrade * profRawWeight) / cutWeight : 0;
+        aporteToSubject = (profGrade * profRawWeight) / 100;
+        maxAporteToCut = cutWeight > 0 ? (5.0 * profRawWeight) / cutWeight : 0;
+        maxAporteToSubject = (5.0 * profRawWeight) / 100;
+        evaluatedWeightInCut = cutWeight > 0 ? (evaluatedWeightPercentInProf / 100) * ((profRawWeight / cutWeight) * 100) : 0;
+        evaluatedWeightInSubject = (evaluatedWeightPercentInProf / 100) * profRawWeight;
+      } else {
+        // relative_to_cut
+        aporteToCut = (profGrade * profRawWeight) / 100;
+        aporteToSubject = (profGrade * effectiveWeightInSubject) / 100;
+        maxAporteToCut = (5.0 * profRawWeight) / 100;
+        maxAporteToSubject = (5.0 * effectiveWeightInSubject) / 100;
+        evaluatedWeightInCut = (evaluatedWeightPercentInProf / 100) * profRawWeight;
+        evaluatedWeightInSubject = (evaluatedWeightPercentInProf / 100) * effectiveWeightInSubject;
+      }
 
       return {
         professorId: prof.id,
         professorName: prof.name,
-        weightPercentInCut: profWeightInCut,
+        weightPercentInCut: profRawWeight,
+        effectiveWeightInCut,
+        effectiveWeightInSubject,
+        mode,
         activitiesProgress,
         totalActivitiesCount: profActivities.length,
         gradedActivitiesCount,
@@ -302,8 +422,11 @@ export const AcademicCalculations = {
         evaluatedWeightPercentInProf,
         grade: profGrade,
         aporteToCut,
+        aporteToSubject,
         maxAporteToCut,
-        evaluatedWeightInCut
+        maxAporteToSubject,
+        evaluatedWeightInCut,
+        evaluatedWeightInSubject
       };
     });
 
@@ -320,11 +443,14 @@ export const AcademicCalculations = {
 
     const pendingWeightPercent = Math.max(0, Math.round((100 - evaluatedWeightPercent) * 10) / 10);
     const accumulatedCutGrade = professorsProgress.reduce((acc, p) => acc + p.aporteToCut, 0);
-    const aporteSubject = accumulatedCutGrade * (cutWeight / 100);
+    const aporteSubject = professorsProgress.reduce((acc, p) => acc + p.aporteToSubject, 0);
     const maxAporteSubject = 5.0 * (cutWeight / 100);
-    const materiaEvaluadaPercent = Math.round((cutWeight * (evaluatedWeightPercent / 100)) * 100) / 100;
+    const materiaEvaluadaPercent = Math.round(
+      professorsProgress.reduce((acc, p) => acc + p.evaluatedWeightInSubject, 0) * 100
+    ) / 100;
 
     const activitiesDistribution = this.getActivitiesDistribution(activities);
+    const professorsDistribution = this.getProfessorsDistribution(cut.professors, cutWeight, mode);
 
     const isAllGraded = activities.length > 0 && gradedActivitiesCount === activities.length;
     const is100PercentAssigned = Math.abs(evaluatedWeightPercent - 100) < 0.1;
@@ -347,6 +473,7 @@ export const AcademicCalculations = {
       cutId: cut.id,
       cutName: cut.cutName,
       cutWeightPercent: cutWeight,
+      distributionMode: mode,
       professorsProgress,
       activities,
       totalActivitiesCount,
@@ -361,7 +488,8 @@ export const AcademicCalculations = {
       status,
       statusLabel,
       statusColor,
-      activitiesDistribution
+      activitiesDistribution,
+      professorsDistribution
     };
   },
 

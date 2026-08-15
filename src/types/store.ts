@@ -27,6 +27,7 @@ export interface SubjectProfessor {
   id: string;
   name: string;
   title?: string; // e.g. "Dr.", "Dra.", "MSc.", "Prof."
+  role?: string; // e.g. "Titular", "Auxiliar", "Laboratorio", "Práctica"
   email?: string;
   phone?: string;
   department?: string;
@@ -84,25 +85,40 @@ export interface AcademicSession {
 }
 
 export interface CutProfessor {
-  id: string;
+  id?: string;
   professorId?: string;
-  name: string;
-  weightPercent: number; // Sum of professor weights in cut = 100%
+  name?: string;
+  professorName?: string; // Aliased for display convenience
+  weightPercent: number; // In relative mode: % of the cut (sums to 100%). In direct mode: % of the subject (sums to cutWeightPercent)
 }
+
+export type AcademicEvaluationType =
+  | 'Parcial'
+  | 'Quiz'
+  | 'Taller'
+  | 'Trabajo'
+  | 'Laboratorio'
+  | 'Exposición'
+  | 'Examen'
+  | 'Evaluación'
+  | 'Entrega'
+  | 'Proyecto'
+  | 'Otro';
 
 export interface AcademicEvaluationActivity {
   id: string;
   name: string;
-  type: 'Parcial' | 'Quiz' | 'Taller' | 'Laboratorio' | 'Exposición' | 'Proyecto' | 'Otro';
+  type: AcademicEvaluationType | string;
   date: string; // YYYY-MM-DD
   time?: string;
   startTime?: string; // HH:mm
   endTime?: string;   // HH:mm
-  weightPercent: number; // e.g. 20 (20%) - 0 if pending
+  weightPercent: number; // e.g. 20 (20%) - 0 if pending (within professor's distribution, sums to 100%)
   grade?: number; // 0.0 - 5.0
   status: 'pending' | 'graded' | 'cancelled';
   description?: string;
   professorId?: string; // Optional reference to CutProfessor or SubjectProfessor
+  professorName?: string;
   gradableType?: 'calificable' | 'no_calificable' | 'pendiente';
   cutId?: string; // Optional if cut is pending / unassigned
 }
@@ -151,6 +167,7 @@ export interface AcademicCut {
   id: string;
   cutName: string;
   cutWeightPercent: number; // Sum of cuts = 100%
+  professorDistributionMode?: 'relative_to_cut' | 'direct_to_subject'; // Explicit modality for professor percentages
   professors?: CutProfessor[]; // Professors in this cut (default 1 prof at 100%)
   activities: AcademicEvaluationActivity[];
 }
