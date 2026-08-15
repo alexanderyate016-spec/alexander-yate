@@ -484,11 +484,14 @@ export const FinancialCalculations = {
     const currency: CurrencyCode = plan.currency || 'COP';
     const mode = plan.incomeBaseMode || 'calculated';
 
-    const actualIncome = this.calculateActualMonthlyIncome(data.transactions || [], currency, todayStr);
+    // Regla fundamental: El ingreso base para la asignación de presupuestos es estrictamente el ingreso de la quincena actual
+    const currentQuincenaInfo = this.getQuincenalPeriodInfo(todayStr);
+    const quincenaIncome = this.calculateQuincenalIncome(data.transactions || [], currency, currentQuincenaInfo.startDate, currentQuincenaInfo.endDate);
+    const actualMonthlyIncome = this.calculateActualMonthlyIncome(data.transactions || [], currency, todayStr);
 
     const baseIncome = mode === 'manual'
       ? (plan.monthlyBaseIncome !== undefined && plan.monthlyBaseIncome !== null ? plan.monthlyBaseIncome : 0)
-      : actualIncome;
+      : (quincenaIncome > 0 ? quincenaIncome : (actualMonthlyIncome > 0 ? actualMonthlyIncome : 0));
 
     const fundsRaw = (plan.funds && plan.funds.length > 0) ? plan.funds : [
       { id: 'fund_necesarios', name: 'Gastos Necesarios', percentage: 50, emoji: '🏠', color: 'emerald', categories: [] },

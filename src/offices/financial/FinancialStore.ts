@@ -613,10 +613,13 @@ export const FinancialStore = {
       (qbState.periodHistory || []).forEach(period => {
         if (period.endDate < todayStr && !period.isClosed) {
           const actualSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', period.startDate, period.endDate);
+          const actualIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', period.startDate, period.endDate);
           period.isClosed = true;
           period.closedAt = todayStr;
+          period.newIncome = actualIncome > 0 ? actualIncome : (period.newIncome || 0);
           period.totalSpent = actualSpent;
-          period.leftover = Math.max(0, period.totalAvailable - actualSpent);
+          // Sobrante de la quincena cerrada: su propio ingreso menos su propio gasto
+          period.leftover = Math.max(0, period.newIncome - actualSpent);
         }
       });
 
@@ -624,14 +627,14 @@ export const FinancialStore = {
       let currentPeriod = (qbState.periodHistory || []).find(p => p.id === currentInfo.id);
 
       if (!currentPeriod) {
-        // Calcular dinero sobrante de la quincena anterior
+        // Calcular dinero sobrante de la quincena anterior (Saldo libre separado)
         const prevInfo = FinancialCalculations.getPreviousQuincenalPeriodInfo(todayStr);
         const prevPeriod = (qbState.periodHistory || []).find(p => p.id === prevInfo.id);
 
         let leftoverFromPrevious = 0;
         if (prevPeriod) {
           const prevSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', prevPeriod.startDate, prevPeriod.endDate);
-          leftoverFromPrevious = Math.max(0, prevPeriod.totalAvailable - prevSpent);
+          leftoverFromPrevious = Math.max(0, prevPeriod.newIncome - prevSpent);
         } else {
           // Si no había registro previo, calcularlo a partir de transacciones pasadas
           const prevIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', prevInfo.startDate, prevInfo.endDate);
@@ -639,7 +642,7 @@ export const FinancialStore = {
           leftoverFromPrevious = Math.max(0, prevIncome - prevExpenses);
         }
 
-        // Calcular ingreso actual del periodo
+        // Calcular ingreso exclusivo de la quincena actual
         const currentIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentInfo.startDate, currentInfo.endDate);
 
         // Crear plantillas de presupuestos con valores iniciales en $0 (Reinicio limpio)
@@ -668,12 +671,13 @@ export const FinancialStore = {
           isClosed: false,
           newIncome: currentIncome,
           leftoverFromPrevious,
-          totalAvailable: currentIncome + leftoverFromPrevious,
+          // Regla fundamental: El presupuesto para asignar de esta quincena es estrictamente el nuevo ingreso de ESTA quincena
+          totalAvailable: currentIncome,
           budgets: defaultBudgets,
           totalAllocated: 0,
-          freeUnallocated: currentIncome + leftoverFromPrevious,
+          freeUnallocated: currentIncome,
           totalSpent: 0,
-          leftover: currentIncome + leftoverFromPrevious
+          leftover: currentIncome
         };
 
         qbState.periodHistory.unshift(currentPeriod);
@@ -684,7 +688,8 @@ export const FinancialStore = {
           currentPeriod.newIncome = actualIncome;
         }
 
-        currentPeriod.totalAvailable = currentPeriod.newIncome + currentPeriod.leftoverFromPrevious;
+        // Presupuesto para asignar = Nuevo ingreso de esta quincena (sin sumar automáticamente sobrante previo ni quincenas pasadas)
+        currentPeriod.totalAvailable = currentPeriod.newIncome;
 
         const totalSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate);
         currentPeriod.totalSpent = totalSpent;
@@ -696,7 +701,7 @@ export const FinancialStore = {
 
         currentPeriod.totalAllocated = currentPeriod.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         currentPeriod.freeUnallocated = Math.max(0, currentPeriod.totalAvailable - currentPeriod.totalAllocated);
-        currentPeriod.leftover = Math.max(0, currentPeriod.totalAvailable - totalSpent);
+        currentPeriod.leftover = Math.max(0, currentPeriod.newIncome - totalSpent);
       }
     });
   },
@@ -768,9 +773,9 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         period.newIncome = Math.max(0, newIncome);
-        period.totalAvailable = period.newIncome + period.leftoverFromPrevious;
+        period.totalAvailable = period.newIncome;
         period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
-        period.leftover = Math.max(0, period.totalAvailable - period.totalSpent);
+        period.leftover = Math.max(0, period.newIncome - period.totalSpent);
       }
     });
   },
@@ -782,9 +787,39 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         period.leftoverFromPrevious = Math.max(0, leftover);
-        period.totalAvailable = period.newIncome + period.leftoverFromPrevious;
+      }
+    });
+  },
+
+  transferSaldoLibreToBudget(periodId: string, budgetId: string, amount: number) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        const transferAmount = Math.min(period.leftoverFromPrevious, Math.max(0, amount));
+        if (transferAmount <= 0) return;
+        const targetBudget = period.budgets.find(b => b.id === budgetId);
+        if (targetBudget) {
+          period.leftoverFromPrevious -= transferAmount;
+          targetBudget.allocatedAmount = (targetBudget.allocatedAmount || 0) + transferAmount;
+          period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        }
+      }
+    });
+  },
+
+  transferSaldoLibreToPool(periodId: string, amount: number) {
+    storeInstance.updateState(draft => {
+      const qbState = draft.offices.financiera.quincenalBudgets;
+      if (!qbState) return;
+      const period = qbState.periodHistory.find(p => p.id === periodId);
+      if (period) {
+        const transferAmount = Math.min(period.leftoverFromPrevious, Math.max(0, amount));
+        if (transferAmount <= 0) return;
+        period.leftoverFromPrevious -= transferAmount;
+        period.totalAvailable += transferAmount;
         period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
-        period.leftover = Math.max(0, period.totalAvailable - period.totalSpent);
       }
     });
   }
