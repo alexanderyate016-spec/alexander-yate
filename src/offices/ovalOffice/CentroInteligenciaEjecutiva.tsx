@@ -69,11 +69,11 @@ export const CentroInteligenciaEjecutiva: React.FC<Props> = ({
 
       {/* QUICK ACCESS BUTTON */}
       <button
-        onClick={() => onNavigateToOffice('desarrolloPersonal')}
+        onClick={() => onNavigateToOffice('vidaDiaria')}
         className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5"
       >
-        <span>Desarrollo Personal</span>
-        <ArrowRight className="w-3.5 h-3.5 text-purple-600" />
+        <span>Gestión Personal</span>
+        <ArrowRight className="w-3.5 h-3.5 text-amber-600" />
       </button>
     </div>
   );

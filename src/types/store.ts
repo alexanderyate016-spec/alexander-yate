@@ -235,6 +235,7 @@ export interface HabitItem {
   scheduledTime?: string; // e.g. "07:00"
   durationMinutes?: number; // e.g. 10 or 15
   logs: Record<string, boolean>; // key: YYYY-MM-DD, value: true
+  isRecurring?: boolean; // Default true. Only repeats if recurring
 }
 
 export interface DailyTask {
@@ -248,6 +249,7 @@ export interface DailyTask {
   status: 'pending' | 'completed';
   checklist?: Array<{ id: string; title: string; completed: boolean }>;
   sendToChiefOfStaff?: boolean;
+  isRecurring?: boolean; // Default false
 }
 
 export interface RoutineStep {
@@ -260,8 +262,11 @@ export interface RoutineItem {
   id: string;
   name: string;
   timeOfDay: 'morning' | 'afternoon' | 'evening';
+  time?: string; // e.g. "06:30"
   emoji?: string;
   steps: RoutineStep[];
+  isRecurring?: boolean; // Default true
+  completedToday?: boolean;
 }
 
 export interface BaseScheduleItem {
@@ -806,8 +811,10 @@ export type JournalMood = 'excelente' | 'bueno' | 'neutro' | 'dificil' | 'reflex
 export interface JournalEntry {
   id: string;
   date: string; // YYYY-MM-DD
+  time?: string; // HH:mm e.g. "21:30"
   wordOfTheDay?: string; // Palabra del día (ej. "Constancia", "Gratitud")
   mood?: JournalMood; // Estado de ánimo
+  moodNote?: string; // Respuesta a "¿Quieres contarme por qué?"
   bestThingToday?: string; // ¿Qué fue lo mejor que ocurrió hoy?
   learnedToday?: string; // ¿Qué aprendí hoy?
   improveTomorrow?: string; // ¿Qué debo mejorar?
@@ -815,6 +822,7 @@ export interface JournalEntry {
   gratefulFor?: string; // ¿Qué agradezco hoy?
   freeReflection?: string; // Reflexión libre ("¿Qué quieres dejar de este día?")
   philosophicalAnswer?: string; // Respuesta a la pregunta filosófica del día
+  createdAt?: string;
 
   // Momentos del día (opcionales):
   wentWell?: string; // ⭐ Algo que salió bien
@@ -842,6 +850,22 @@ export interface LifeLesson {
   description: string;
   date: string; // YYYY-MM-DD
   tags: string[];
+}
+
+export interface GrowthProgressNote {
+  id: string;
+  date: string;
+  time?: string;
+  note: string;
+}
+
+export interface GrowthObjective {
+  id: string;
+  title: string; // e.g. "Ser más disciplinado", "Mejorar mi confianza"
+  description?: string;
+  category?: string;
+  progressNotes?: GrowthProgressNote[];
+  createdAt: string;
 }
 
 export interface MonthlyReview {
@@ -888,6 +912,7 @@ export interface PhilosophicalReflection {
 export interface PersonalDevOfficeData {
   journalEntries: JournalEntry[]; // 1 por día
   lifeLessons: LifeLesson[];
+  growthObjectives?: GrowthObjective[];
   monthlyReviews: Record<string, MonthlyReview>; // key: "YYYY-MM"
 
   // Campos opcionales legacy mantenidos para prevención de fallos de parsing:

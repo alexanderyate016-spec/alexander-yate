@@ -3,103 +3,131 @@ import { DailyLifeOfficeData, HabitItem, DailyTask, RoutineItem, DailyObjective,
 import { getTodayDateString } from '../../utils/dates';
 import { DailyLifeCalculations } from './DailyLifeCalculations';
 
+const DEFAULT_HABITS: HabitItem[] = [
+  {
+    id: 'hab_read',
+    name: 'Leer 20 minutos',
+    emoji: '📖',
+    color: '#3B82F6',
+    frequency: 'daily',
+    scheduledTime: '20:00',
+    description: 'Lectura diaria personal o profesional',
+    logs: { [getTodayDateString()]: true }
+  },
+  {
+    id: 'hab_water',
+    name: 'Tomar agua',
+    emoji: '💧',
+    color: '#06B6D4',
+    frequency: 'daily',
+    description: 'Mantener hidratación adecuada (2L al día)',
+    logs: { [getTodayDateString()]: true }
+  },
+  {
+    id: 'hab_exercise',
+    name: 'Ejercicio',
+    emoji: '🏋️',
+    color: '#10B981',
+    frequency: 'custom',
+    targetDays: ['lun', 'mie', 'vie'],
+    scheduledTime: '18:00',
+    description: 'Rutina de entrenamiento físico',
+    logs: {}
+  },
+  {
+    id: 'hab_meditate',
+    name: 'Meditar',
+    emoji: '🧘',
+    color: '#8B5CF6',
+    frequency: 'daily',
+    scheduledTime: '07:00',
+    description: 'Práctica de atención plena y respiración',
+    logs: {}
+  }
+];
+
+const DEFAULT_TASKS: DailyTask[] = [
+  {
+    id: 'tsk_1',
+    name: 'Organizar documentos personales',
+    description: 'Clasificar archivos digitales y notas',
+    priority: 'medium',
+    date: getTodayDateString(),
+    status: 'completed'
+  },
+  {
+    id: 'tsk_2',
+    name: 'Terminar trabajo prioritario',
+    description: 'Revisar entregables pendientes',
+    priority: 'high',
+    date: getTodayDateString(),
+    status: 'pending'
+  },
+  {
+    id: 'tsk_3',
+    name: 'Comprar materiales necesarios',
+    description: 'Insumos personales y papelería',
+    priority: 'low',
+    date: getTodayDateString(),
+    status: 'pending'
+  }
+];
+
+const DEFAULT_BASE_SCHEDULE = {
+  wakeUpTime: '06:30',
+  breakfastTime: '07:00',
+  lunchTime: '12:30',
+  dinnerTime: '19:30',
+  sleepTime: '23:00',
+  customItems: []
+};
+
 export const DailyLifeStore = {
   getData(): DailyLifeOfficeData {
-    this.ensureDefaultData();
-    this.checkAndApplyDailyReset();
-    return storeInstance.getState().offices.vidaDiaria;
+    const state = storeInstance.getState();
+    const data = state?.offices?.vidaDiaria;
+    return {
+      habits: (data?.habits && data.habits.length > 0) ? data.habits : DEFAULT_HABITS,
+      tasks: (data?.tasks && data.tasks.length > 0) ? data.tasks : DEFAULT_TASKS,
+      routines: data?.routines || [],
+      objectives: data?.objectives || [],
+      timePlans: data?.timePlans || [],
+      lastActiveDate: data?.lastActiveDate || '',
+      dailyHistory: data?.dailyHistory || [],
+      welcomeMessage: data?.welcomeMessage || null,
+      baseSchedule: data?.baseSchedule || DEFAULT_BASE_SCHEDULE
+    };
   },
 
   ensureDefaultData() {
     const todayStr = getTodayDateString();
     storeInstance.updateState(draft => {
-      const data = draft.offices.vidaDiaria;
-      if (!data) return;
-
-      if (!data.baseSchedule) {
-        data.baseSchedule = {
-          wakeUpTime: '06:30',
-          breakfastTime: '07:00',
-          lunchTime: '12:30',
-          dinnerTime: '19:30',
-          sleepTime: '23:00',
-          customItems: []
+      if (!draft.offices) return;
+      if (!draft.offices.vidaDiaria) {
+        (draft.offices as any).vidaDiaria = {
+          habits: [],
+          tasks: [],
+          routines: [],
+          objectives: [],
+          timePlans: [],
+          lastActiveDate: '',
+          dailyHistory: [],
+          welcomeMessage: null
         };
       }
+      const data = draft.offices.vidaDiaria;
+
+      if (!data.baseSchedule) {
+        data.baseSchedule = DEFAULT_BASE_SCHEDULE;
+      }
       if (!data.habits || data.habits.length === 0) {
-        data.habits = [
-          {
-            id: 'hab_read',
-            name: 'Leer 20 minutos',
-            emoji: '📖',
-            color: '#3B82F6',
-            frequency: 'daily',
-            scheduledTime: '20:00',
-            description: 'Lectura diaria personal o profesional',
-            logs: { [todayStr]: true }
-          },
-          {
-            id: 'hab_water',
-            name: 'Tomar agua',
-            emoji: '💧',
-            color: '#06B6D4',
-            frequency: 'daily',
-            description: 'Mantener hidratación adecuada (2L al día)',
-            logs: { [todayStr]: true }
-          },
-          {
-            id: 'hab_exercise',
-            name: 'Ejercicio',
-            emoji: '🏋️',
-            color: '#10B981',
-            frequency: 'custom',
-            targetDays: ['lun', 'mie', 'vie'],
-            scheduledTime: '18:00',
-            description: 'Rutina de entrenamiento físico',
-            logs: {}
-          },
-          {
-            id: 'hab_meditate',
-            name: 'Meditar',
-            emoji: '🧘',
-            color: '#8B5CF6',
-            frequency: 'daily',
-            scheduledTime: '07:00',
-            description: 'Práctica de atención plena y respiración',
-            logs: {}
-          }
-        ];
+        data.habits = DEFAULT_HABITS;
       }
       if (!data.routines) {
         data.routines = [];
       }
       if (!data.tasks || data.tasks.length === 0) {
-        data.tasks = [
-          {
-            id: 'tsk_1',
-            name: 'Organizar documentos personales',
-            description: 'Clasificar archivos digitales y notas',
-            priority: 'medium',
-            date: todayStr,
-            status: 'completed'
-          },
-          {
-            id: 'tsk_2',
-            name: 'Terminar trabajo prioritario',
-            description: 'Revisar entregables pendientes',
-            priority: 'high',
-            date: todayStr,
-            status: 'pending'
-          },
-          {
-            id: 'tsk_3',
-            name: 'Comprar materiales necesarios',
-            description: 'Insumos personales y papelería',
-            priority: 'low',
-            date: todayStr,
-            status: 'pending'
-          }
-        ];
+        data.tasks = DEFAULT_TASKS;
       }
     });
   },
@@ -136,11 +164,13 @@ export const DailyLifeStore = {
 
   checkAndApplyDailyReset() {
     const todayStr = getTodayDateString();
-    const currentData = storeInstance.getState().offices.vidaDiaria;
+    const currentData = storeInstance.getState()?.offices?.vidaDiaria;
+    if (!currentData) return;
     const lastActiveDate = currentData.lastActiveDate;
 
     if (!lastActiveDate) {
       storeInstance.updateState(draft => {
+        if (!draft.offices?.vidaDiaria) return;
         draft.offices.vidaDiaria.lastActiveDate = todayStr;
       });
       return;
@@ -148,6 +178,7 @@ export const DailyLifeStore = {
 
     if (lastActiveDate !== todayStr) {
       storeInstance.updateState(draft => {
+        if (!draft.offices?.vidaDiaria) return;
         const data = draft.offices.vidaDiaria;
         const userName = draft.security?.profile?.name || draft.settings?.profileName || 'Alex';
 
@@ -166,12 +197,13 @@ export const DailyLifeStore = {
         // 2. Reset daily completion states
         // Routines step completions reset for today
         (data.routines || []).forEach(routine => {
+          routine.completedToday = false;
           (routine.steps || []).forEach(step => {
             step.completedToday = false;
           });
         });
 
-        // Daily objectives reset for new day
+        // Daily objectives (goals of the day) reset for new day
         (data.objectives || []).forEach(obj => {
           if (obj.date === lastActiveDate) {
             obj.status = 'pending';
@@ -180,15 +212,27 @@ export const DailyLifeStore = {
           }
         });
 
+        // Non-recurring completed tasks from previous days are archived in history
         // Tasks for today reset pending
-        (data.tasks || []).forEach(task => {
-          if (!task.date || task.date === todayStr) {
-            task.status = 'pending';
-            if (task.checklist) {
-              task.checklist.forEach(c => { c.completed = false; });
+        if (data.tasks) {
+          data.tasks = data.tasks.filter(task => {
+            if (task.date && task.date !== todayStr) {
+              // If not recurring, it stays only in history
+              return task.isRecurring;
             }
-          }
-        });
+            return true;
+          });
+
+          data.tasks.forEach(task => {
+            if (!task.date || task.date === todayStr) {
+              task.date = todayStr;
+              task.status = 'pending';
+              if (task.checklist) {
+                task.checklist.forEach(c => { c.completed = false; });
+              }
+            }
+          });
+        }
 
         // 3. Update lastActiveDate
         data.lastActiveDate = todayStr;
@@ -307,13 +351,71 @@ export const DailyLifeStore = {
     });
   },
 
+  toggleRoutine(routineId: string) {
+    storeInstance.updateState(draft => {
+      const r = draft.offices.vidaDiaria.routines.find(item => item.id === routineId);
+      if (r) {
+        const nextState = !r.completedToday;
+        r.completedToday = nextState;
+        if (r.steps) {
+          r.steps.forEach(s => {
+            s.completedToday = nextState;
+          });
+        }
+      }
+    });
+  },
+
   deleteRoutine(routineId: string) {
     storeInstance.updateState(draft => {
       draft.offices.vidaDiaria.routines = draft.offices.vidaDiaria.routines.filter(r => r.id !== routineId);
     });
   },
 
-  // OBJECTIVES
+  // OBJECTIVES / DAILY GOALS
+  setDailyGoal(title: string, dateStr?: string) {
+    const targetDate = dateStr || getTodayDateString();
+    storeInstance.updateState(draft => {
+      if (!draft.offices.vidaDiaria.objectives) draft.offices.vidaDiaria.objectives = [];
+      const existing = draft.offices.vidaDiaria.objectives.find(o => o.date === targetDate);
+      if (existing) {
+        existing.title = title.trim();
+        existing.status = 'pending';
+      } else {
+        const id = 'obj_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        draft.offices.vidaDiaria.objectives.push({
+          id,
+          title: title.trim(),
+          date: targetDate,
+          status: 'pending'
+        });
+      }
+    });
+  },
+
+  toggleDailyGoal(goalId?: string, dateStr?: string) {
+    const targetDate = dateStr || getTodayDateString();
+    storeInstance.updateState(draft => {
+      const objs = draft.offices.vidaDiaria.objectives || [];
+      const goal = goalId ? objs.find(o => o.id === goalId) : objs.find(o => o.date === targetDate);
+      if (goal) {
+        goal.status = goal.status === 'completed' ? 'pending' : 'completed';
+      }
+    });
+  },
+
+  clearDailyGoal(goalId?: string, dateStr?: string) {
+    const targetDate = dateStr || getTodayDateString();
+    storeInstance.updateState(draft => {
+      if (!draft.offices.vidaDiaria.objectives) return;
+      if (goalId) {
+        draft.offices.vidaDiaria.objectives = draft.offices.vidaDiaria.objectives.filter(o => o.id !== goalId);
+      } else {
+        draft.offices.vidaDiaria.objectives = draft.offices.vidaDiaria.objectives.filter(o => o.date !== targetDate);
+      }
+    });
+  },
+
   addObjective(obj: Omit<DailyObjective, 'id' | 'status'>) {
     storeInstance.updateState(draft => {
       const id = 'obj_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);

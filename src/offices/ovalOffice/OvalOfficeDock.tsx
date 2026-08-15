@@ -19,10 +19,9 @@ export const OvalOfficeDock: React.FC<Props> = ({
 }) => {
   const dockIcons = [
     { key: 'ovalOffice', label: 'Oval Office', icon: Crown },
-    { key: 'vidaDiaria', label: 'Agenda', icon: Calendar },
+    { key: 'vidaDiaria', label: 'Gestión Personal', icon: Calendar },
     { key: 'vidaSocial', label: 'Relaciones', icon: Users },
     { key: 'medica', label: 'Salud', icon: Stethoscope },
-    { key: 'desarrolloPersonal', label: 'Desarrollo', icon: Compass }
   ];
 
   return (

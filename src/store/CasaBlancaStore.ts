@@ -123,7 +123,8 @@ class CasaBlancaStore {
           direction: parsed?.offices?.desarrolloPersonal?.direction || { purpose: '', vision: '', principles: [] },
           characterAreas: Array.isArray(parsed?.offices?.desarrolloPersonal?.characterAreas) ? parsed.offices.desarrolloPersonal.characterAreas : [],
           personalHistory: Array.isArray(parsed?.offices?.desarrolloPersonal?.personalHistory) ? parsed.offices.desarrolloPersonal.personalHistory : [],
-          philosophicalReflections: Array.isArray(parsed?.offices?.desarrolloPersonal?.philosophicalReflections) ? parsed.offices.desarrolloPersonal.philosophicalReflections : []
+          philosophicalReflections: Array.isArray(parsed?.offices?.desarrolloPersonal?.philosophicalReflections) ? parsed.offices.desarrolloPersonal.philosophicalReflections : [],
+          growthObjectives: Array.isArray(parsed?.offices?.desarrolloPersonal?.growthObjectives) ? parsed.offices.desarrolloPersonal.growthObjectives : []
         }
       },
       executive: { ...initial.executive, ...parsed?.executive }

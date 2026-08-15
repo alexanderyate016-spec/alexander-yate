@@ -24,12 +24,11 @@ export const OvalOfficeLeftSidebar: React.FC<Props> = ({
   const navItems = [
     { key: 'ovalOffice', label: 'Oval Office', icon: Crown },
     { key: 'westWing', label: 'West Wing', icon: Building2 },
-    { key: 'vidaDiaria', label: 'Vida Diaria', icon: Activity },
+    { key: 'vidaDiaria', label: 'Gestión Personal', icon: Activity },
     { key: 'academica', label: 'Académica', icon: BookOpen },
     { key: 'financiera', label: 'Financiera', icon: Landmark },
     { key: 'medica', label: 'Médica', icon: Stethoscope },
     { key: 'vidaSocial', label: 'Relaciones', icon: Heart },
-    { key: 'desarrolloPersonal', label: 'Desarrollo', icon: Compass },
     { key: 'inteligencia', label: 'Centro de Inteligencia', icon: BrainCircuit },
     { key: 'seguridad', label: 'Ajustes', icon: Settings }
   ];

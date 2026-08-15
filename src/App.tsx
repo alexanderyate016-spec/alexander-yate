@@ -9,7 +9,6 @@ import { DailyLifeView } from './offices/dailyLife/DailyLifeView';
 import { FinancialView } from './offices/financial/FinancialView';
 import { SocialView } from './offices/social/SocialView';
 import { MedicalView } from './offices/medical/MedicalView';
-import { PersonalDevView } from './offices/personalDev/PersonalDevView';
 import { SettingsOfficeView } from './offices/settings/SettingsOfficeView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
 import { ChiefOfStaffView } from './offices/chiefOfStaff/ChiefOfStaffView';
@@ -112,11 +111,10 @@ export function App() {
     { key: 'ovalOffice', label: 'Despacho Oval', emoji: '🏛️' },
     { key: 'agenda', label: 'Oficina de Agenda', emoji: '🗓️' },
     { key: 'academica', label: 'Académica', emoji: '🎓' },
-    { key: 'vidaDiaria', label: 'Gestión Personal', emoji: '🌿' },
+    { key: 'vidaDiaria', label: 'Gestión Personal', emoji: '🟠' },
     { key: 'financiera', label: 'Financiera', emoji: '💰' },
     { key: 'vidaSocial', label: 'Vida Social', emoji: '💖' },
     { key: 'medica', label: 'Médica', emoji: '🩺' },
-    { key: 'desarrolloPersonal', label: 'Desarrollo Personal', emoji: '🧭' },
     { key: 'configuracion', label: 'Configuración', emoji: '⚙️' },
   ];
 
@@ -168,17 +166,18 @@ export function App() {
               onNavigateToOffice={officeKey => setActiveOffice(officeKey)}
             />
           )}
-          {activeOffice === 'academica' && <AcademicView data={state.offices.academica} />}
-          {activeOffice === 'vidaDiaria' && <DailyLifeView data={state.offices.vidaDiaria} />}
-          {activeOffice === 'financiera' && <FinancialView data={state.offices.financiera} />}
+          {activeOffice === 'academica' && <AcademicView data={state?.offices?.academica} />}
+          {(activeOffice === 'vidaDiaria' || activeOffice === 'desarrolloPersonal') && (
+            <DailyLifeView data={state?.offices?.vidaDiaria} />
+          )}
+          {activeOffice === 'financiera' && <FinancialView data={state?.offices?.financiera} />}
           {activeOffice === 'vidaSocial' && (
             <SocialView
-              data={state.offices.vidaSocial}
-              profileName={state.security.userProfile?.fullName}
+              data={state?.offices?.vidaSocial}
+              profileName={state?.security?.userProfile?.fullName}
             />
           )}
-          {activeOffice === 'medica' && <MedicalView data={state.offices.medica} />}
-          {activeOffice === 'desarrolloPersonal' && <PersonalDevView data={state.offices.desarrolloPersonal} />}
+          {activeOffice === 'medica' && <MedicalView data={state?.offices?.medica} />}
           {(activeOffice === 'configuracion' || activeOffice === 'seguridad') && (
             <SettingsOfficeView state={state} showToast={showToast} />
           )}
