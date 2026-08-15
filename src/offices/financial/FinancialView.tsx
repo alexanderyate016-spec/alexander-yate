@@ -421,6 +421,8 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
   const [accInterest, setAccInterest] = useState<number | ''>('');
 
   // New Transaction State
+  const [txDate, setTxDate] = useState(todayStr);
+  const [txQuincenaPeriodId, setTxQuincenaPeriodId] = useState('');
   const [txNature, setTxNature] = useState<TransactionNature>('external_expense');
   const [txDesc, setTxDesc] = useState('');
   const [txAmount, setTxAmount] = useState<number | ''>('');
@@ -660,7 +662,7 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
     if (finalAmount <= 0) return;
 
     FinancialStore.addTransaction({
-      date: todayStr,
+      date: txDate || todayStr,
       time: timeStr,
       nature: txNature,
       description: txDesc.trim(),
@@ -679,12 +681,15 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
       categoryId: txCategory || undefined,
       budgetId: isSplitExpense ? undefined : (txBudgetId || undefined),
       budgetCategoryId: isSplitExpense ? undefined : (txBudgetCategoryId || undefined),
+      quincenaPeriodId: txQuincenaPeriodId || undefined,
       splits: isSplitExpense ? txSplits.filter(s => Number(s.amount) > 0) : undefined,
       tags: []
     });
 
     setTxDesc('');
     setTxAmount('');
+    setTxDate(todayStr);
+    setTxQuincenaPeriodId('');
     setTxBudgetId('');
     setTxBudgetCategoryId('');
     setIsSplitExpense(false);
@@ -2738,46 +2743,81 @@ export const FinancialView: React.FC<Props> = ({ data }) => {
 
                 {/* DYNAMIC FIELDS PER NATURE */}
                 {txNature === 'external_income' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end p-3 bg-emerald-950/20 border border-emerald-200 rounded-xl">
-                    <div>
-                      <ExecutiveInput
-                        label="Origen del Dinero *"
-                        placeholder="Ej: Salario, Beca, Regalo, Venta, Devolución"
-                        value={txSourceName}
-                        onChange={e => setTxSourceName(e.target.value)}
-                        accentColor="emerald"
-                        required
-                      />
+                  <div className="space-y-3 p-4 bg-emerald-950/20 border border-emerald-200 rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                      <div>
+                        <ExecutiveInput
+                          label="Fecha recibida *"
+                          type="date"
+                          value={txDate}
+                          onChange={e => setTxDate(e.target.value)}
+                          accentColor="emerald"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <ExecutiveInput
+                          label="Origen del Dinero *"
+                          placeholder="Ej: Salario, Honorarios, Venta"
+                          value={txSourceName}
+                          onChange={e => setTxSourceName(e.target.value)}
+                          accentColor="emerald"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <ExecutiveSelect
+                          label="Cuenta Destino (Ingreso) *"
+                          value={txDestAcc}
+                          onChange={e => setTxDestAcc(e.target.value)}
+                          accentColor="emerald"
+                          options={[
+                            { value: '', label: '-- Seleccionar Cuenta Destino --' },
+                            ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <ExecutiveInput
+                          label="Monto del Ingreso *"
+                          type="number"
+                          placeholder="0.00"
+                          value={txAmount}
+                          onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                          accentColor="emerald"
+                          required
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <ExecutiveSelect
-                        label="Cuenta Destino (Ingreso) *"
-                        value={txDestAcc}
-                        onChange={e => setTxDestAcc(e.target.value)}
-                        accentColor="emerald"
-                        options={[
-                          { value: '', label: '-- Seleccionar Cuenta Destino --' },
-                          ...(data.accounts || []).map(a => ({ value: a.id, label: `${a.name} (${a.currency})` }))
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      <ExecutiveInput
-                        label="Monto del Ingreso *"
-                        type="number"
-                        placeholder="0.00"
-                        value={txAmount}
-                        onChange={e => setTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        accentColor="emerald"
-                        required
-                      />
+
+                    {/* Automatic Quincena Detection Badge */}
+                    <div className="p-2.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-200">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>
+                          Quincena asignada automáticamente: <strong>{FinancialCalculations.getQuincenalPeriodInfo(txDate || todayStr).periodLabel}</strong> (Día {Number((txDate || todayStr).split('-')[2]) || 1} → {Number((txDate || todayStr).split('-')[2]) <= 15 ? '1ª quincena: días 1–15' : '2ª quincena: días 16–fin de mes'})
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 shrink-0">
+                        Presupuesto Independiente
+                      </span>
                     </div>
                   </div>
                 )}
 
                 {txNature === 'external_expense' && (
                   <div className="space-y-3 p-4 bg-rose-950/20 border border-rose-500/30 rounded-xl">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                      <div>
+                        <ExecutiveInput
+                          label="Fecha del Gasto *"
+                          type="date"
+                          value={txDate}
+                          onChange={e => setTxDate(e.target.value)}
+                          accentColor="emerald"
+                          required
+                        />
+                      </div>
                       <div>
                         <ExecutiveSelect
                           label="Cuenta Origen (Desembolso) *"

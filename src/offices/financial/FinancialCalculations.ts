@@ -566,7 +566,8 @@ export const FinancialCalculations = {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
 
-    const parts = (dateStr || '').split('-');
+    const cleanDate = (dateStr || '').split('T')[0];
+    const parts = cleanDate.split('-');
     let year = parseInt(parts[0], 10);
     let month = parseInt(parts[1], 10);
     let day = parseInt(parts[2], 10);
@@ -663,27 +664,33 @@ export const FinancialCalculations = {
     }
   },
 
-  calculateQuincenalIncome(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string): number {
+  calculateQuincenalIncome(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string, periodId?: string): number {
     if (!transactions || transactions.length === 0) return 0;
     return transactions
-      .filter(t => 
-        (t.nature === 'external_income' || t.nature === 'financial_yield' || t.nature === 'investment_sell') &&
-        t.currency === currency &&
-        t.date >= startDate &&
-        t.date <= endDate
-      )
+      .filter(t => {
+        if (t.currency !== currency) return false;
+        if (t.nature !== 'external_income' && t.nature !== 'financial_yield' && t.nature !== 'investment_sell') return false;
+        if (t.quincenaPeriodId && periodId) {
+          return t.quincenaPeriodId === periodId;
+        }
+        const txCleanDate = (t.date || '').split('T')[0];
+        return txCleanDate >= startDate && txCleanDate <= endDate;
+      })
       .reduce((sum, t) => sum + t.amount, 0);
   },
 
-  calculateQuincenalExpenses(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string): number {
+  calculateQuincenalExpenses(transactions: FinancialTransaction[], currency: CurrencyCode, startDate: string, endDate: string, periodId?: string): number {
     if (!transactions || transactions.length === 0) return 0;
     return transactions
-      .filter(t => 
-        (t.nature === 'external_expense' || t.nature === 'investment_buy') &&
-        t.currency === currency &&
-        t.date >= startDate &&
-        t.date <= endDate
-      )
+      .filter(t => {
+        if (t.currency !== currency) return false;
+        if (t.nature !== 'external_expense' && t.nature !== 'investment_buy') return false;
+        if (t.quincenaPeriodId && periodId) {
+          return t.quincenaPeriodId === periodId;
+        }
+        const txCleanDate = (t.date || '').split('T')[0];
+        return txCleanDate >= startDate && txCleanDate <= endDate;
+      })
       .reduce((sum, t) => sum + t.amount, 0);
   },
 
@@ -692,19 +699,23 @@ export const FinancialCalculations = {
     transactions: FinancialTransaction[],
     currency: CurrencyCode,
     startDate: string,
-    endDate: string
+    endDate: string,
+    periodId?: string
   ): number {
     if (!transactions || transactions.length === 0) return 0;
     const nameLower = (budgetItem.name || '').toLowerCase();
     const catLower = (budgetItem.categoryName || '').toLowerCase();
 
     return transactions
-      .filter(t => 
-        (t.nature === 'external_expense' || t.nature === 'investment_buy') &&
-        t.currency === currency &&
-        t.date >= startDate &&
-        t.date <= endDate
-      )
+      .filter(t => {
+        if (t.currency !== currency) return false;
+        if (t.nature !== 'external_expense' && t.nature !== 'investment_buy') return false;
+        if (t.quincenaPeriodId && periodId) {
+          return t.quincenaPeriodId === periodId;
+        }
+        const txCleanDate = (t.date || '').split('T')[0];
+        return txCleanDate >= startDate && txCleanDate <= endDate;
+      })
       .reduce((sum, t) => {
         // Splits check
         if (t.splits && t.splits.length > 0) {

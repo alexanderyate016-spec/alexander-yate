@@ -412,6 +412,7 @@ export interface FinancialTransaction {
   budgetId?: string; // Presupuesto asignado (opcional)
   budgetCategoryId?: string; // Categoría dentro del presupuesto (opcional)
   splits?: FinancialTransactionSplit[]; // Para opción "Dividir gasto"
+  quincenaPeriodId?: string; // Asignación de quincena personalizada (opcional/excepción manual)
   description: string;
   amount: number;
   currency: CurrencyCode;

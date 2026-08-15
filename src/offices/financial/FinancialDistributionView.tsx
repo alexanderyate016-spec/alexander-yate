@@ -192,7 +192,13 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAccountId, setExpenseAccountId] = useState(data.accounts?.[0]?.id || '');
 
-  // Estado de edición manual de ingresos / sobrante
+  // Estado de edición y registro de ingresos
+  const [incomeMode, setIncomeMode] = useState<'register' | 'manual'>('register');
+  const [incomeTxDate, setIncomeTxDate] = useState(todayStr);
+  const [incomeTxAmount, setIncomeTxAmount] = useState<number | ''>('');
+  const [incomeTxSourceName, setIncomeTxSourceName] = useState('Sueldo / Honorarios');
+  const [incomeTxAccountId, setIncomeTxAccountId] = useState(data.accounts?.[0]?.id || '');
+  const [incomeTxDesc, setIncomeTxDesc] = useState('');
   const [customIncomeInput, setCustomIncomeInput] = useState<number | ''>('');
   const [customLeftoverInput, setCustomLeftoverInput] = useState<number | ''>('');
 
@@ -344,7 +350,48 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     setIsQuickExpenseModalOpen(false);
   };
 
-  // Guardar nuevo ingreso manual
+  // Abrir modal para registrar ingreso con fecha recibida
+  const handleOpenRegisterIncome = () => {
+    setIncomeMode('register');
+    setIncomeTxDate(todayStr);
+    setIncomeTxAmount('');
+    setIncomeTxSourceName('Sueldo / Honorarios');
+    setIncomeTxAccountId(data.accounts?.[0]?.id || '');
+    setIncomeTxDesc('');
+    setIsEditIncomeModalOpen(true);
+  };
+
+  // Guardar registro de transacción de ingreso con asignación automática por fecha
+  const handleRegisterIncomeTx = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(incomeTxAmount);
+    if (isNaN(amount) || amount <= 0) {
+      triggerToast('Ingresa un monto válido para el ingreso', 'warning');
+      return;
+    }
+
+    const targetDate = incomeTxDate || todayStr;
+    const detectedPeriod = FinancialCalculations.getQuincenalPeriodInfo(targetDate);
+    const destAccId = incomeTxAccountId || data.accounts?.[0]?.id || '';
+
+    FinancialStore.addTransaction({
+      date: targetDate,
+      time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      nature: 'external_income',
+      amount,
+      currency,
+      accountId: destAccId,
+      destinationAccountId: destAccId,
+      sourceName: incomeTxSourceName.trim() || 'Ingreso',
+      description: incomeTxDesc.trim() || `Ingreso de ${incomeTxSourceName.trim() || 'Quincena'}`,
+      quincenaPeriodId: detectedPeriod.id
+    });
+
+    triggerToast(`Ingreso de ${formatCurrency(amount, currency)} registrado en ${detectedPeriod.periodLabel}`, 'success');
+    setIsEditIncomeModalOpen(false);
+  };
+
+  // Guardar nuevo ingreso manual de referencia
   const handleSaveCustomIncome = (e: React.FormEvent) => {
     e.preventDefault();
     const val = Number(customIncomeInput);
@@ -425,16 +472,26 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                 Nuevo Ingreso
               </span>
-              <button
-                onClick={() => {
-                  setCustomIncomeInput(currentPeriod.newIncome);
-                  setIsEditIncomeModalOpen(true);
-                }}
-                className="text-[10px] text-emerald-300 hover:text-white px-2 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 transition-colors font-medium flex items-center gap-1"
-                title="Ajustar o registrar ingreso de la quincena"
-              >
-                <Edit2 className="w-3 h-3" /> Editar
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleOpenRegisterIncome}
+                  className="text-[10px] text-emerald-200 hover:text-white px-2 py-0.5 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/50 transition-colors font-bold flex items-center gap-1 border border-emerald-500/40"
+                  title="Registrar ingreso recibido con fecha"
+                >
+                  <Plus className="w-3 h-3" /> Registrar
+                </button>
+                <button
+                  onClick={() => {
+                    setIncomeMode('manual');
+                    setCustomIncomeInput(currentPeriod.newIncome);
+                    setIsEditIncomeModalOpen(true);
+                  }}
+                  className="text-[10px] text-emerald-300 hover:text-white px-1.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 transition-colors font-medium flex items-center gap-1"
+                  title="Ajustar monto de referencia"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
+              </div>
             </div>
             <div>
               <strong className="text-2xl font-black font-serif text-emerald-400 tracking-tight">
@@ -1140,13 +1197,21 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
       )}
 
       {/* ========================================================= */}
-      {/* MODAL 4: EDITAR NUEVO INGRESO DE LA QUINCENA              */}
+      {/* MODAL 4: REGISTRAR O AJUSTAR INGRESO DE LA QUINCENA       */}
       {/* ========================================================= */}
       {isEditIncomeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 space-y-5">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Nuevo Ingreso de la Quincena</h3>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
+                  <TrendingUp className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Ingreso Quincenal</h3>
+                  <p className="text-xs text-slate-500">Asignación automática según la fecha recibida</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsEditIncomeModalOpen(false)}
                 className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
@@ -1155,41 +1220,177 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               </button>
             </div>
 
-            <form onSubmit={handleSaveCustomIncome} className="space-y-4">
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Ingresa el sueldo u honorarios que realmente recibiste en esta quincena. No incluye el dinero que ya tenías de periodos pasados.
-              </p>
+            {/* Mode Switcher */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setIncomeMode('register')}
+                className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  incomeMode === 'register'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Registrar Ingreso Real</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncomeMode('manual')}
+                className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  incomeMode === 'manual'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Ajuste Manual</span>
+              </button>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Monto del Ingreso ($)</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="1000"
-                  value={customIncomeInput}
-                  onChange={e => setCustomIncomeInput(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-base font-bold text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
+            {incomeMode === 'register' ? (
+              <form onSubmit={handleRegisterIncomeTx} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Fecha recibida *</label>
+                    <input
+                      type="date"
+                      required
+                      value={incomeTxDate}
+                      onChange={e => setIncomeTxDate(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsEditIncomeModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all"
-                >
-                  Guardar Ingreso
-                </button>
-              </div>
-            </form>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Monto del Ingreso ($) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="1000"
+                      value={incomeTxAmount}
+                      onChange={e => setIncomeTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Quincena Detection Preview */}
+                {(() => {
+                  const targetDate = incomeTxDate || todayStr;
+                  const detected = FinancialCalculations.getQuincenalPeriodInfo(targetDate);
+                  const dayNum = parseInt(targetDate.split('-')[2], 10) || 1;
+                  return (
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                        <span>Quincena asignada automáticamente:</span>
+                      </div>
+                      <p className="font-semibold">
+                        🗓️ {detected.periodLabel} (Días {dayNum <= 15 ? '1 al 15' : '16 al fin de mes'})
+                      </p>
+                      <p className="text-[11px] text-emerald-700">
+                        Este ingreso se asignará exclusivamente a este periodo y no se acumulará con quincenas anteriores.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Origen / Pagador</label>
+                    <input
+                      type="text"
+                      value={incomeTxSourceName}
+                      onChange={e => setIncomeTxSourceName(e.target.value)}
+                      placeholder="Ej. Nómina empresa, Honorarios cliente"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Cuenta Destino</label>
+                    <select
+                      value={incomeTxAccountId}
+                      onChange={e => setIncomeTxAccountId(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {(data.accounts || []).map(acc => (
+                        <option key={acc.id} value={acc.id}>
+                          💳 {acc.name} ({acc.institution})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Concepto / Descripción (Opcional)</label>
+                  <input
+                    type="text"
+                    value={incomeTxDesc}
+                    onChange={e => setIncomeTxDesc(e.target.value)}
+                    placeholder="Ej. Pago de primera quincena"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditIncomeModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>Registrar Ingreso en Quincena</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSaveCustomIncome} className="space-y-4">
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Ajusta directamente el nuevo ingreso presupuestario asignado a la quincena activa (<strong>{currentPeriod.periodLabel}</strong>).
+                </p>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Monto del Ingreso ($)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="1000"
+                    value={customIncomeInput}
+                    onChange={e => setCustomIncomeInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-base font-bold text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditIncomeModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all"
+                  >
+                    Guardar Ajuste
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
