@@ -618,19 +618,21 @@ export const FinancialStore = {
       (qbState.periodHistory || []).forEach(period => {
         const actualSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', period.startDate, period.endDate, period.id);
         const actualIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', period.startDate, period.endDate, period.id);
+        const realAvailable = Math.max(0, actualIncome - actualSpent);
+
         if (period.endDate < todayStr) {
           period.isClosed = true;
           if (!period.closedAt) period.closedAt = todayStr;
         }
         period.newIncome = actualIncome;
         period.totalSpent = actualSpent;
-        period.leftover = Math.max(0, actualIncome - actualSpent);
-        period.totalAvailable = actualIncome;
+        period.leftover = realAvailable;
+        period.totalAvailable = realAvailable;
         period.budgets.forEach(b => {
           b.spentAmount = FinancialCalculations.calculateQuincenalBudgetItemSpent(b, transactions, 'COP', period.startDate, period.endDate, period.id);
         });
         period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
       });
 
       // 2. Verificar si existe el registro para la quincena actual
@@ -642,8 +644,10 @@ export const FinancialStore = {
         .reduce((sum, p) => sum + (p.leftover || 0), 0);
 
       if (!currentPeriod) {
-        // Calcular ingreso exclusivo de la quincena actual
+        // Calcular ingreso exclusivo de la quincena actual y gastos
         const currentIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentInfo.startDate, currentInfo.endDate, currentInfo.id);
+        const currentSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentInfo.startDate, currentInfo.endDate, currentInfo.id);
+        const realAvailable = Math.max(0, currentIncome - currentSpent);
 
         // Crear plantillas de presupuestos con valores iniciales en $0 (Reinicio limpio)
         const defaultBudgets: QuincenalBudgetItem[] = (qbState.budgetTemplates || [
@@ -671,27 +675,26 @@ export const FinancialStore = {
           isClosed: false,
           newIncome: currentIncome,
           leftoverFromPrevious: prevClosedLeftover,
-          // Regla fundamental: El presupuesto para asignar de esta quincena es estrictamente el nuevo ingreso de ESTA quincena
-          totalAvailable: currentIncome,
+          // Dinero disponible real = Ingresos de la quincena - Gastos de la quincena
+          totalAvailable: realAvailable,
           budgets: defaultBudgets,
           totalAllocated: 0,
-          freeUnallocated: currentIncome,
-          totalSpent: 0,
-          leftover: currentIncome
+          freeUnallocated: realAvailable,
+          totalSpent: currentSpent,
+          leftover: realAvailable
         };
 
         qbState.periodHistory.unshift(currentPeriod);
       } else {
         // Actualizar datos en tiempo real de la quincena en curso
         const actualIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id);
-        currentPeriod.newIncome = actualIncome;
-
-        // Presupuesto para asignar = Nuevo ingreso de esta quincena (sin sumar automáticamente sobrante previo ni quincenas pasadas)
-        currentPeriod.totalAvailable = currentPeriod.newIncome;
-        currentPeriod.leftoverFromPrevious = prevClosedLeftover;
-
         const totalSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id);
+        const realAvailable = Math.max(0, actualIncome - totalSpent);
+
+        currentPeriod.newIncome = actualIncome;
         currentPeriod.totalSpent = totalSpent;
+        currentPeriod.totalAvailable = realAvailable;
+        currentPeriod.leftoverFromPrevious = prevClosedLeftover;
 
         // Actualizar gasto individual de cada presupuesto
         currentPeriod.budgets.forEach(b => {
@@ -699,8 +702,9 @@ export const FinancialStore = {
         });
 
         currentPeriod.totalAllocated = currentPeriod.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        currentPeriod.freeUnallocated = Math.max(0, currentPeriod.totalAvailable - currentPeriod.totalAllocated);
-        currentPeriod.leftover = Math.max(0, currentPeriod.newIncome - totalSpent);
+        // Dinero disponible sin asignar = Dinero disponible real - dinero actualmente asignado a presupuestos
+        currentPeriod.freeUnallocated = Math.max(0, realAvailable - currentPeriod.totalAllocated);
+        currentPeriod.leftover = realAvailable;
       }
     });
   },
@@ -712,8 +716,10 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         period.budgets = budgets;
+        const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
+        period.totalAvailable = realAvailable;
         period.totalAllocated = budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
       }
     });
   },
@@ -727,8 +733,10 @@ export const FinancialStore = {
         const item = period.budgets.find(b => b.id === budgetId);
         if (item) {
           item.allocatedAmount = Math.max(0, newAmount);
+          const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
+          period.totalAvailable = realAvailable;
           period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-          period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+          period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
         }
       }
     });
@@ -746,8 +754,10 @@ export const FinancialStore = {
           id,
           spentAmount: 0
         });
+        const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
+        period.totalAvailable = realAvailable;
         period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
       }
     });
   },
@@ -759,8 +769,10 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         period.budgets = period.budgets.filter(b => b.id !== budgetId);
+        const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
+        period.totalAvailable = realAvailable;
         period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
+        period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
       }
     });
   },
@@ -772,9 +784,10 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         period.newIncome = Math.max(0, newIncome);
-        period.totalAvailable = period.newIncome;
-        period.freeUnallocated = Math.max(0, period.totalAvailable - period.totalAllocated);
-        period.leftover = Math.max(0, period.newIncome - period.totalSpent);
+        const realAvailable = Math.max(0, period.newIncome - (period.totalSpent || 0));
+        period.totalAvailable = realAvailable;
+        period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
+        period.leftover = realAvailable;
       }
     });
   },

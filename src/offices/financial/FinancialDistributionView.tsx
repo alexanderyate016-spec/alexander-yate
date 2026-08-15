@@ -37,7 +37,8 @@ import {
   Zap,
   ArrowLeftRight,
   Info,
-  Clock
+  Clock,
+  Receipt
 } from 'lucide-react';
 
 interface Props {
@@ -85,10 +86,12 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
     // Fallback reactivo si aún se está inicializando
     const prevInfo = FinancialCalculations.getPreviousQuincenalPeriodInfo(todayStr);
-    const prevIncome = FinancialCalculations.calculateQuincenalIncome(data.transactions || [], currency, prevInfo.startDate, prevInfo.endDate);
-    const prevExpenses = FinancialCalculations.calculateQuincenalExpenses(data.transactions || [], currency, prevInfo.startDate, prevInfo.endDate);
+    const prevIncome = FinancialCalculations.calculateQuincenalIncome(data.transactions || [], currency, prevInfo.startDate, prevInfo.endDate, prevInfo.id);
+    const prevExpenses = FinancialCalculations.calculateQuincenalExpenses(data.transactions || [], currency, prevInfo.startDate, prevInfo.endDate, prevInfo.id);
     const leftoverPrev = Math.max(0, prevIncome - prevExpenses);
-    const curIncome = FinancialCalculations.calculateQuincenalIncome(data.transactions || [], currency, currentPeriodInfo.startDate, currentPeriodInfo.endDate);
+    const curIncome = FinancialCalculations.calculateQuincenalIncome(data.transactions || [], currency, currentPeriodInfo.startDate, currentPeriodInfo.endDate, currentPeriodInfo.id);
+    const curSpent = FinancialCalculations.calculateQuincenalExpenses(data.transactions || [], currency, currentPeriodInfo.startDate, currentPeriodInfo.endDate, currentPeriodInfo.id);
+    const realAvail = Math.max(0, curIncome - curSpent);
 
     return {
       id: currentPeriodInfo.id,
@@ -101,29 +104,45 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
       isClosed: false,
       newIncome: curIncome,
       leftoverFromPrevious: leftoverPrev,
-      totalAvailable: curIncome,
+      totalAvailable: realAvail,
       budgets: [
         { id: 'bdg_necesarios', name: 'Gastos Necesarios', allocatedAmount: 0, emoji: '🏠', color: 'emerald' },
         { id: 'bdg_personales', name: 'Gastos Personales', allocatedAmount: 0, emoji: '💳', color: 'purple' },
         { id: 'bdg_ahorro', name: 'Ahorro', allocatedAmount: 0, emoji: '🏦', color: 'blue' }
       ],
       totalAllocated: 0,
-      freeUnallocated: curIncome,
-      totalSpent: 0,
-      leftover: curIncome
+      freeUnallocated: realAvail,
+      totalSpent: curSpent,
+      leftover: realAvail
     } as QuincenalPeriodRecord;
-  }, [periodHistory, currentPeriodInfo, data.transactions, todayStr]);
+  }, [periodHistory, currentPeriodInfo, data.transactions, todayStr, currency]);
 
-  // Cálculos en tiempo real para la quincena actual
+  // 1. Ingreso de la quincena (Recibido en este periodo)
+  const actualPeriodIncome = useMemo(() => {
+    return FinancialCalculations.calculateQuincenalIncome(
+      data.transactions || [],
+      currency,
+      currentPeriod.startDate,
+      currentPeriod.endDate,
+      currentPeriod.id
+    );
+  }, [data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id]);
+
+  // 2. Gastos realizados de la quincena (Salidas registradas)
   const actualPeriodSpent = useMemo(() => {
     return FinancialCalculations.calculateQuincenalExpenses(
       data.transactions || [],
       currency,
       currentPeriod.startDate,
-      currentPeriod.endDate
+      currentPeriod.endDate,
+      currentPeriod.id
     );
-  }, [data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate]);
+  }, [data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id]);
 
+  // 3. Dinero disponible real = Ingresos de la quincena - Gastos de la quincena
+  const realAvailable = Math.max(0, actualPeriodIncome - actualPeriodSpent);
+
+  // 4. Presupuestos con gasto calculado individualmente
   const budgetsWithSpent = useMemo(() => {
     return (currentPeriod.budgets || []).map(b => {
       const spent = FinancialCalculations.calculateQuincenalBudgetItemSpent(
@@ -131,7 +150,8 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         data.transactions || [],
         currency,
         currentPeriod.startDate,
-        currentPeriod.endDate
+        currentPeriod.endDate,
+        currentPeriod.id
       );
       const allocated = b.allocatedAmount || 0;
       const remaining = allocated - spent;
@@ -143,14 +163,16 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         percentUsed
       };
     });
-  }, [currentPeriod.budgets, data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate]);
+  }, [currentPeriod.budgets, data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id]);
 
+  // 5. Total asignado actualmente a presupuestos
   const totalAllocated = useMemo(() => {
     return budgetsWithSpent.reduce((sum, b) => sum + (b.allocatedAmount || 0), 0);
   }, [budgetsWithSpent]);
 
-  const freeUnallocated = Math.max(0, currentPeriod.totalAvailable - totalAllocated);
-  const totalLeftoverProjected = Math.max(0, currentPeriod.totalAvailable - actualPeriodSpent);
+  // 6. Dinero disponible sin asignar = Dinero disponible real - Dinero actualmente asignado a presupuestos
+  const freeUnallocated = Math.max(0, realAvailable - totalAllocated);
+  const totalLeftoverProjected = realAvailable;
 
   // Cálculo de progreso de días en la quincena
   const dayProgress = useMemo(() => {
@@ -241,6 +263,10 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
   // Abrir modal de distribución masiva
   const handleOpenDistributeModal = () => {
+    if (realAvailable <= 0) {
+      triggerToast('No tienes dinero disponible para asignar en esta quincena ($0 disponible).', 'warning');
+      return;
+    }
     const initial: Record<string, number> = {};
     (currentPeriod.budgets || []).forEach(b => {
       initial[b.id] = b.allocatedAmount || 0;
@@ -251,6 +277,12 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
 
   const handleSaveDistribution = (e: React.FormEvent) => {
     e.preventDefault();
+    const currentSum = Object.values(distributeAllocations).reduce((acc, val) => acc + (val || 0), 0);
+    if (currentSum > realAvailable) {
+      triggerToast(`No puedes asignar más de los ${formatCurrency(realAvailable, currency)} disponibles reales. El dinero gastado no puede volver a asignarse.`, 'error');
+      return;
+    }
+
     const updatedBudgets = (currentPeriod.budgets || []).map(b => ({
       ...b,
       allocatedAmount: Math.max(0, distributeAllocations[b.id] || 0)
@@ -483,7 +515,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 <button
                   onClick={() => {
                     setIncomeMode('manual');
-                    setCustomIncomeInput(currentPeriod.newIncome);
+                    setCustomIncomeInput(actualPeriodIncome);
                     setIsEditIncomeModalOpen(true);
                   }}
                   className="text-[10px] text-emerald-300 hover:text-white px-1.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 transition-colors font-medium flex items-center gap-1"
@@ -495,70 +527,52 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
             </div>
             <div>
               <strong className="text-2xl font-black font-serif text-emerald-400 tracking-tight">
-                {formatCurrency(currentPeriod.newIncome, currency)}
+                {formatCurrency(actualPeriodIncome, currency)}
               </strong>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Recibido exclusivamente en este periodo ({currentPeriod.startDate.substring(5)} al {currentPeriod.endDate.substring(5)})
+                Recibido en esta quincena ({currentPeriod.startDate.substring(5)} al {currentPeriod.endDate.substring(5)})
               </p>
             </div>
           </div>
 
-          {/* B. PRESUPUESTO PARA ASIGNAR */}
+          {/* B. GASTOS REALIZADOS */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-300 flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5 text-purple-400" />
-                Presupuesto para Asignar
+              <span className="text-[11px] uppercase font-bold tracking-wider text-rose-400 flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5 text-rose-400" />
+                Gastos Realizados
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold">
-                Base Independiente
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+                {actualPeriodIncome > 0 ? Math.round((actualPeriodSpent / actualPeriodIncome) * 100) : 0}% consumido
               </span>
             </div>
             <div>
-              <strong className="text-2xl font-black font-serif text-white tracking-tight">
-                {formatCurrency(currentPeriod.totalAvailable, currency)}
+              <strong className="text-2xl font-black font-serif text-rose-400 tracking-tight">
+                {formatCurrency(actualPeriodSpent, currency)}
               </strong>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Presupuesto disponible de esta quincena (= Nuevo ingreso)
+                Salidas y compras registradas en este periodo
               </p>
             </div>
           </div>
 
-          {/* C. SALDO LIBRE ACUMULADO (CONSERVADO POR SEPARADO) */}
+          {/* C. DINERO DISPONIBLE REAL */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-amber-400 flex items-center gap-1.5">
-                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                Saldo Libre Acumulado
+              <span className="text-[11px] uppercase font-bold tracking-wider text-amber-300 flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-amber-300" />
+                Dinero Disponible Real
               </span>
-              <div className="flex items-center gap-1">
-                {currentPeriod.leftoverFromPrevious > 0 && (
-                  <button
-                    onClick={handleOpenTransferSaldoLibre}
-                    className="text-[10px] text-amber-200 hover:text-white px-2 py-0.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/50 transition-colors font-bold flex items-center gap-1 border border-amber-500/40"
-                    title="Transferir explícitamente a un presupuesto o al disponible"
-                  >
-                    <ArrowLeftRight className="w-3 h-3" /> Usar
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setCustomLeftoverInput(currentPeriod.leftoverFromPrevious);
-                    setIsEditLeftoverModalOpen(true);
-                  }}
-                  className="text-[10px] text-amber-300 hover:text-white px-1.5 py-0.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 transition-colors font-medium flex items-center gap-1"
-                  title="Ajustar dinero sobrante acumulado"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
-              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">
+                Saldo Real
+              </span>
             </div>
             <div>
-              <strong className="text-2xl font-black font-serif text-amber-400 tracking-tight">
-                {formatCurrency(currentPeriod.leftoverFromPrevious, currency)}
+              <strong className="text-2xl font-black font-serif text-amber-300 tracking-tight">
+                {formatCurrency(realAvailable, currency)}
               </strong>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Sobrante separado de quincenas anteriores (no se suma automáticamente)
+                Ingreso ({formatCurrency(actualPeriodIncome, currency)}) − Gastos ({formatCurrency(actualPeriodSpent, currency)})
               </p>
             </div>
           </div>
@@ -571,7 +585,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 Disponible sin Asignar
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold">
-                {currentPeriod.totalAvailable > 0 ? Math.round((freeUnallocated / currentPeriod.totalAvailable) * 100) : 0}%
+                {realAvailable > 0 ? Math.round((freeUnallocated / realAvailable) * 100) : 0}% libre
               </span>
             </div>
             <div>
@@ -579,9 +593,55 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 {formatCurrency(freeUnallocated, currency)}
               </strong>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {freeUnallocated > 0 ? 'Disponible para distribuir en presupuestos' : 'Todo el presupuesto fue asignado'}
+                {freeUnallocated > 0
+                  ? `Disponible real − Asignado (${formatCurrency(totalAllocated, currency)})`
+                  : 'Todo el dinero real fue asignado o gastado'}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* BARRA INFORMATIVA DE SALDO LIBRE ACUMULADO (HISTORIAL SEPARADO) */}
+        <div className="relative z-10 mt-3 p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-200">
+                  Saldo Libre Acumulado (Quincenas Anteriores):
+                </span>
+                <strong className="text-xs font-bold text-purple-400 font-serif">
+                  {formatCurrency(currentPeriod.leftoverFromPrevious, currency)}
+                </strong>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Sobrante conservado independientemente de periodos cerrados (no contamina el cálculo del periodo actual).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {currentPeriod.leftoverFromPrevious > 0 && (
+              <button
+                onClick={handleOpenTransferSaldoLibre}
+                className="text-[10px] text-purple-200 hover:text-white px-2.5 py-1 rounded-lg bg-purple-500/30 hover:bg-purple-500/50 transition-colors font-bold flex items-center gap-1 border border-purple-500/40"
+                title="Transferir explícitamente a un presupuesto o al disponible"
+              >
+                <ArrowLeftRight className="w-3 h-3" /> Usar / Transferir
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setCustomLeftoverInput(currentPeriod.leftoverFromPrevious);
+                setIsEditLeftoverModalOpen(true);
+              }}
+              className="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors font-medium flex items-center gap-1 border border-slate-700"
+              title="Ajustar saldo libre acumulado"
+            >
+              <Edit2 className="w-3 h-3" /> Ajustar
+            </button>
           </div>
         </div>
       </div>
@@ -924,7 +984,10 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Distribuir Dinero de la Quincena</h3>
                 <p className="text-xs text-slate-500">
-                  Total disponible para distribuir: <strong>{formatCurrency(currentPeriod.totalAvailable, currency)}</strong>
+                  Dinero disponible real: <strong className="text-emerald-700">{formatCurrency(realAvailable, currency)}</strong>
+                  <span className="text-[11px] text-slate-400 ml-1">
+                    (Ingreso: {formatCurrency(actualPeriodIncome, currency)} − Gastos: {formatCurrency(actualPeriodSpent, currency)})
+                  </span>
                 </p>
               </div>
               <button
@@ -935,69 +998,99 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               </button>
             </div>
 
-            <form onSubmit={handleSaveDistribution} className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1 text-xs text-purple-900">
-                <div className="font-bold flex items-center gap-1.5 text-purple-950">
-                  <Info className="w-4 h-4 text-purple-600" />
-                  <span>Resumen de Distribución en Tiempo Real</span>
-                </div>
-                {(() => {
-                  const currentSum = Object.values(distributeAllocations).reduce((acc, val) => acc + (val || 0), 0);
-                  const remainingFree = currentPeriod.totalAvailable - currentSum;
-                  return (
+            {(() => {
+              const currentSum = Object.values(distributeAllocations).reduce((acc, val) => acc + (val || 0), 0);
+              const remainingFree = realAvailable - currentSum;
+              const isOverAllocated = currentSum > realAvailable;
+
+              return (
+                <form onSubmit={handleSaveDistribution} className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1.5 text-xs text-purple-900">
+                    <div className="font-bold flex items-center justify-between text-purple-950">
+                      <span className="flex items-center gap-1.5">
+                        <Info className="w-4 h-4 text-purple-600" />
+                        Resumen de Distribución
+                      </span>
+                      <span className="text-[11px] font-semibold text-purple-700">
+                        Tope Real: {formatCurrency(realAvailable, currency)}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between font-semibold pt-1">
                       <span>Total Asignado: <strong>{formatCurrency(currentSum, currency)}</strong></span>
                       <span className={remainingFree < 0 ? 'text-rose-600 font-bold' : 'text-emerald-700'}>
-                        Libre Restante: <strong>{formatCurrency(remainingFree, currency)}</strong>
+                        {remainingFree < 0 ? 'Excedido por: ' : 'Libre Restante: '}
+                        <strong>{formatCurrency(Math.abs(remainingFree), currency)}</strong>
                       </span>
                     </div>
-                  );
-                })()}
-              </div>
 
-              <div className="space-y-3">
-                {(currentPeriod.budgets || []).map(b => (
-                  <div key={b.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-lg">{b.emoji || '💼'}</span>
-                      <span className="text-xs font-bold text-slate-800">{b.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-slate-400">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        value={distributeAllocations[b.id] !== undefined ? distributeAllocations[b.id] : ''}
-                        onChange={e => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          setDistributeAllocations(prev => ({ ...prev, [b.id]: val }));
-                        }}
-                        className="w-36 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-right text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
-                        placeholder="0"
-                      />
-                    </div>
+                    {isOverAllocated && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 text-[11px] font-semibold flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>
+                          No puedes asignar más de los {formatCurrency(realAvailable, currency)} disponibles reales. El dinero gastado ({formatCurrency(actualPeriodSpent, currency)}) ya no existe físicamente y no puede distribuirse.
+                        </span>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsDistributeModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-all"
-                >
-                  Guardar Distribución
-                </button>
-              </div>
-            </form>
+                  <div className="space-y-3">
+                    {(currentPeriod.budgets || []).map(b => (
+                      <div key={b.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{b.emoji || '💼'}</span>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">{b.name}</span>
+                            {b.spentAmount > 0 && (
+                              <span className="text-[10px] text-slate-500">
+                                Gastado en este periodo: {formatCurrency(b.spentAmount, currency)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-slate-400">$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1000"
+                            value={distributeAllocations[b.id] !== undefined ? distributeAllocations[b.id] : ''}
+                            onChange={e => {
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              setDistributeAllocations(prev => ({ ...prev, [b.id]: val }));
+                            }}
+                            className="w-36 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-right text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsDistributeModalOpen(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isOverAllocated}
+                      className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all ${
+                        isOverAllocated
+                          ? 'bg-slate-400 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700'
+                      }`}
+                    >
+                      Guardar Distribución
+                    </button>
+                  </div>
+                </form>
+              );
+            })()}
           </div>
         </div>
       )}
