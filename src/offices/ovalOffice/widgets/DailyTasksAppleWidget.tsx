@@ -33,21 +33,21 @@ export const DailyTasksAppleWidget: React.FC<Props> = ({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-6 backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 text-slate-900 dark:text-white border border-white/50 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 flex flex-col justify-between min-h-[220px]">
+    <div className="liquid-glass-card p-6 flex flex-col justify-between min-h-[220px]">
       {/* HEADER ROW */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
               <CheckSquare className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-secondary-theme">
               Tareas de Hoy
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/20">
+            <span className="text-xs font-mono font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/20">
               {completedCount} / {totalCount}
             </span>
             <button
@@ -77,7 +77,7 @@ export const DailyTasksAppleWidget: React.FC<Props> = ({
           <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 flex items-center gap-3">
             <Award className="w-6 h-6 text-emerald-500 shrink-0" />
             <div className="text-xs">
-              <p className="font-extrabold text-sm">¡Felicidades, Alex!</p>
+              <p className="font-bold text-sm">¡Felicidades, Alex!</p>
               <p className="opacity-90">Completaste todas tus tareas de hoy.</p>
             </div>
           </div>
@@ -90,8 +90,8 @@ export const DailyTasksAppleWidget: React.FC<Props> = ({
                 onClick={() => handleToggleTask(task.id, task.status)}
                 className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none text-xs ${
                   isCompleted
-                    ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 line-through'
-                    : 'bg-white/60 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500/50 text-slate-900 dark:text-white'
+                    ? 'bg-slate-100/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-tertiary-theme line-through'
+                    : 'bg-white/70 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500/50 text-primary-theme'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -109,7 +109,7 @@ export const DailyTasksAppleWidget: React.FC<Props> = ({
                       ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                       : task.priority === 'medium'
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
                     {task.priority}
                   </span>
@@ -118,18 +118,18 @@ export const DailyTasksAppleWidget: React.FC<Props> = ({
             );
           })
         ) : (
-          <div className="text-center py-4 text-xs text-slate-400">
+          <div className="text-center py-4 text-xs text-tertiary-theme">
             No hay tareas pendientes. Clic en + para agregar.
           </div>
         )}
       </div>
 
       {/* FOOTER */}
-      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
+      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs text-secondary-theme">
         <span className="font-medium">Gestión Personal</span>
         <button
           onClick={() => onNavigateToOffice('vidaDiaria')}
-          className="font-bold text-purple-600 dark:text-purple-400 hover:underline"
+          className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
         >
           Ver Todas ({tasks.length})
         </button>

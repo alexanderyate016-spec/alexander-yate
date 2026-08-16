@@ -67,20 +67,20 @@ export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateT
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-6 backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 text-slate-900 dark:text-white border border-white/50 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 flex flex-col justify-between min-h-[220px]">
+    <div className="liquid-glass-card p-6 flex flex-col justify-between min-h-[220px]">
       {/* TOP TITLE BAR */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
             <Clock className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-semibold uppercase tracking-wider text-secondary-theme">
             Próximo Evento
           </span>
         </div>
 
         {nextEvent && (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
             {countdownText}
           </span>
         )}
@@ -91,12 +91,12 @@ export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateT
         <div className="my-3 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{getIcon(nextEvent.sourceOffice)}</span>
-            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white line-clamp-1">
+            <h3 className="text-xl font-bold text-primary-theme line-clamp-1">
               {nextEvent.title}
             </h3>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-secondary-theme">
             {nextEvent.startTime && (
               <span className="flex items-center gap-1 font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
                 <Clock className="w-3.5 h-3.5 text-purple-500" />
@@ -105,7 +105,7 @@ export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateT
             )}
 
             {nextEvent.location && (
-              <span className="flex items-center gap-1 text-slate-500">
+              <span className="flex items-center gap-1 text-tertiary-theme">
                 <MapPin className="w-3.5 h-3.5" />
                 {nextEvent.location}
               </span>
@@ -115,7 +115,7 @@ export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateT
       ) : (
         <div className="my-4 text-center py-4 space-y-2">
           <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+          <p className="text-sm font-semibold text-secondary-theme">
             Sin eventos próximos agendados por hoy
           </p>
         </div>
@@ -126,21 +126,21 @@ export const NextEventAppleWidget: React.FC<Props> = ({ events, now, onNavigateT
         {nextEvent ? (
           <>
             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-              officeOfficeMap[nextEvent.sourceOffice]?.bg || 'bg-slate-100 text-slate-700'
+              officeOfficeMap[nextEvent.sourceOffice]?.bg || 'bg-slate-100 text-slate-800'
             }`}>
               {officeOfficeMap[nextEvent.sourceOffice]?.label || nextEvent.sourceOffice}
             </span>
 
             <button
               onClick={() => onNavigateToOffice(officeOfficeMap[nextEvent.sourceOffice]?.key || 'agenda')}
-              className="flex items-center gap-1 font-bold text-purple-600 dark:text-purple-400 hover:underline"
+              className="flex items-center gap-1 font-semibold text-purple-600 dark:text-purple-400 hover:underline"
             >
               <span>Ver Detalle</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </>
         ) : (
-          <span className="text-slate-400 text-xs">Jornada despejada</span>
+          <span className="text-tertiary-theme text-xs">Jornada despejada</span>
         )}
       </div>
     </div>
