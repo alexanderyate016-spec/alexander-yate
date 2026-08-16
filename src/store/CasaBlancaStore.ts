@@ -92,7 +92,12 @@ class CasaBlancaStore {
           recurringExpenses: parsed?.offices?.financiera?.recurringExpenses || initial.offices.financiera.recurringExpenses || [],
           savings: parsed?.offices?.financiera?.savings || initial.offices.financiera.savings || [],
           investments: parsed?.offices?.financiera?.investments || initial.offices.financiera.investments || [],
-          obligations: parsed?.offices?.financiera?.obligations || initial.offices.financiera.obligations || []
+          obligations: parsed?.offices?.financiera?.obligations || initial.offices.financiera.obligations || [],
+          quincenalBudgets: parsed?.offices?.financiera?.quincenalBudgets || initial.offices.financiera.quincenalBudgets || {
+            budgetTemplates: [],
+            periodHistory: [],
+            accumulatedCarryover: 0
+          }
         },
         vidaSocial: {
           people: parsed?.offices?.vidaSocial?.people || initial.offices.vidaSocial.people || [],

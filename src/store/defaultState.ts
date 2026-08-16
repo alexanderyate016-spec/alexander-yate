@@ -323,7 +323,16 @@ export function createInitialEmptyStore(): CasaBlancaStoreData {
         recurringExpenses: [],
         savings: [],
         investments: [],
-        obligations: []
+        obligations: [],
+        quincenalBudgets: {
+          budgetTemplates: [
+            { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultAmount: 0, defaultPercentage: 50 },
+            { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultAmount: 0, defaultPercentage: 20 },
+            { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultAmount: 0, defaultPercentage: 20 }
+          ],
+          periodHistory: [],
+          accumulatedCarryover: 0
+        }
       },
       vidaSocial: {
         people: [],

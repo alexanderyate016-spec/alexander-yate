@@ -38,7 +38,8 @@ import {
   ArrowLeftRight,
   Info,
   Clock,
-  Receipt
+  Receipt,
+  PieChart
 } from 'lucide-react';
 
 interface Props {
@@ -60,6 +61,12 @@ const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; 
 
 const PALETTE_COLORS = ['emerald', 'purple', 'blue', 'amber', 'rose', 'teal', 'indigo', 'cyan'];
 
+const formatBudgetPercentage = (pct: number): string => {
+  if (isNaN(pct) || pct <= 0) return '0%';
+  const rounded = Number(pct.toFixed(1));
+  return rounded % 1 === 0 ? `${rounded}%` : `${rounded.toFixed(1)}%`;
+};
+
 export function FinancialDistributionView({ data, todayStr, triggerToast }: Props) {
   const currency: CurrencyCode = 'COP';
 
@@ -79,7 +86,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
   const qbState = data.quincenalBudgets;
   const periodHistory = qbState?.periodHistory || [];
 
-  // Periodo quincenal activo
+  // Periodo quincenal activo con fallback seguro basado en plantillas
   const currentPeriod = useMemo(() => {
     const found = periodHistory.find(p => p.id === currentPeriodInfo.id);
     if (found) return found;
@@ -93,6 +100,24 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
     const curSpent = FinancialCalculations.calculateQuincenalExpenses(data.transactions || [], currency, currentPeriodInfo.startDate, currentPeriodInfo.endDate, currentPeriodInfo.id);
     const realAvail = Math.max(0, curIncome - curSpent);
 
+    const templates = qbState?.budgetTemplates || [
+      { id: 'necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultAmount: 42000 },
+      { id: 'personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultAmount: 20000 },
+      { id: 'ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultAmount: 10000 }
+    ];
+
+    const fallbackBudgets = templates.map((t, idx) => ({
+      id: 'bdg_' + (t.id || `item_${idx}`),
+      name: t.name,
+      allocatedAmount: Math.max(0, Math.floor(t.defaultAmount ?? 0)),
+      spentAmount: 0,
+      emoji: t.emoji || '💼',
+      color: t.color || 'emerald',
+      categoryName: t.name
+    }));
+
+    const totalAlloc = fallbackBudgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+
     return {
       id: currentPeriodInfo.id,
       year: currentPeriodInfo.year,
@@ -105,17 +130,13 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
       newIncome: curIncome,
       leftoverFromPrevious: leftoverPrev,
       totalAvailable: realAvail,
-      budgets: [
-        { id: 'bdg_necesarios', name: 'Gastos Necesarios', allocatedAmount: 0, emoji: '🏠', color: 'emerald' },
-        { id: 'bdg_personales', name: 'Gastos Personales', allocatedAmount: 0, emoji: '💳', color: 'purple' },
-        { id: 'bdg_ahorro', name: 'Ahorro', allocatedAmount: 0, emoji: '🏦', color: 'blue' }
-      ],
-      totalAllocated: 0,
-      freeUnallocated: realAvail,
+      budgets: fallbackBudgets,
+      totalAllocated: totalAlloc,
+      freeUnallocated: Math.max(0, realAvail - totalAlloc),
       totalSpent: curSpent,
       leftover: realAvail
     } as QuincenalPeriodRecord;
-  }, [periodHistory, currentPeriodInfo, data.transactions, todayStr, currency]);
+  }, [periodHistory, currentPeriodInfo, data.transactions, todayStr, currency, qbState?.budgetTemplates]);
 
   // 1. Ingreso de la quincena (Recibido en este periodo)
   const actualPeriodIncome = useMemo(() => {
@@ -142,7 +163,19 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
   // 3. Dinero disponible real = Ingresos de la quincena - Gastos de la quincena
   const realAvailable = Math.max(0, actualPeriodIncome - actualPeriodSpent);
 
-  // 4. Presupuestos con gasto calculado individualmente
+  // 4. Base para el cálculo automático de porcentajes: (monto asignado / dinero disponible) * 100
+  const rawTotalAllocated = useMemo(() => {
+    return (currentPeriod.budgets || []).reduce((sum, b) => sum + (b.allocatedAmount || 0), 0);
+  }, [currentPeriod.budgets]);
+
+  const baseForPercentages = useMemo(() => {
+    if (realAvailable > 0) return realAvailable;
+    if (rawTotalAllocated > 0) return rawTotalAllocated;
+    if (actualPeriodIncome > 0) return actualPeriodIncome;
+    return 0;
+  }, [realAvailable, rawTotalAllocated, actualPeriodIncome]);
+
+  // 5. Presupuestos con gasto individual y porcentaje calculado con la fórmula: (asignado / disponible) * 100
   const budgetsWithSpent = useMemo(() => {
     return (currentPeriod.budgets || []).map(b => {
       const spent = FinancialCalculations.calculateQuincenalBudgetItemSpent(
@@ -153,24 +186,28 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
         currentPeriod.endDate,
         currentPeriod.id
       );
-      const allocated = b.allocatedAmount || 0;
+      const allocated = Math.max(0, Math.floor(b.allocatedAmount || 0));
       const remaining = allocated - spent;
       const percentUsed = allocated > 0 ? (spent / allocated) * 100 : (spent > 0 ? 100 : 0);
+      const percentOfTotal = baseForPercentages > 0 ? (allocated / baseForPercentages) * 100 : 0;
+
       return {
         ...b,
+        allocatedAmount: allocated,
         spentAmount: spent,
         remaining,
-        percentUsed
+        percentUsed,
+        percentOfTotal
       };
     });
-  }, [currentPeriod.budgets, data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id]);
+  }, [currentPeriod.budgets, data.transactions, currency, currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id, baseForPercentages]);
 
-  // 5. Total asignado actualmente a presupuestos
+  // Total asignado consolidado
   const totalAllocated = useMemo(() => {
     return budgetsWithSpent.reduce((sum, b) => sum + (b.allocatedAmount || 0), 0);
   }, [budgetsWithSpent]);
 
-  // 6. Dinero disponible sin asignar = Dinero disponible real - Dinero actualmente asignado a presupuestos
+  // Dinero disponible sin asignar
   const freeUnallocated = Math.max(0, realAvailable - totalAllocated);
   const totalLeftoverProjected = realAvailable;
 
@@ -650,44 +687,105 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
       {activeSubTab === 'current' && (
         <div className="space-y-6">
           {/* BARRA DE ACCIÓN Y CONTROL DE PRESUPUESTOS */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span>Mis Presupuestos del Periodo</span>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                  {budgetsWithSpent.length} Categorías
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Asignado: <strong>{formatCurrency(totalAllocated, currency)}</strong> • Gastado en esta quincena: <strong>{formatCurrency(actualPeriodSpent, currency)}</strong> • Sobrante proyectado: <strong>{formatCurrency(totalLeftoverProjected, currency)}</strong>
-              </p>
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span>Mis Presupuestos del Periodo</span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                    {budgetsWithSpent.length} Categorías
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Dinero Disponible: <strong className="text-slate-900 font-bold">{formatCurrency(realAvailable, currency)}</strong> • Asignado: <strong className="text-purple-700 font-bold">{formatCurrency(totalAllocated, currency)}</strong> ({formatBudgetPercentage(baseForPercentages > 0 ? (totalAllocated / baseForPercentages) * 100 : 0)}) • Gastado: <strong className="text-rose-600 font-bold">{formatCurrency(actualPeriodSpent, currency)}</strong>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={handleOpenDistributeModal}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>Distribuir Dinero</span>
+                </button>
+
+                <button
+                  onClick={handleOpenAddBudget}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all border border-slate-200 flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Nuevo Presupuesto</span>
+                </button>
+
+                <button
+                  onClick={() => handleOpenQuickExpense()}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-all border border-emerald-200 flex items-center gap-1.5"
+                >
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <span>+ Registrar Gasto</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={handleOpenDistributeModal}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1.5"
-              >
-                <Sliders className="w-4 h-4" />
-                <span>Distribuir Dinero</span>
-              </button>
+            {/* BARRA VISUAL DE DISTRIBUCIÓN GENERAL DE LA QUINCENA */}
+            {budgetsWithSpent.length > 0 && (
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <PieChart className="w-3.5 h-3.5 text-purple-600" />
+                    Distribución Visual del Dinero Disponible ({formatCurrency(baseForPercentages, currency)})
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    Asignado: {formatBudgetPercentage(baseForPercentages > 0 ? (totalAllocated / baseForPercentages) * 100 : 0)}
+                    {freeUnallocated > 0 && ` • Libre: ${formatCurrency(freeUnallocated, currency)}`}
+                  </span>
+                </div>
 
-              <button
-                onClick={handleOpenAddBudget}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition-all border border-slate-200 flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo Presupuesto</span>
-              </button>
+                {/* Stacked segmented visual bar */}
+                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
+                  {budgetsWithSpent.map(b => {
+                    const colorTheme = COLOR_CLASSES[b.color || 'emerald'] || COLOR_CLASSES.emerald;
+                    const pct = Math.min(100, Math.max(0, b.percentOfTotal));
+                    if (pct <= 0) return null;
+                    return (
+                      <div
+                        key={b.id}
+                        className={`h-full transition-all duration-500 ${colorTheme.bar}`}
+                        style={{ width: `${pct}%` }}
+                        title={`${b.name}: ${formatCurrency(b.allocatedAmount, currency)} (${formatBudgetPercentage(pct)})`}
+                      />
+                    );
+                  })}
+                  {freeUnallocated > 0 && (
+                    <div
+                      className="h-full bg-slate-200 transition-all duration-500"
+                      style={{ width: `${Math.min(100, (freeUnallocated / (baseForPercentages || 1)) * 100)}%` }}
+                      title={`Sin asignar: ${formatCurrency(freeUnallocated, currency)}`}
+                    />
+                  )}
+                </div>
 
-              <button
-                onClick={() => handleOpenQuickExpense()}
-                className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-xs transition-all border border-emerald-200 flex items-center gap-1.5"
-              >
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span>+ Registrar Gasto</span>
-              </button>
-            </div>
+                {/* Categories badges */}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {budgetsWithSpent.map(b => {
+                    const colorTheme = COLOR_CLASSES[b.color || 'emerald'] || COLOR_CLASSES.emerald;
+                    return (
+                      <div key={b.id} className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
+                        <span className={`w-2.5 h-2.5 rounded-full ${colorTheme.bar}`} />
+                        <span>{b.emoji} {b.name}: <strong>{formatCurrency(b.allocatedAmount, currency)}</strong> ({formatBudgetPercentage(b.percentOfTotal)})</span>
+                      </div>
+                    );
+                  })}
+                  {freeUnallocated > 0 && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                      <span>Sin Asignar: {formatCurrency(freeUnallocated, currency)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* LISTA DE PRESUPUESTOS DE LA QUINCENA */}
@@ -708,8 +806,8 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {budgetsWithSpent.map((budget, idx) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {budgetsWithSpent.map((budget) => {
                 const colorTheme = COLOR_CLASSES[budget.color || 'emerald'] || COLOR_CLASSES.emerald;
                 const isOverBudget = budget.spentAmount > budget.allocatedAmount && budget.allocatedAmount > 0;
                 const isUnassigned = budget.allocatedAmount === 0;
@@ -717,22 +815,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                 return (
                   <div
                     key={budget.id}
-                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+                    className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
                   >
-                    {/* TOP INFO & BADGE */}
+                    {/* TOP INFO & PORCENTAJE DEL TOTAL */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-xs ${colorTheme.bg} border ${colorTheme.border}`}>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-xs ${colorTheme.bg} border ${colorTheme.border}`}>
                           {budget.emoji || '💼'}
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
+                          <h3 className="text-base font-black text-slate-900 group-hover:text-purple-700 transition-colors">
                             {budget.name}
                           </h3>
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            {budget.allocatedAmount > 0
-                              ? `${Math.round(budget.percentUsed)}% del presupuesto consumido`
-                              : 'Sin asignar ($0)'}
+                          <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 inline-block mt-0.5">
+                            {formatBudgetPercentage(budget.percentOfTotal)} del total
                           </span>
                         </div>
                       </div>
@@ -755,63 +851,106 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       </div>
                     </div>
 
-                    {/* METRICS ROW */}
-                    <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                    {/* HERO ASIGNACIÓN MONETARIA */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Presupuesto Asignado (Reservado)
+                        </span>
+                        <button
+                          onClick={() => handleOpenEditBudget(budget)}
+                          className="text-[10px] font-semibold text-purple-600 hover:text-purple-800 transition-colors"
+                        >
+                          Modificar
+                        </button>
+                      </div>
+                      <div className="text-xl font-black text-slate-900 font-serif">
+                        {formatCurrency(budget.allocatedAmount, currency)}
+                      </div>
+                    </div>
+
+                    {/* DISTINCIÓN CLARA: PRESUPUESTO ASIGNADO vs GASTO REALIZADO vs RESTANTE */}
+                    <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-900 text-white shadow-xs text-center">
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase block">Asignado</span>
-                        <strong className="text-xs font-bold text-slate-900">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Asignado</span>
+                        <strong className="text-xs font-black text-white font-serif">
                           {formatCurrency(budget.allocatedAmount, currency)}
                         </strong>
                       </div>
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase block">Gastado</span>
-                        <strong className={`text-xs font-bold ${budget.spentAmount > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
+                        <span className="text-[9px] font-bold text-rose-300 uppercase block">Gastado</span>
+                        <strong className={`text-xs font-black font-serif ${budget.spentAmount > 0 ? 'text-rose-400' : 'text-slate-300'}`}>
                           {formatCurrency(budget.spentAmount, currency)}
                         </strong>
                       </div>
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase block">Disponible</span>
-                        <strong className={`text-xs font-bold ${budget.remaining < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                        <span className="text-[9px] font-bold text-emerald-300 uppercase block">Restante</span>
+                        <strong className={`text-xs font-black font-serif ${budget.remaining < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                           {formatCurrency(budget.remaining, currency)}
                         </strong>
                       </div>
                     </div>
 
-                    {/* PROGRESS BAR */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[11px] font-medium text-slate-500">
-                        <span>Consumo de la quincena</span>
-                        <span className={isOverBudget ? 'text-rose-600 font-bold' : 'text-slate-700'}>
-                          {Math.round(budget.percentUsed)}%
-                        </span>
+                    {/* DUAL BARS: 1) % DEL TOTAL DISPONIBLE, 2) % CONSUMO DEL GASTO */}
+                    <div className="space-y-3 pt-1">
+                      {/* BARRA 1: PARTICIPACIÓN EN LA QUINCENA */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <PieChart className="w-3 h-3 text-slate-400" />
+                            Peso en la Quincena
+                          </span>
+                          <span className="font-bold text-purple-700">
+                            {formatBudgetPercentage(budget.percentOfTotal)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${colorTheme.bar}`}
+                            style={{ width: `${Math.min(100, Math.max(0, budget.percentOfTotal))}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            isOverBudget ? 'bg-rose-500' : colorTheme.bar
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }}
-                        />
+
+                      {/* BARRA 2: CONSUMO DEL GASTO REALIZADO */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-slate-400" />
+                            Gasto Ejecutado
+                          </span>
+                          <span className={isOverBudget ? 'text-rose-600 font-bold' : 'text-slate-700 font-bold'}>
+                            {Math.round(budget.percentUsed)}% ({formatCurrency(budget.spentAmount, currency)})
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isOverBudget ? 'bg-rose-500' : colorTheme.bar
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
 
                     {/* FOOTER ACTIONS */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                       <button
                         onClick={() => handleOpenQuickExpense(budget.id)}
-                        className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 flex items-center gap-1 transition-colors"
+                        className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 transition-colors px-2.5 py-1 rounded-lg hover:bg-purple-50"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Registrar Gasto
+                        <Plus className="w-3.5 h-3.5" /> + Gasto
                       </button>
 
                       {isOverBudget && (
-                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Sobrepasado
                         </span>
                       )}
                       {isUnassigned && (
                         <span className="text-[10px] font-medium text-slate-400 italic">
-                          Pendiente distribuir
+                          $0 asignado
                         </span>
                       )}
                     </div>
@@ -1035,37 +1174,49 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   </div>
 
                   <div className="space-y-3">
-                    {(currentPeriod.budgets || []).map(b => (
-                      <div key={b.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-lg">{b.emoji || '💼'}</span>
-                          <div>
-                            <span className="text-xs font-bold text-slate-800 block">{b.name}</span>
-                            {b.spentAmount > 0 && (
-                              <span className="text-[10px] text-slate-500">
-                                Gastado en este periodo: {formatCurrency(b.spentAmount, currency)}
-                              </span>
-                            )}
+                    {(currentPeriod.budgets || []).map(b => {
+                      const val = distributeAllocations[b.id] !== undefined ? distributeAllocations[b.id] : (b.allocatedAmount || 0);
+                      return (
+                        <div key={b.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-xl">{b.emoji || '💼'}</span>
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">{b.name}</span>
+                              {b.spentAmount > 0 ? (
+                                <span className="text-[10px] text-slate-500 font-medium">
+                                  Gastado en este periodo: {formatCurrency(b.spentAmount, currency)}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400">
+                                  Sin gastos registrados
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:items-end gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-500">$</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={val === 0 ? '' : val}
+                                onChange={e => {
+                                  const raw = e.target.value === '' ? 0 : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                                  setDistributeAllocations(prev => ({ ...prev, [b.id]: raw }));
+                                }}
+                                className="w-36 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-right text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                                placeholder="0"
+                              />
+                            </div>
+                            <span className="text-[10px] text-purple-700 font-semibold">
+                              {formatCurrency(val, currency)}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-slate-400">$</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1000"
-                            value={distributeAllocations[b.id] !== undefined ? distributeAllocations[b.id] : ''}
-                            onChange={e => {
-                              const val = e.target.value === '' ? 0 : Number(e.target.value);
-                              setDistributeAllocations(prev => ({ ...prev, [b.id]: val }));
-                            }}
-                            className="w-36 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-right text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1124,7 +1275,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   required
                   value={budgetName}
                   onChange={e => setBudgetName(e.target.value)}
-                  placeholder="Ej. Gastos Necesarios, Ahorro, etc."
+                  placeholder="Ej. Gastos necesarios, Gastos personales, Ahorro"
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -1145,12 +1296,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   <input
                     type="number"
                     min="0"
-                    step="1000"
+                    step="1"
                     value={budgetAmount}
-                    onChange={e => setBudgetAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={e => {
+                      const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                      setBudgetAmount(val);
+                    }}
                     placeholder="0"
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                   />
+                  {budgetAmount !== '' && Number(budgetAmount) > 0 && (
+                    <span className="text-[10px] font-bold text-purple-700 block">
+                      {formatCurrency(Number(budgetAmount), currency)}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1235,12 +1394,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   type="number"
                   required
                   min="1"
-                  step="100"
+                  step="1"
                   value={expenseAmount}
-                  onChange={e => setExpenseAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                  onChange={e => {
+                    const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                    setExpenseAmount(val);
+                  }}
                   placeholder="0"
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                 />
+                {expenseAmount !== '' && Number(expenseAmount) > 0 && (
+                  <span className="text-[10px] font-bold text-rose-600 block">
+                    {formatCurrency(Number(expenseAmount), currency)}
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -1249,7 +1416,7 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   type="text"
                   value={expenseDesc}
                   onChange={e => setExpenseDesc(e.target.value)}
-                  placeholder="Ej. Mercado quincenal, combustible, etc."
+                  placeholder="Ej. Mercado quincenal, combustible, servicios, etc."
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -1361,12 +1528,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                       type="number"
                       required
                       min="1"
-                      step="1000"
+                      step="1"
                       value={incomeTxAmount}
-                      onChange={e => setIncomeTxAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                      onChange={e => {
+                        const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                        setIncomeTxAmount(val);
+                      }}
                       placeholder="0"
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                     />
+                    {incomeTxAmount !== '' && Number(incomeTxAmount) > 0 && (
+                      <span className="text-[10px] font-bold text-emerald-700 block">
+                        {formatCurrency(Number(incomeTxAmount), currency)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1459,12 +1634,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                     type="number"
                     required
                     min="0"
-                    step="1000"
+                    step="1"
                     value={customIncomeInput}
-                    onChange={e => setCustomIncomeInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={e => {
+                      const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                      setCustomIncomeInput(val);
+                    }}
                     placeholder="0"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-base font-bold text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                   />
+                  {customIncomeInput !== '' && Number(customIncomeInput) > 0 && (
+                    <span className="text-[10px] font-bold text-emerald-700 block">
+                      {formatCurrency(Number(customIncomeInput), currency)}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1515,12 +1698,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   type="number"
                   required
                   min="0"
-                  step="1000"
+                  step="1"
                   value={customLeftoverInput}
-                  onChange={e => setCustomLeftoverInput(e.target.value === '' ? '' : Number(e.target.value))}
+                  onChange={e => {
+                    const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                    setCustomLeftoverInput(val);
+                  }}
                   placeholder="0"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-base font-bold text-amber-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
                 />
+                {customLeftoverInput !== '' && Number(customLeftoverInput) > 0 && (
+                  <span className="text-[10px] font-bold text-amber-700 block">
+                    {formatCurrency(Number(customLeftoverInput), currency)}
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1593,12 +1784,20 @@ export function FinancialDistributionView({ data, todayStr, triggerToast }: Prop
                   required
                   min="1"
                   max={currentPeriod.leftoverFromPrevious}
-                  step="1000"
+                  step="1"
                   value={transferAmountInput}
-                  onChange={e => setTransferAmountInput(e.target.value === '' ? '' : Number(e.target.value))}
+                  onChange={e => {
+                    const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                    setTransferAmountInput(val);
+                  }}
                   placeholder="0"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-base font-bold text-amber-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
                 />
+                {transferAmountInput !== '' && Number(transferAmountInput) > 0 && (
+                  <span className="text-[10px] font-bold text-amber-700 block">
+                    {formatCurrency(Number(transferAmountInput), currency)}
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">

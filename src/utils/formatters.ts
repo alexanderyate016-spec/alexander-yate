@@ -16,8 +16,9 @@ export function formatCurrency(amount: number, currency: string = 'COP'): string
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
-    maximumFractionDigits: currency === 'COP' ? 0 : 2
-  }).format(amount);
+    maximumFractionDigits: currency === 'COP' ? 0 : 2,
+    minimumFractionDigits: currency === 'COP' ? 0 : 2
+  }).format(currency === 'COP' ? Math.round(amount) : amount);
 }
 
 export function formatPercent(value: number): string {

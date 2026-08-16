@@ -601,9 +601,9 @@ export const FinancialStore = {
         draft.offices.financiera.quincenalBudgets = {
           currentPeriodId: currentInfo.id,
           budgetTemplates: [
-            { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultPercentage: 50 },
-            { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultPercentage: 20 },
-            { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultPercentage: 20 }
+            { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultAmount: 42000, defaultPercentage: 58.3 },
+            { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultAmount: 20000, defaultPercentage: 27.8 },
+            { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultAmount: 10000, defaultPercentage: 13.9 }
           ],
           periodHistory: [],
           accumulatedCarryover: 0
@@ -628,10 +628,10 @@ export const FinancialStore = {
         period.totalSpent = actualSpent;
         period.leftover = realAvailable;
         period.totalAvailable = realAvailable;
-        period.budgets.forEach(b => {
+        (period.budgets || []).forEach(b => {
           b.spentAmount = FinancialCalculations.calculateQuincenalBudgetItemSpent(b, transactions, 'COP', period.startDate, period.endDate, period.id);
         });
-        period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        period.totalAllocated = (period.budgets || []).reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
       });
 
@@ -649,20 +649,39 @@ export const FinancialStore = {
         const currentSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentInfo.startDate, currentInfo.endDate, currentInfo.id);
         const realAvailable = Math.max(0, currentIncome - currentSpent);
 
-        // Crear plantillas de presupuestos con valores iniciales en $0 (Reinicio limpio)
-        const defaultBudgets: QuincenalBudgetItem[] = (qbState.budgetTemplates || [
-          { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald' },
-          { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple' },
-          { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue' }
-        ]).map(tmpl => ({
-          id: 'bdg_' + tmpl.id + '_' + Date.now().toString(36),
+        // Buscar presupuestos existentes del periodo anterior más reciente o de templates
+        const latestPeriod = (qbState.periodHistory || [])[0];
+        let templateList = qbState.budgetTemplates;
+
+        if ((!templateList || templateList.length === 0) && latestPeriod && latestPeriod.budgets && latestPeriod.budgets.length > 0) {
+          templateList = latestPeriod.budgets.map(b => ({
+            id: b.id,
+            name: b.name,
+            emoji: b.emoji || '💼',
+            color: b.color || 'emerald',
+            defaultAmount: b.allocatedAmount || 0
+          }));
+        }
+
+        if (!templateList || templateList.length === 0) {
+          templateList = [
+            { id: 'tmpl_necesarios', name: 'Gastos Necesarios', emoji: '🏠', color: 'emerald', defaultAmount: 42000 },
+            { id: 'tmpl_personales', name: 'Gastos Personales', emoji: '💳', color: 'purple', defaultAmount: 20000 },
+            { id: 'tmpl_ahorro', name: 'Ahorro', emoji: '🏦', color: 'blue', defaultAmount: 10000 }
+          ];
+        }
+
+        const defaultBudgets: QuincenalBudgetItem[] = templateList.map((tmpl, idx) => ({
+          id: 'bdg_' + (tmpl.id || `item_${idx}`) + '_' + Date.now().toString(36),
           name: tmpl.name,
-          allocatedAmount: 0, // Reinicio automático a $0
+          allocatedAmount: Math.max(0, Math.floor(tmpl.defaultAmount ?? 0)),
           spentAmount: 0,
-          emoji: tmpl.emoji,
-          color: tmpl.color,
+          emoji: tmpl.emoji || '💼',
+          color: tmpl.color || 'emerald',
           categoryName: tmpl.name
         }));
+
+        const totalAllocated = defaultBudgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
 
         currentPeriod = {
           id: currentInfo.id,
@@ -675,18 +694,17 @@ export const FinancialStore = {
           isClosed: false,
           newIncome: currentIncome,
           leftoverFromPrevious: prevClosedLeftover,
-          // Dinero disponible real = Ingresos de la quincena - Gastos de la quincena
           totalAvailable: realAvailable,
           budgets: defaultBudgets,
-          totalAllocated: 0,
-          freeUnallocated: realAvailable,
+          totalAllocated,
+          freeUnallocated: Math.max(0, realAvailable - totalAllocated),
           totalSpent: currentSpent,
           leftover: realAvailable
         };
 
         qbState.periodHistory.unshift(currentPeriod);
       } else {
-        // Actualizar datos en tiempo real de la quincena en curso
+        // Actualizar datos en tiempo real de la quincena en curso SIN BORRAR los presupuestos del usuario
         const actualIncome = FinancialCalculations.calculateQuincenalIncome(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id);
         const totalSpent = FinancialCalculations.calculateQuincenalExpenses(transactions, 'COP', currentPeriod.startDate, currentPeriod.endDate, currentPeriod.id);
         const realAvailable = Math.max(0, actualIncome - totalSpent);
@@ -696,13 +714,12 @@ export const FinancialStore = {
         currentPeriod.totalAvailable = realAvailable;
         currentPeriod.leftoverFromPrevious = prevClosedLeftover;
 
-        // Actualizar gasto individual de cada presupuesto
-        currentPeriod.budgets.forEach(b => {
+        // Actualizar gasto individual de cada presupuesto preservando el allocatedAmount intacto
+        (currentPeriod.budgets || []).forEach(b => {
           b.spentAmount = FinancialCalculations.calculateQuincenalBudgetItemSpent(b, transactions, 'COP', currentPeriod!.startDate, currentPeriod!.endDate, currentPeriod!.id);
         });
 
-        currentPeriod.totalAllocated = currentPeriod.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
-        // Dinero disponible sin asignar = Dinero disponible real - dinero actualmente asignado a presupuestos
+        currentPeriod.totalAllocated = (currentPeriod.budgets || []).reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         currentPeriod.freeUnallocated = Math.max(0, realAvailable - currentPeriod.totalAllocated);
         currentPeriod.leftover = realAvailable;
       }
@@ -715,11 +732,23 @@ export const FinancialStore = {
       if (!qbState) return;
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
-        period.budgets = budgets;
+        period.budgets = budgets.map(b => ({
+          ...b,
+          allocatedAmount: Math.max(0, Math.floor(b.allocatedAmount || 0))
+        }));
         const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
         period.totalAvailable = realAvailable;
-        period.totalAllocated = budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
+        period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
+
+        // Guardar como plantilla para preservar categorías y montos del usuario
+        qbState.budgetTemplates = period.budgets.map(b => ({
+          id: b.id,
+          name: b.name,
+          emoji: b.emoji || '💼',
+          color: b.color || 'emerald',
+          defaultAmount: b.allocatedAmount || 0
+        }));
       }
     });
   },
@@ -732,11 +761,17 @@ export const FinancialStore = {
       if (period) {
         const item = period.budgets.find(b => b.id === budgetId);
         if (item) {
-          item.allocatedAmount = Math.max(0, newAmount);
+          item.allocatedAmount = Math.max(0, Math.floor(newAmount || 0));
           const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
           period.totalAvailable = realAvailable;
           period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
           period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
+
+          // Actualizar plantilla correspondiente
+          const tmpl = (qbState.budgetTemplates || []).find(t => t.id === budgetId || t.name.toLowerCase() === item.name.toLowerCase());
+          if (tmpl) {
+            tmpl.defaultAmount = item.allocatedAmount;
+          }
         }
       }
     });
@@ -749,15 +784,27 @@ export const FinancialStore = {
       const period = qbState.periodHistory.find(p => p.id === periodId);
       if (period) {
         const id = 'bdg_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 5);
-        period.budgets.push({
+        const newItem: QuincenalBudgetItem = {
           ...item,
           id,
+          allocatedAmount: Math.max(0, Math.floor(item.allocatedAmount || 0)),
           spentAmount: 0
-        });
+        };
+        period.budgets.push(newItem);
         const realAvailable = Math.max(0, (period.newIncome || 0) - (period.totalSpent || 0));
         period.totalAvailable = realAvailable;
         period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
+
+        // Añadir a plantillas persistentes
+        if (!qbState.budgetTemplates) qbState.budgetTemplates = [];
+        qbState.budgetTemplates.push({
+          id,
+          name: newItem.name,
+          emoji: newItem.emoji || '💼',
+          color: newItem.color || 'emerald',
+          defaultAmount: newItem.allocatedAmount
+        });
       }
     });
   },
@@ -773,6 +820,10 @@ export const FinancialStore = {
         period.totalAvailable = realAvailable;
         period.totalAllocated = period.budgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0);
         period.freeUnallocated = Math.max(0, realAvailable - period.totalAllocated);
+
+        if (qbState.budgetTemplates) {
+          qbState.budgetTemplates = qbState.budgetTemplates.filter(t => t.id !== budgetId);
+        }
       }
     });
   },
