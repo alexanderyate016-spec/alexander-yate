@@ -9,7 +9,7 @@ import { DailyLifeView } from './offices/dailyLife/DailyLifeView';
 import { FinancialView } from './offices/financial/FinancialView';
 import { SocialView } from './offices/social/SocialView';
 import { MedicalView } from './offices/medical/MedicalView';
-import { SettingsOfficeView } from './offices/settings/SettingsOfficeView';
+import { MikeRitterOfficeView } from './offices/security/MikeRitterOfficeView';
 import { OvalOfficeView } from './offices/ovalOffice/OvalOfficeView';
 import { ChiefOfStaffView } from './offices/chiefOfStaff/ChiefOfStaffView';
 import { AgendaView } from './offices/agenda/AgendaView';
@@ -115,7 +115,7 @@ export function App() {
     { key: 'financiera', label: 'Financiera', emoji: '💰' },
     { key: 'vidaSocial', label: 'Vida Social', emoji: '💖' },
     { key: 'medica', label: 'Médica', emoji: '🩺' },
-    { key: 'configuracion', label: 'Configuración', emoji: '⚙️' },
+    { key: 'mikeRitter', label: 'Mike Ritter', emoji: '🛡️' },
   ];
 
   return (
@@ -178,8 +178,8 @@ export function App() {
             />
           )}
           {activeOffice === 'medica' && <MedicalView data={state?.offices?.medica} />}
-          {(activeOffice === 'configuracion' || activeOffice === 'seguridad') && (
-            <SettingsOfficeView state={state} showToast={showToast} />
+          {(activeOffice === 'mikeRitter' || activeOffice === 'configuracion' || activeOffice === 'seguridad') && (
+            <MikeRitterOfficeView state={state} showToast={showToast} />
           )}
         </div>
       </main>
